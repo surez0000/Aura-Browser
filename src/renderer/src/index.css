@@ -1,0 +1,66 @@
+@import 'tailwindcss';
+@import './theme/tokens.css';
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-ui);
+  color: var(--ink-1);
+  background: transparent;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  -webkit-user-drag: none;
+}
+
+.drag {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Self-painted aurora backdrop (ADR-0002): identical on every OS. */
+.app-bg {
+  background:
+    radial-gradient(1100px 750px at 12% -8%, var(--aurora-a), transparent 62%),
+    radial-gradient(1000px 700px at 108% 18%, var(--aurora-c), transparent 58%),
+    radial-gradient(950px 900px at 38% 118%, var(--aurora-b), transparent 60%), var(--bg-base);
+}
+
+.glass {
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+}
+
+::placeholder {
+  color: var(--ink-3);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--surface-glass-strong);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}

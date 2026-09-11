@@ -1,0 +1,128 @@
+import { useEffect, useRef, useState } from 'react'
+import { Lock, Search, Star, TriangleAlert } from 'lucide-react'
+import { invoke } from '@/lib/ipc'
+import { displayLabel, normalizeInput } from '@/lib/url'
+import { useTabs, selectActiveTab } from '@/state/tabs'
+import { useUi } from '@/state/ui'
+
+function SecurityIcon({ state }: { state: 'secure' | 'insecure' | 'neutral' }): React.JSX.Element {
+  if (state === 'secure') return <Lock size={13} style={{ color: 'var(--ink-2)' }} />
+  if (state === 'insecure') return <TriangleAlert size={13} style={{ color: 'var(--danger)' }} />
+  return <Search size={13} style={{ color: 'var(--ink-3)' }} />
+}
+
+/**
+ * The compact address pill (no persistent address bar). Click — or ⌘L — to
+ * expand it into an inline editor.
+ */
+export function UrlPill(): React.JSX.Element {
+  const active = useTabs(selectActiveTab)
+  const favorites = useTabs((s) => s.favorites)
+  const editRequest = useUi((s) => s.urlEditRequest)
+
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState('')
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  const currentUrl = active?.url || active?.pendingUrl || ''
+  const isFavorite = !!currentUrl && favorites.some((f) => f.url === currentUrl)
+
+  // ⌘L bumps a request counter; adjust state during render (React's endorsed
+  // pattern for reacting to an external "event" value without an effect).
+  const [handledRequest, setHandledRequest] = useState(editRequest)
+  if (editRequest !== handledRequest) {
+    setHandledRequest(editRequest)
+    setValue(currentUrl)
+    setEditing(true)
+  }
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+  }, [editing])
+
+  const submit = (): void => {
+    const url = normalizeInput(value)
+    if (url) {
+      if (active) void invoke('tabs:navigate', { tabId: active.id, url })
+      else void invoke('tabs:create', { url, activate: true })
+    }
+    setEditing(false)
+  }
+
+  const toggleFavorite = (): void => {
+    if (!active || !currentUrl) return
+    if (isFavorite) {
+      void invoke('favorites:remove', { url: currentUrl })
+    } else {
+      void invoke('favorites:add', {
+        url: currentUrl,
+        title: active.title || displayLabel(currentUrl),
+        faviconUrl: active.faviconUrl,
+      })
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="glass no-drag flex h-9 shrink-0 items-center gap-2 rounded-(--radius-pill) px-3">
+        <Search size={13} style={{ color: 'var(--ink-3)' }} />
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submit()
+            else if (e.key === 'Escape') setEditing(false)
+          }}
+          onBlur={() => setEditing(false)}
+          spellCheck={false}
+          autoCapitalize="off"
+          autoCorrect="off"
+          placeholder="Search or enter URL…"
+          className="w-full bg-transparent text-[13px] outline-none"
+          style={{ color: 'var(--ink-1)' }}
+          data-testid="url-input"
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="glass no-drag flex h-9 shrink-0 cursor-text items-center gap-2 rounded-(--radius-pill) px-3"
+      onClick={() => {
+        setValue(currentUrl)
+        setEditing(true)
+      }}
+      title={currentUrl || 'Search or enter URL'}
+      data-testid="url-pill"
+    >
+      <SecurityIcon state={active?.security ?? 'neutral'} />
+      <span className="min-w-0 flex-1 truncate text-[13px]" style={{ color: 'var(--ink-2)' }}>
+        {displayLabel(currentUrl || null)}
+      </span>
+      {active && currentUrl.startsWith('http') && (
+        <button
+          type="button"
+          title={isFavorite ? 'Remove favorite' : 'Add to favorites'}
+          aria-label={isFavorite ? 'Remove favorite' : 'Add to favorites'}
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleFavorite()
+          }}
+          className="cursor-pointer rounded p-0.5 transition-colors hover:bg-(--surface-hover)"
+          data-testid="favorite-toggle"
+        >
+          <Star
+            size={13}
+            style={{ color: isFavorite ? 'var(--accent)' : 'var(--ink-3)' }}
+            fill={isFavorite ? 'var(--accent)' : 'none'}
+          />
+        </button>
+      )}
+    </div>
+  )
+}
