@@ -1,17 +1,22 @@
-import { app, dialog, session, type BrowserWindow } from 'electron'
+import { app, session, type BrowserWindow } from 'electron'
 import { join } from 'node:path'
-import type { SessionSnapshot } from '@shared/models'
+import { DEFAULT_SETTINGS, type AuroraSettings } from '@shared/models'
+import { RENDERER_COMBOS } from '@shared/keymap'
 import { openDb } from './services/db'
 import { KvStore } from './services/db/kv'
 import { HistoryStore } from './services/db/history'
-import { FavoritesService } from './services/favorites'
+import { ArchiveStore } from './services/db/archive'
+import { DownloadsService } from './services/downloads'
+import { PermissionService } from './services/permissions'
+import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
 import { TabManager } from './tabs/tab-manager'
+import { INCOGNITO_PARTITION } from './tabs/tab'
 import { createChromeWindow } from './windows/chrome-window'
 import { registerIpcHandlers } from './ipc/handlers'
 import { pushToChrome, setTrustedWebContents } from './ipc/router'
 import { installMenu } from './menu'
-import { RENDERER_COMBO_KEYS } from './services/shortcuts'
-import { isE2E } from './env'
+
+const AUTO_ARCHIVE_SWEEP_MS = 5 * 60_000
 
 // Must happen before `ready`: the e2e harness isolates each run's profile.
 if (process.env.AURORA_USER_DATA_DIR) {
@@ -47,18 +52,54 @@ function bootstrap(): void {
   const db = openDb(join(app.getPath('userData'), 'data', 'aurora.db'))
   const kv = new KvStore(db)
   const history = new HistoryStore(db)
+  const archive = new ArchiveStore(db)
+
+  let settings: AuroraSettings = {
+    ...DEFAULT_SETTINGS,
+    ...(kv.get<AuroraSettings>('settings') ?? {}),
+  }
 
   const w = createChromeWindow()
   win = w
   const m = new TabManager(w, {
     history,
+    archive,
     saveSession: (snapshot) => kv.set('session', snapshot),
+    pushFindResult: (result) => pushToChrome('find:result', result),
   })
   manager = m
 
   setTrustedWebContents(w.webContents)
-  const favorites = new FavoritesService(kv, (f) => pushToChrome('favorites:changed', f))
-  registerIpcHandlers({ manager: m, favorites, win: w })
+
+  const downloads = new DownloadsService(db, DownloadsService.defaultDirectory(), (list) =>
+    pushToChrome('downloads:changed', list),
+  )
+  const permissions = new PermissionService(kv, (request) =>
+    pushToChrome('permissions:request', request),
+  )
+  const incognitoSession = session.fromPartition(INCOGNITO_PARTITION)
+  for (const [ses, persist] of [
+    [session.defaultSession, true],
+    [incognitoSession, false],
+  ] as const) {
+    downloads.attach(ses)
+    permissions.attach(ses, { persistDecisions: persist })
+  }
+
+  registerIpcHandlers({
+    manager: m,
+    history,
+    archive,
+    downloads,
+    permissions,
+    getSettings: () => settings,
+    setSettings: (patch) => {
+      settings = { ...settings, ...patch }
+      kv.set('settings', settings)
+      return settings
+    },
+    win: w,
+  })
   installMenu({
     manager: m,
     getWindow: () => win,
@@ -67,12 +108,16 @@ function bootstrap(): void {
 
   hardenChromeNavigation(w)
   forwardRendererCombos(w)
-  installPermissionHandler(() => win)
 
   // Restore only after the chrome renderer has painted: the shell appears
   // instantly, and no WebContentsView is created while automation harnesses
   // (Playwright's CDP handshake) are still attaching to the fresh process.
-  w.webContents.once('did-finish-load', () => restoreSession(kv, m))
+  w.webContents.once('did-finish-load', () => {
+    restoreSession(kv, m)
+    m.autoArchive(settings.todayArchiveHours)
+  })
+
+  setInterval(() => m.autoArchive(settings.todayArchiveHours), AUTO_ARCHIVE_SWEEP_MS)
 
   w.on('closed', () => {
     win = null
@@ -80,12 +125,12 @@ function bootstrap(): void {
 }
 
 function restoreSession(kv: KvStore, m: TabManager): void {
-  const snap = kv.get<SessionSnapshot>('session')
-  if (!snap || !Array.isArray(snap.tabs) || snap.tabs.length === 0) return
-  for (const t of snap.tabs) {
-    m.create({ url: t.url, lazy: true, activate: false, title: t.title, faviconUrl: t.faviconUrl })
+  const upgraded = upgradeSession(kv.get('session'))
+  if (upgraded) {
+    m.restore(mergeLegacyFavorites(upgraded, kv.get('favorites')))
+  } else {
+    m.ensureDefaultSpace()
   }
-  m.activateAt(Math.min(Math.max(0, snap.activeIndex), snap.tabs.length - 1))
 }
 
 /** The chrome renderer only ever displays the bundled UI. */
@@ -99,9 +144,9 @@ function hardenChromeNavigation(w: BrowserWindow): void {
 }
 
 /**
- * Renderer-scope shortcuts (Cmd/Ctrl+T/L/S) while a *page* has focus: menu
- * accelerators are unregistered on Windows/Linux for these (see menu.ts), so
- * intercept them on tab webContents and route them to the chrome renderer.
+ * Renderer-scope shortcuts while a *page* has focus: menu accelerators are
+ * unregistered on Windows/Linux for these (see menu.ts), so intercept them on
+ * tab webContents and route them to the chrome renderer.
  */
 function forwardRendererCombos(w: BrowserWindow): void {
   app.on('web-contents-created', (_event, wc) => {
@@ -109,64 +154,13 @@ function forwardRendererCombos(w: BrowserWindow): void {
     wc.on('before-input-event', (event, input) => {
       if (input.type !== 'keyDown') return
       const mod = process.platform === 'darwin' ? input.meta : input.control
-      if (!mod || input.alt || input.shift) return
-      const command = RENDERER_COMBO_KEYS[input.key.toLowerCase()]
-      if (command) {
+      if (!mod || input.alt) return
+      const key = input.key.toLowerCase()
+      const entry = RENDERER_COMBOS.find((c) => c.key === key && (c.shift ?? false) === input.shift)
+      if (entry) {
         event.preventDefault()
-        pushToChrome('ui:command', { id: command })
+        pushToChrome('ui:command', { id: entry.command })
       }
     })
-  })
-}
-
-const PERMISSION_DESCRIPTIONS: Record<string, string> = {
-  notifications: 'show notifications',
-  geolocation: 'know your location',
-  media: 'use your camera or microphone',
-  'clipboard-read': 'read your clipboard',
-  midi: 'use MIDI devices',
-  midiSysex: 'use MIDI devices',
-}
-
-/**
- * Phase (a) stopgap: native per-request prompt, deny-by-default.
- * Phase (b) replaces this with in-chrome permission UI + persistence.
- */
-function installPermissionHandler(getWin: () => BrowserWindow | null): void {
-  session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
-    if (
-      permission === 'fullscreen' ||
-      permission === 'clipboard-sanitized-write' ||
-      permission === 'pointerLock'
-    ) {
-      callback(true)
-      return
-    }
-    const describe = PERMISSION_DESCRIPTIONS[permission]
-    const w = getWin()
-    if (!describe || !w || isE2E) {
-      callback(false)
-      return
-    }
-    const requestingUrl =
-      'requestingUrl' in details && typeof details.requestingUrl === 'string'
-        ? details.requestingUrl
-        : wc.getURL()
-    let host = requestingUrl
-    try {
-      host = new URL(requestingUrl).host
-    } catch {
-      /* keep raw string */
-    }
-    void dialog
-      .showMessageBox(w, {
-        type: 'question',
-        buttons: ['Block', 'Allow'],
-        defaultId: 0,
-        cancelId: 0,
-        message: `Allow ${host || 'this site'} to ${describe}?`,
-      })
-      .then((result) => callback(result.response === 1))
-      .catch(() => callback(false))
   })
 }

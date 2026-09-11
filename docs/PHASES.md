@@ -26,18 +26,36 @@ explicit confirmation.
 **Exit criteria met:** browse real sites in multiple tabs; restart restores the
 session; shortcuts work; suites green.
 
-## (b) Command palette + Spaces
+## (b) Command palette + Spaces — ✅ complete
 
-- Real palette: fuzzy match across URLs, web search, open tabs, history,
-  bookmarks, and actions (the keymap registry doubles as the action source).
-- Spaces: create/rename/color accent; per-Space favorites, pinned tabs, Today;
-  drag tabs between Spaces; ⌃1…n switching.
-- Incognito Space on an ephemeral session partition.
-- Today auto-archive (configurable, default 12 h) + archive browser.
-- Find-in-page, downloads panel, in-chrome permission prompts (replacing the
-  native-dialog stopgap), full Arc-mirror keymap.
+- Command palette (⌘T / ⌘L): dependency-free fuzzy scoring across open tabs
+  (all spaces), per-space favorites, SQLite history (visit-count + recency
+  ranked), archived tabs, an action registry (with dynamic switch-/move-to-
+  space entries), plus URL and DuckDuckGo fallbacks; keyboard-first with
+  ranked, deduped results.
+- Spaces: create/rename/accent (editor popover), dot-rail switching (click,
+  ⌃1…9, or menu), per-space favorites + pinned + Today sections, drag a tab
+  onto a space dot to move it, native tab context menu (pin/unpin, move,
+  copy URL, close).
+- Incognito Space: separate in-memory session partition; no history writes, no
+  session persistence, no stored permission decisions; gone after restart.
+- Today auto-archive: configurable hours (settings kv + palette actions,
+  default 12 h, sweep every 5 min), manual "Archive Today", archived tabs are
+  searchable/reopenable from the palette (SQLite `archive` table).
+- Find-in-page (⌘F/⌘G/⇧⌘G): implemented via main-process script injection with
+  the CSS Custom Highlight API — Electron 44's `webContents.findInPage` never
+  emits `found-in-page` (verified with a minimal repro). The bar sits above the
+  page card, so the native view shrinks instead of being overdrawn.
+  Limitation: same-document text only (cross-origin iframes are not searched).
+- Downloads (⌘J): tracked across both sessions, persisted to SQLite, sidebar
+  panel with progress/open/show-in-folder/cancel.
+- In-chrome permission banners replace the native-dialog stopgap:
+  deny-by-default, optional per-(origin, permission) remembering, queued,
+  auto-denied if the requesting page closes.
+- Session schema v2 (spaces, kinds, per-space favorites + active tab) with
+  automatic upgrade from phase-(a) snapshots and legacy favorites merge.
 
-**Exit:** daily-drivable.
+**Exit met:** daily-drivable. 47 unit + 17 e2e tests green.
 
 ## (c) Aurora Glass theming + motion
 

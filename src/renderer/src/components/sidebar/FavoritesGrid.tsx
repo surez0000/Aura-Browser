@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { invoke } from '@/lib/ipc'
 import { displayLabel } from '@/lib/url'
-import { useTabs } from '@/state/tabs'
+import { useTabs, selectActiveSpace } from '@/state/tabs'
 import type { FavoriteEntry } from '@shared/models'
 
 function hueFor(url: string): number {
@@ -13,9 +13,12 @@ function hueFor(url: string): number {
 function FavoriteTile({ favorite }: { favorite: FavoriteEntry }): React.JSX.Element {
   const [imgFailed, setImgFailed] = useState(false)
   const tabs = useTabs((s) => s.tabs)
+  const activeSpaceId = useTabs((s) => s.activeSpaceId)
 
   const open = (): void => {
-    const existing = tabs.find((t) => (t.url || t.pendingUrl) === favorite.url)
+    const existing = tabs.find(
+      (t) => t.spaceId === activeSpaceId && (t.url || t.pendingUrl) === favorite.url,
+    )
     if (existing) void invoke('tabs:activate', { tabId: existing.id })
     else void invoke('tabs:create', { url: favorite.url, activate: true })
   }
@@ -53,8 +56,12 @@ function FavoriteTile({ favorite }: { favorite: FavoriteEntry }): React.JSX.Elem
   )
 }
 
+/** Favorites of the active space (each space has its own grid). */
 export function FavoritesGrid(): React.JSX.Element | null {
-  const favorites = useTabs((s) => s.favorites)
+  // Select the (stable) space object; deriving `?? []` inside the selector
+  // would mint a fresh array per call and loop useSyncExternalStore.
+  const space = useTabs(selectActiveSpace)
+  const favorites = space?.favorites ?? []
 
   if (favorites.length === 0) {
     return (

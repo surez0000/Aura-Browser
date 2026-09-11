@@ -1,29 +1,83 @@
 import type { BrowserWindow } from 'electron'
+import type { AuroraSettings } from '@shared/models'
 import type { TabManager } from '../tabs/tab-manager'
-import type { FavoritesService } from '../services/favorites'
+import type { HistoryStore } from '../services/db/history'
+import type { ArchiveStore } from '../services/db/archive'
+import type { DownloadsService } from '../services/downloads'
+import type { PermissionService } from '../services/permissions'
 import { handleInvoke } from './router'
 
 interface HandlerContext {
   manager: TabManager
-  favorites: FavoritesService
+  history: HistoryStore
+  archive: ArchiveStore
+  downloads: DownloadsService
+  permissions: PermissionService
+  getSettings: () => AuroraSettings
+  setSettings: (patch: Partial<AuroraSettings>) => AuroraSettings
   win: BrowserWindow
 }
 
-export function registerIpcHandlers({ manager, favorites, win }: HandlerContext): void {
+export function registerIpcHandlers(ctx: HandlerContext): void {
+  const { manager, win } = ctx
+
   handleInvoke('tabs:create', (req) => ({
-    id: manager.create({ url: req.url, activate: req.activate }).id,
+    id: manager.create({
+      url: req.url,
+      activate: req.activate,
+      spaceId: req.spaceId,
+      kind: req.kind,
+    }).id,
   }))
   handleInvoke('tabs:close', (req) => manager.close(req.tabId))
-  handleInvoke('tabs:activate', (req) => manager.setActive(req.tabId))
+  handleInvoke('tabs:activate', (req) => manager.setActiveTab(req.tabId))
   handleInvoke('tabs:reorder', (req) => manager.reorder(req.orderedIds))
   handleInvoke('tabs:navigate', (req) => manager.navigate(req.tabId, req.url))
-  handleInvoke('tabs:back', (req) => manager.get(req.tabId)?.goBack())
-  handleInvoke('tabs:forward', (req) => manager.get(req.tabId)?.goForward())
-  handleInvoke('tabs:reload', (req) => manager.get(req.tabId)?.reload(req.hard ?? false))
-  handleInvoke('tabs:stop', (req) => manager.get(req.tabId)?.stop())
+  handleInvoke('tabs:back', (req) => manager.getTab(req.tabId)?.goBack())
+  handleInvoke('tabs:forward', (req) => manager.getTab(req.tabId)?.goForward())
+  handleInvoke('tabs:reload', (req) => manager.getTab(req.tabId)?.reload(req.hard ?? false))
+  handleInvoke('tabs:stop', (req) => manager.getTab(req.tabId)?.stop())
   handleInvoke('tabs:reopenClosed', () => manager.reopenClosed())
   handleInvoke('tabs:zoom', (req) => manager.zoom(req.tabId, req.direction))
-  handleInvoke('tabs:openDevTools', (req) => manager.get(req.tabId)?.openDevTools())
+  handleInvoke('tabs:openDevTools', (req) => manager.getTab(req.tabId)?.openDevTools())
+  handleInvoke('tabs:setKind', (req) => manager.setKind(req.tabId, req.kind))
+  handleInvoke('tabs:moveToSpace', (req) => manager.moveToSpace(req.tabId, req.spaceId))
+  handleInvoke('tabs:archiveToday', () =>
+    manager.archiveToday({ spaceId: manager.activeSpace()?.id }),
+  )
+  handleInvoke('tabs:contextMenu', (req) => manager.showTabContextMenu(req.tabId))
+
+  handleInvoke('spaces:create', (req) => ({
+    id: manager.createSpace({ name: req.name, accentHue: req.accentHue, activate: req.activate })
+      .id,
+  }))
+  handleInvoke('spaces:rename', (req) => manager.renameSpace(req.spaceId, req.name))
+  handleInvoke('spaces:setAccent', (req) => manager.setSpaceAccent(req.spaceId, req.accentHue))
+  handleInvoke('spaces:remove', (req) => manager.removeSpace(req.spaceId))
+  handleInvoke('spaces:activate', (req) => manager.activateSpace(req.spaceId))
+  handleInvoke('spaces:openIncognito', () => ({ id: manager.openIncognito().id }))
+
+  handleInvoke('favorites:add', (req) => manager.addFavorite(req))
+  handleInvoke('favorites:remove', (req) => manager.removeFavorite(req.url))
+
+  handleInvoke('history:search', (req) => ctx.history.search(req.query, req.limit ?? 8))
+  handleInvoke('archive:search', (req) => ctx.archive.search(req.query, req.limit ?? 10))
+
+  handleInvoke('find:start', (req) =>
+    manager.findStart(req.text, { forward: req.forward, findNext: req.findNext }),
+  )
+  handleInvoke('find:stop', () => manager.findStop())
+
+  handleInvoke('permissions:respond', (req) =>
+    ctx.permissions.respond(req.id, req.allow, req.remember),
+  )
+  handleInvoke('permissions:clearStored', () => ctx.permissions.clearStored())
+
+  handleInvoke('downloads:list', () => ctx.downloads.list())
+  handleInvoke('downloads:action', (req) => ctx.downloads.action(req.id, req.action))
+
+  handleInvoke('settings:get', () => ctx.getSettings())
+  handleInvoke('settings:set', (req) => ctx.setSettings(req))
 
   handleInvoke('ui:setPageBounds', (req) => manager.setPageBounds(req))
   handleInvoke('ui:overlay', (req) => manager.setOverlayShown(req.shown))
@@ -44,8 +98,4 @@ export function registerIpcHandlers({ manager, favorites, win }: HandlerContext)
   })
 
   handleInvoke('state:get', () => manager.snapshot())
-
-  handleInvoke('favorites:list', () => favorites.list())
-  handleInvoke('favorites:add', (req) => favorites.add(req))
-  handleInvoke('favorites:remove', (req) => favorites.remove(req.url))
 }

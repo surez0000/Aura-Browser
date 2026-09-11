@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { KEYMAP, RENDERER_COMBO_KEYS } from '../../src/main/services/shortcuts'
+import { KEYMAP, RENDERER_COMBOS, matchCombo } from '@shared/keymap'
 
 describe('keymap', () => {
   it('has unique command ids', () => {
@@ -7,8 +7,8 @@ describe('keymap', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('has unique accelerators', () => {
-    const accels = KEYMAP.map((k) => k.accelerator)
+  it('has unique accelerators (where defined)', () => {
+    const accels = KEYMAP.map((k) => k.accelerator).filter((a): a is string => !!a)
     expect(new Set(accels).size).toBe(accels.length)
   })
 
@@ -22,9 +22,23 @@ describe('keymap', () => {
     const rendererCommands = new Set(
       KEYMAP.filter((k) => k.scope === 'renderer').map((k) => k.rendererCommand),
     )
-    for (const command of Object.values(RENDERER_COMBO_KEYS)) {
-      expect(rendererCommands.has(command)).toBe(true)
+    for (const combo of RENDERER_COMBOS) {
+      expect(rendererCommands.has(combo.command), `${combo.command} must be renderer scope`).toBe(
+        true,
+      )
     }
-    expect(Object.keys(RENDERER_COMBO_KEYS).sort()).toEqual(['l', 's', 't'])
+  })
+
+  it('has no duplicate combo (key, shift) pairs', () => {
+    const pairs = RENDERER_COMBOS.map((c) => `${c.key}:${c.shift ?? false}`)
+    expect(new Set(pairs).size).toBe(pairs.length)
+  })
+
+  it('matchCombo resolves keys with and without shift', () => {
+    expect(matchCombo('t', false)).toBe('tab:new')
+    expect(matchCombo('g', false)).toBe('find:next')
+    expect(matchCombo('g', true)).toBe('find:prev')
+    expect(matchCombo('t', true)).toBeNull()
+    expect(matchCombo('x', false)).toBeNull()
   })
 })

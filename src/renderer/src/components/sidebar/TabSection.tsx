@@ -3,8 +3,8 @@ import { Reorder } from 'motion/react'
 import { Globe, Loader2, X } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
 import { displayLabel } from '@/lib/url'
-import { useTabs } from '@/state/tabs'
-import type { TabInfo } from '@shared/models'
+import { useTabs, tabsOf } from '@/state/tabs'
+import type { TabInfo, TabKind } from '@shared/models'
 
 function TabFavicon({ tab }: { tab: TabInfo }): React.JSX.Element {
   const [imgFailed, setImgFailed] = useState(false)
@@ -38,8 +38,26 @@ function TabItem({ tab, isActive }: { tab: TabInfo; isActive: boolean }): React.
       }}
       whileHover={{ backgroundColor: isActive ? undefined : 'var(--surface-hover)' }}
       onClick={() => void invoke('tabs:activate', { tabId: tab.id })}
+      onContextMenu={(e: React.MouseEvent) => {
+        e.preventDefault()
+        void invoke('tabs:contextMenu', { tabId: tab.id })
+      }}
+      onDragEnd={(_event, info) => {
+        // Dropping a tab onto a space dot in the switcher rail moves it there.
+        // elementsFromPoint (plural): the dragged item itself sits under the
+        // pointer, so scan the whole stack for a dot beneath it.
+        const stack = document.elementsFromPoint(info.point.x, info.point.y)
+        const dot = stack
+          .map((el) => el.closest('[data-space-dot]'))
+          .find((el): el is Element => !!el)
+        const targetSpaceId = dot?.getAttribute('data-space-dot')
+        if (targetSpaceId && targetSpaceId !== tab.spaceId) {
+          void invoke('tabs:moveToSpace', { tabId: tab.id, spaceId: targetSpaceId })
+        }
+      }}
       data-testid="tab-item"
       data-tab-id={tab.id}
+      data-kind={tab.kind}
       data-active={isActive || undefined}
     >
       <TabFavicon tab={tab} />
@@ -64,23 +82,28 @@ function TabItem({ tab, isActive }: { tab: TabInfo; isActive: boolean }): React.
   )
 }
 
-export function TabList(): React.JSX.Element {
+/** One reorderable sidebar section (pinned or Today) of the active space. */
+export function TabSection({ kind }: { kind: TabKind }): React.JSX.Element {
   const tabs = useTabs((s) => s.tabs)
+  const activeSpaceId = useTabs((s) => s.activeSpaceId)
   const activeTabId = useTabs((s) => s.activeTabId)
-  const setLocalOrder = useTabs((s) => s.setLocalOrder)
+  const applyGroupOrder = useTabs((s) => s.applyGroupOrder)
+
+  const sectionTabs = tabsOf(tabs, activeSpaceId, kind)
 
   return (
     <Reorder.Group
       axis="y"
-      values={tabs}
+      values={sectionTabs}
       onReorder={(next: TabInfo[]) => {
-        setLocalOrder(next)
-        void invoke('tabs:reorder', { orderedIds: next.map((t) => t.id) })
+        const orderedIds = next.map((t) => t.id)
+        applyGroupOrder(orderedIds)
+        void invoke('tabs:reorder', { orderedIds })
       }}
-      className="-mx-1 flex-1 space-y-0.5 overflow-y-auto px-1"
-      data-testid="tab-list"
+      className="space-y-0.5"
+      data-testid={`section-${kind}`}
     >
-      {tabs.map((tab) => (
+      {sectionTabs.map((tab) => (
         <TabItem key={tab.id} tab={tab} isActive={tab.id === activeTabId} />
       ))}
     </Reorder.Group>

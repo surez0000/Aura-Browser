@@ -1,5 +1,5 @@
 import type { AuroraDb } from './index'
-import type { HistoryEntry } from '@shared/models'
+import type { HistoryEntry, HistorySearchRow } from '@shared/models'
 
 function isRecordable(url: string): boolean {
   return url.startsWith('https://') || url.startsWith('http://')
@@ -11,7 +11,7 @@ export class HistoryStore {
   private readonly setTitleStmt
   private readonly recentStmt
 
-  constructor(db: AuroraDb) {
+  constructor(private readonly db: AuroraDb) {
     this.insertStmt = db.prepare('INSERT INTO history (url, title, visited_at) VALUES (?, ?, ?)')
     this.lastForUrlStmt = db.prepare(
       'SELECT id FROM history WHERE url = ? ORDER BY visited_at DESC LIMIT 1',
@@ -37,4 +37,45 @@ export class HistoryStore {
   recent(limit = 50): HistoryEntry[] {
     return this.recentStmt.all(limit) as HistoryEntry[]
   }
+
+  /**
+   * Palette search: scan recent matching visits, aggregate by URL in JS
+   * (visit count + latest title/timestamp), most-visited-then-recent first.
+   */
+  search(query: string, limit = 8): HistorySearchRow[] {
+    const q = query.trim()
+    const rows = (
+      q ? this.searchScanStmt.all(`%${q}%`, `%${q}%`) : this.recentStmt.all(80)
+    ) as HistoryEntry[]
+    const byUrl = new Map<string, HistorySearchRow>()
+    for (const row of rows) {
+      const existing = byUrl.get(row.url)
+      if (existing) {
+        existing.visits++
+        if (row.visitedAt > existing.visitedAt) {
+          existing.visitedAt = row.visitedAt
+          if (row.title) existing.title = row.title
+        }
+      } else {
+        byUrl.set(row.url, {
+          url: row.url,
+          title: row.title,
+          visitedAt: row.visitedAt,
+          visits: 1,
+        })
+      }
+    }
+    return [...byUrl.values()]
+      .sort((a, b) => b.visits - a.visits || b.visitedAt - a.visitedAt)
+      .slice(0, limit)
+  }
+
+  private get searchScanStmt() {
+    return (this.searchScanCached ??= this.db.prepare(
+      `SELECT id, url, title, visited_at AS visitedAt FROM history
+       WHERE url LIKE ? OR title LIKE ?
+       ORDER BY visited_at DESC LIMIT 400`,
+    ))
+  }
+  private searchScanCached: ReturnType<AuroraDb['prepare']> | undefined
 }

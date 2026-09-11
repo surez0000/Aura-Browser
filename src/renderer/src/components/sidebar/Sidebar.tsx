@@ -1,18 +1,42 @@
 import { motion } from 'motion/react'
-import { Plus } from 'lucide-react'
-import { isMac, modKeyLabel } from '@/lib/ipc'
+import { Archive, Plus } from 'lucide-react'
+import { isMac, modKeyLabel, invoke } from '@/lib/ipc'
+import { useTabs, tabsOf } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 import { NavCluster } from './NavCluster'
 import { UrlPill } from './UrlPill'
+import { SpaceHeader } from './SpaceHeader'
 import { FavoritesGrid } from './FavoritesGrid'
-import { TabList } from './TabList'
+import { TabSection } from './TabSection'
+import { SpaceSwitcher } from './SpaceSwitcher'
+import { SpaceEditor } from './SpaceEditor'
+import { DownloadsButton, DownloadsFlyout } from './DownloadsFlyout'
 import { WindowControls } from './WindowControls'
 
 export const SIDEBAR_WIDTH = 264
 
+function SectionLabel({
+  children,
+  action,
+}: {
+  children: React.ReactNode
+  action?: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <div
+      className="mx-1 flex items-center justify-between text-[11px] font-medium tracking-wide uppercase"
+      style={{ color: 'var(--ink-3)' }}
+    >
+      <span>{children}</span>
+      {action}
+    </div>
+  )
+}
+
 export function Sidebar(): React.JSX.Element {
   const collapsed = useUi((s) => s.sidebarCollapsed)
   const openPalette = useUi((s) => s.openPalette)
+  const hasPinned = useTabs((s) => tabsOf(s.tabs, s.activeSpaceId, 'pinned').length > 0)
 
   return (
     <motion.aside
@@ -36,16 +60,34 @@ export function Sidebar(): React.JSX.Element {
 
         <NavCluster />
         <UrlPill />
+        <SpaceHeader />
         <FavoritesGrid />
 
-        <div
-          className="mx-1 mt-1 flex items-center justify-between text-[11px] font-medium tracking-wide uppercase"
-          style={{ color: 'var(--ink-3)' }}
-        >
-          <span>Today</span>
+        <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-1 pt-1">
+          {hasPinned && (
+            <>
+              <SectionLabel>Pinned</SectionLabel>
+              <TabSection kind="pinned" />
+            </>
+          )}
+          <SectionLabel
+            action={
+              <button
+                type="button"
+                title="Archive Today tabs"
+                aria-label="Archive Today tabs"
+                onClick={() => void invoke('tabs:archiveToday', {})}
+                className="no-drag cursor-pointer rounded p-0.5 transition-colors hover:bg-(--surface-hover)"
+                data-testid="archive-today"
+              >
+                <Archive size={11} />
+              </button>
+            }
+          >
+            Today
+          </SectionLabel>
+          <TabSection kind="today" />
         </div>
-
-        <TabList />
 
         <button
           type="button"
@@ -60,6 +102,15 @@ export function Sidebar(): React.JSX.Element {
             {modKeyLabel()}T
           </span>
         </button>
+
+        <div className="flex h-8 shrink-0 items-center gap-2">
+          <DownloadsButton />
+          <SpaceSwitcher />
+          <div className="w-7 shrink-0" />
+        </div>
+
+        <DownloadsFlyout />
+        <SpaceEditor />
       </div>
     </motion.aside>
   )

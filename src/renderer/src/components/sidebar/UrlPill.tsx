@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Lock, Search, Star, TriangleAlert } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
 import { displayLabel, normalizeInput } from '@/lib/url'
-import { useTabs, selectActiveTab } from '@/state/tabs'
+import { useTabs, selectActiveTab, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
 function SecurityIcon({ state }: { state: 'secure' | 'insecure' | 'neutral' }): React.JSX.Element {
@@ -17,7 +17,8 @@ function SecurityIcon({ state }: { state: 'secure' | 'insecure' | 'neutral' }): 
  */
 export function UrlPill(): React.JSX.Element {
   const active = useTabs(selectActiveTab)
-  const favorites = useTabs((s) => s.favorites)
+  const activeSpace = useTabs(selectActiveSpace)
+  const favorites = activeSpace?.favorites ?? []
   const editRequest = useUi((s) => s.urlEditRequest)
 
   const [editing, setEditing] = useState(false)

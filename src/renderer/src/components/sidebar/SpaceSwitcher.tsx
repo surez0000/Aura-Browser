@@ -1,0 +1,61 @@
+import { EyeOff, Plus } from 'lucide-react'
+import { invoke } from '@/lib/ipc'
+import { useTabs } from '@/state/tabs'
+import { useUi } from '@/state/ui'
+import type { SpaceInfo } from '@shared/models'
+
+export function spaceColor(space: Pick<SpaceInfo, 'accentHue' | 'incognito'>): string {
+  return space.incognito ? 'hsl(275 12% 55%)' : `hsl(${space.accentHue} 70% 62%)`
+}
+
+/**
+ * The dot rail at the sidebar's foot: click to switch, drop a dragged tab on a
+ * dot to move it to that space, "+" to create a space.
+ */
+export function SpaceSwitcher(): React.JSX.Element {
+  const spaces = useTabs((s) => s.spaces)
+  const activeSpaceId = useTabs((s) => s.activeSpaceId)
+  const openSpaceEditor = useUi((s) => s.openSpaceEditor)
+
+  return (
+    <div
+      className="no-drag flex min-w-0 flex-1 items-center justify-center gap-2"
+      data-testid="space-switcher"
+    >
+      {spaces.map((space) => {
+        const isActive = space.id === activeSpaceId
+        return (
+          <button
+            key={space.id}
+            type="button"
+            title={space.name}
+            aria-label={`Switch to ${space.name}`}
+            onClick={() => void invoke('spaces:activate', { spaceId: space.id })}
+            className="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform hover:scale-110"
+            style={{
+              background: spaceColor(space),
+              outline: isActive ? '2px solid var(--ink-2)' : '1px solid var(--border-glass)',
+              outlineOffset: 1,
+            }}
+            data-space-dot={space.id}
+            data-testid="space-dot"
+            data-active={isActive || undefined}
+          >
+            {space.incognito && <EyeOff size={10} color="rgba(255,255,255,.9)" />}
+          </button>
+        )
+      })}
+      <button
+        type="button"
+        title="New Space"
+        aria-label="New Space"
+        onClick={() => openSpaceEditor(null)}
+        className="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-(--surface-hover)"
+        style={{ color: 'var(--ink-3)', border: '1px dashed var(--border-glass)' }}
+        data-testid="space-add"
+      >
+        <Plus size={11} />
+      </button>
+    </div>
+  )
+}

@@ -1,6 +1,6 @@
 import { Menu, type BrowserWindow, type MenuItemConstructorOptions } from 'electron'
 import type { RendererCommandId } from '@shared/ipc-contract'
-import { KEYMAP, type KeyCommand } from './services/shortcuts'
+import { KEYMAP, type KeyCommand } from '@shared/keymap'
 import type { TabManager } from './tabs/tab-manager'
 import { isDev } from './env'
 
@@ -55,16 +55,31 @@ export function installMenu(ctx: MenuContext): void {
     click: () => m.activateAt(Number.MAX_SAFE_INTEGER, true),
   })
 
+  const spacePickItems: MenuItemConstructorOptions[] = []
+  for (let i = 1; i <= 9; i++) {
+    spacePickItems.push({
+      label: `Switch to Space ${i}`,
+      accelerator: `Control+${i}`,
+      click: () => m.activateSpaceAt(i - 1),
+    })
+  }
+
   const template: MenuItemConstructorOptions[] = [
     ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
     {
       label: 'File',
       submenu: [
         rendererItem('tab:new'),
+        mainItem('tab:incognito', () => {
+          m.openIncognito()
+          ctx.sendCommand('tab:new')
+        }),
         rendererItem('url:focus'),
         { type: 'separator' },
+        mainItem('favorite:toggle', () => m.toggleFavoriteForActiveTab()),
+        { type: 'separator' },
         mainItem('tab:close', () => {
-          if (m.closeActive() === 'empty') ctx.getWindow()?.close()
+          if (m.closeActive() === 'empty' && m.count() === 0) ctx.getWindow()?.close()
         }),
         mainItem('tab:reopen', () => m.reopenClosed()),
       ],
@@ -73,16 +88,21 @@ export function installMenu(ctx: MenuContext): void {
     {
       label: 'View',
       submenu: [
-        mainItem('nav:reload', () => m.get(undefined)?.reload()),
-        mainItem('nav:hardReload', () => m.get(undefined)?.reload(true)),
+        mainItem('nav:reload', () => m.getTab(undefined)?.reload()),
+        mainItem('nav:hardReload', () => m.getTab(undefined)?.reload(true)),
+        { type: 'separator' },
+        rendererItem('find:open'),
+        rendererItem('find:next'),
+        rendererItem('find:prev'),
         { type: 'separator' },
         mainItem('zoom:in', () => m.zoom(undefined, 'in')),
         mainItem('zoom:out', () => m.zoom(undefined, 'out')),
         mainItem('zoom:reset', () => m.zoom(undefined, 'reset')),
         { type: 'separator' },
         rendererItem('sidebar:toggle'),
+        rendererItem('downloads:toggle'),
         { type: 'separator' },
-        mainItem('tab:devtools', () => m.get(undefined)?.openDevTools()),
+        mainItem('tab:devtools', () => m.getTab(undefined)?.openDevTools()),
         ...(isDev
           ? [
               {
@@ -97,8 +117,20 @@ export function installMenu(ctx: MenuContext): void {
     {
       label: 'History',
       submenu: [
-        mainItem('nav:back', () => m.get(undefined)?.goBack()),
-        mainItem('nav:forward', () => m.get(undefined)?.goForward()),
+        mainItem('nav:back', () => m.getTab(undefined)?.goBack()),
+        mainItem('nav:forward', () => m.getTab(undefined)?.goForward()),
+      ],
+    },
+    {
+      label: 'Spaces',
+      submenu: [
+        rendererItem('space:new'),
+        {
+          label: 'Archive Today Tabs',
+          click: () => m.archiveToday({ spaceId: m.activeSpace()?.id }),
+        },
+        { type: 'separator' },
+        ...spacePickItems,
       ],
     },
     {

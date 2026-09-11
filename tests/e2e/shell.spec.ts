@@ -39,8 +39,10 @@ test('palette overlays a live page (screenshot artifact)', async () => {
     await chrome.keyboard.press(`${modifierKey()}+t`)
     await expect(chrome.getByTestId('palette')).toBeVisible()
     await expect(chrome.getByTestId('palette-input')).toBeFocused()
+    await chrome.getByTestId('palette-input').fill('fix')
+    await expect(chrome.getByTestId('palette-result').first()).toBeVisible()
     await chrome.waitForTimeout(450) // let the spring settle for a clean artifact
-    await chrome.screenshot({ path: 'test-results/phase-a-palette.png' })
+    await chrome.screenshot({ path: 'test-results/phase-b-palette.png' })
     await chrome.keyboard.press('Escape')
     await expect(chrome.getByTestId('palette')).toHaveCount(0)
   } finally {

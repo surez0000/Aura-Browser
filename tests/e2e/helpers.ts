@@ -66,6 +66,15 @@ export async function startFixtureServer(): Promise<FixtureServer> {
   const dir = join(root, 'tests', 'e2e', 'fixtures')
   const server = createServer((req, res) => {
     const name = basename((req.url ?? '/a.html').split('?')[0] ?? '') || 'a.html'
+    if (name === 'file.bin') {
+      res.writeHead(200, {
+        'content-type': 'application/octet-stream',
+        'content-disposition': 'attachment; filename="file.bin"',
+        'content-length': '2048',
+      })
+      res.end(Buffer.alloc(2048, 7))
+      return
+    }
     readFile(join(dir, name))
       .then((content) => {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })

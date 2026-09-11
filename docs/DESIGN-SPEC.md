@@ -30,19 +30,25 @@ Source of truth: [`src/renderer/src/theme/tokens.css`](../src/renderer/src/theme
 Contrast: phase (c) adds automated WCAG AA checks over every ink/surface pair
 and constrains aurora palettes to luminance bands (see PHASES.md).
 
-## Component inventory (phase a)
+## Component inventory (phases a + b)
 
-| Component         | File                                    | Notes                                             |
-| ----------------- | --------------------------------------- | ------------------------------------------------- |
-| App shell         | `App.tsx`                               | aurora ground, grid: sidebar + page area          |
-| Sidebar           | `components/sidebar/Sidebar.tsx`        | spring collapse (⌘S), fixed inner width           |
-| NavCluster        | `components/sidebar/NavCluster.tsx`     | back / forward / reload-stop                      |
-| UrlPill           | `components/sidebar/UrlPill.tsx`        | security icon, host label, ★, inline edit         |
-| FavoritesGrid     | `components/sidebar/FavoritesGrid.tsx`  | 4-col glass tiles, letter fallback                |
-| TabList / TabItem | `components/sidebar/TabList.tsx`        | drag reorder (motion `Reorder`), close on hover   |
-| WindowControls    | `components/sidebar/WindowControls.tsx` | Windows/Linux only                                |
-| PageCard          | `components/PageCard.tsx`               | measures view bounds; empty/crash/snapshot states |
-| Palette v0        | `components/palette/Palette.tsx`        | scrim + glass panel; full palette in phase b      |
+| Component              | File                                     | Notes                                                           |
+| ---------------------- | ---------------------------------------- | --------------------------------------------------------------- |
+| App shell              | `App.tsx`                                | aurora ground; space accent → `--accent`                        |
+| Sidebar                | `components/sidebar/Sidebar.tsx`         | spring collapse (⌘S), sections, footer rail                     |
+| NavCluster             | `components/sidebar/NavCluster.tsx`      | back / forward / reload-stop                                    |
+| UrlPill                | `components/sidebar/UrlPill.tsx`         | security icon, host label, ★, inline edit                       |
+| SpaceHeader            | `components/sidebar/SpaceHeader.tsx`     | space name/accent, edit affordance, incognito badge             |
+| FavoritesGrid          | `components/sidebar/FavoritesGrid.tsx`   | per-space, 4-col glass tiles, letter fallback                   |
+| TabSection / TabItem   | `components/sidebar/TabSection.tsx`      | pinned + Today lists; reorder, drag-to-dot, native context menu |
+| SpaceSwitcher          | `components/sidebar/SpaceSwitcher.tsx`   | dot rail: switch, drop target, add                              |
+| SpaceEditor            | `components/sidebar/SpaceEditor.tsx`     | create/edit popover: name, hue swatches, delete                 |
+| DownloadsButton/Flyout | `components/sidebar/DownloadsFlyout.tsx` | badge, progress rows, open/show/cancel                          |
+| WindowControls         | `components/sidebar/WindowControls.tsx`  | Windows/Linux only                                              |
+| PageCard               | `components/PageCard.tsx`                | measures view bounds; empty/crash/snapshot states               |
+| FindBar                | `components/FindBar.tsx`                 | above the card (view shrinks); n / m counter                    |
+| PermissionBanner       | `components/PermissionBanner.tsx`        | queued, remember checkbox, allow/block                          |
+| Palette                | `components/palette/Palette.tsx`         | ranked results across all sources; keyboard-first               |
 
 ## Motion
 

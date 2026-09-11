@@ -1,0 +1,114 @@
+import type { SessionSnapshotV1, SessionSnapshotV2, SessionSpaceV2, TabKind } from '@shared/models'
+
+const VALID_KINDS: readonly TabKind[] = ['pinned', 'today']
+
+function isV2(raw: unknown): raw is SessionSnapshotV2 {
+  return (
+    typeof raw === 'object' &&
+    raw !== null &&
+    (raw as { version?: unknown }).version === 2 &&
+    Array.isArray((raw as { spaces?: unknown }).spaces)
+  )
+}
+
+function isV1(raw: unknown): raw is SessionSnapshotV1 {
+  return (
+    typeof raw === 'object' &&
+    raw !== null &&
+    Array.isArray((raw as { tabs?: unknown }).tabs) &&
+    typeof (raw as { activeIndex?: unknown }).activeIndex === 'number' &&
+    !('version' in (raw as object))
+  )
+}
+
+function sanitizeSpace(raw: SessionSpaceV2, index: number): SessionSpaceV2 {
+  return {
+    id: typeof raw.id === 'string' && raw.id ? raw.id : `space-${index}`,
+    name: typeof raw.name === 'string' && raw.name.trim() ? raw.name : `Space ${index + 1}`,
+    accentHue: Number.isFinite(raw.accentHue) ? ((raw.accentHue % 360) + 360) % 360 : 226,
+    favorites: Array.isArray(raw.favorites)
+      ? raw.favorites.filter((f) => typeof f?.url === 'string')
+      : [],
+    activeIndex: Number.isFinite(raw.activeIndex) ? Math.max(0, raw.activeIndex) : 0,
+    tabs: Array.isArray(raw.tabs)
+      ? raw.tabs
+          .filter((t) => typeof t?.url === 'string' && t.url)
+          .map((t) => ({
+            url: t.url,
+            title: typeof t.title === 'string' ? t.title : '',
+            faviconUrl: typeof t.faviconUrl === 'string' ? t.faviconUrl : null,
+            kind: VALID_KINDS.includes(t.kind) ? t.kind : 'today',
+          }))
+      : [],
+  }
+}
+
+/**
+ * Parse whatever is stored under kv "session" into the current schema.
+ * Phase (a) snapshots ({tabs, activeIndex}) are wrapped into a default space.
+ * Returns null when there is nothing usable to restore.
+ */
+export function upgradeSession(raw: unknown): SessionSnapshotV2 | null {
+  if (isV2(raw)) {
+    const spaces = raw.spaces
+      .map(sanitizeSpace)
+      .filter((s) => s.tabs.length > 0 || s.favorites.length > 0 || raw.spaces.length === 1)
+    if (spaces.length === 0) return null
+    const activeSpaceId = spaces.some((s) => s.id === raw.activeSpaceId)
+      ? raw.activeSpaceId
+      : (spaces[0]?.id ?? '')
+    return { version: 2, activeSpaceId, spaces }
+  }
+  if (isV1(raw)) {
+    const tabs = raw.tabs
+      .filter((t) => typeof t?.url === 'string' && t.url)
+      .map((t) => ({
+        url: t.url,
+        title: typeof t.title === 'string' ? t.title : '',
+        faviconUrl: typeof t.faviconUrl === 'string' ? t.faviconUrl : null,
+        kind: 'today' as TabKind,
+      }))
+    if (tabs.length === 0) return null
+    return {
+      version: 2,
+      activeSpaceId: 'v1-default',
+      spaces: [
+        {
+          id: 'v1-default',
+          name: 'Personal',
+          accentHue: 226,
+          favorites: [],
+          activeIndex: Math.min(Math.max(0, raw.activeIndex), tabs.length - 1),
+          tabs,
+        },
+      ],
+    }
+  }
+  return null
+}
+
+/** Fold the phase-(a) global favorites (kv "favorites") into the first space. */
+export function mergeLegacyFavorites(
+  snapshot: SessionSnapshotV2,
+  legacyFavorites: unknown,
+): SessionSnapshotV2 {
+  if (!Array.isArray(legacyFavorites) || legacyFavorites.length === 0) return snapshot
+  const first = snapshot.spaces[0]
+  if (!first) return snapshot
+  const valid = legacyFavorites.filter(
+    (f): f is { url: string; title: string; faviconUrl: string | null } =>
+      typeof f === 'object' && f !== null && typeof (f as { url?: unknown }).url === 'string',
+  )
+  const existing = new Set(first.favorites.map((f) => f.url))
+  first.favorites = [
+    ...first.favorites,
+    ...valid
+      .filter((f) => !existing.has(f.url))
+      .map((f) => ({
+        url: f.url,
+        title: typeof f.title === 'string' ? f.title : f.url,
+        faviconUrl: typeof f.faviconUrl === 'string' ? f.faviconUrl : null,
+      })),
+  ].slice(0, 12)
+  return snapshot
+}

@@ -4,8 +4,10 @@ An Arc-inspired desktop browser with an original **Aurora Glass** look — a rea
 Chromium engine (Electron + `WebContentsView` per tab) under a frameless chrome
 built with React, TypeScript, and design tokens.
 
-> Phase (a) is complete: shell, tab engine, sidebar, palette v0, session
-> restore, history recording, keyboard shortcuts, and a 3-OS test rig.
+> Phases (a) and (b) are complete: shell, tab engine, sidebar, command palette
+> (tabs/history/favorites/actions), Spaces with per-space favorites + pinned +
+> Today, incognito Space, Today auto-archive, find-in-page, downloads panel,
+> in-chrome permission prompts, session restore, and a 3-OS test rig.
 > See [docs/PHASES.md](docs/PHASES.md) for the roadmap.
 
 ## Quick start
@@ -73,12 +75,13 @@ tests/e2e      Playwright, driving the built app with local fixtures
 docs           phase plan, design spec, ADRs
 ```
 
-## Keyboard shortcuts (phase a)
+## Keyboard shortcuts
 
-⌘T palette · ⌘L edit address · ⌘S toggle sidebar · ⌘W close tab ·
-⇧⌘T reopen closed · ⌘R / ⇧⌘R reload · ⌘[ / ⌘] back/forward ·
-⌃Tab / ⌃⇧Tab next/previous tab · ⌘1–9 pick tab · ⌘+/−/0 zoom ·
-⌥⌘I DevTools. (Ctrl on Windows/Linux.)
+⌘T palette · ⌘L edit address · ⌘S toggle sidebar · ⌘F find in page ·
+⌘G / ⇧⌘G find next/previous · ⌘J downloads · ⌘D toggle favorite ·
+⇧⌘N incognito · ⌘W close tab · ⇧⌘T reopen closed · ⌘R / ⇧⌘R reload ·
+⌘[ / ⌘] back/forward · ⌃Tab / ⌃⇧Tab next/previous tab · ⌘1–9 pick tab ·
+⌃1–9 switch space · ⌘+/−/0 zoom · ⌥⌘I DevTools. (Ctrl on Windows/Linux.)
 
 ## Constraints honored
 

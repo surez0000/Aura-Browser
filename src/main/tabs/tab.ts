@@ -1,15 +1,77 @@
 import { WebContentsView, clipboard, type MenuItemConstructorOptions } from 'electron'
 import { randomUUID } from 'node:crypto'
-import type { SecurityState, TabInfo } from '@shared/models'
+import type { FindResult, SecurityState, TabInfo, TabKind } from '@shared/models'
+
+export const INCOGNITO_PARTITION = 'aurora-incognito' // no "persist:" prefix -> in-memory
 
 /** What a Tab needs from its owner (the TabManager). */
 export interface TabHost {
   changed(tab: Tab): void
-  openUrl(url: string, activate: boolean): void
-  recordVisit(url: string): void
-  updateTitle(url: string, title: string): void
+  openUrl(opener: Tab, url: string, activate: boolean): void
+  recordVisit(tab: Tab, url: string): void
+  updateTitle(tab: Tab, url: string, title: string): void
   popupMenu(template: MenuItemConstructorOptions[]): void
 }
+
+/**
+ * Find-in-page, injected. Electron 44's webContents.findInPage never emits
+ * 'found-in-page' (verified with a minimal repro), so Aurora searches text
+ * nodes itself and paints matches with the CSS Custom Highlight API. Matches
+ * inside cross-origin iframes are not found — same-document text only.
+ */
+function findScript(query: string, activeIndex: number): string {
+  return `(() => {
+  const query = ${JSON.stringify(query.toLowerCase())};
+  if (!query) return { matches: 0, activeMatchOrdinal: 0 };
+  if (!document.getElementById('aurora-find-style')) {
+    const style = document.createElement('style');
+    style.id = 'aurora-find-style';
+    style.textContent = '::highlight(aurora-find){background-color:rgba(255,204,0,.45)} ::highlight(aurora-find-active){background-color:rgba(255,145,0,.95);color:#000}';
+    (document.head || document.documentElement).appendChild(style);
+  }
+  const ranges = [];
+  const root = document.body || document.documentElement;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const tag = node.parentElement ? node.parentElement.tagName : '';
+      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  let node;
+  outer: while ((node = walker.nextNode())) {
+    const lower = (node.nodeValue || '').toLowerCase();
+    let from = 0, idx;
+    while ((idx = lower.indexOf(query, from)) !== -1) {
+      const range = new Range();
+      range.setStart(node, idx);
+      range.setEnd(node, idx + query.length);
+      ranges.push(range);
+      from = idx + query.length;
+      if (ranges.length >= 5000) break outer;
+    }
+  }
+  const count = ranges.length;
+  const active = count ? ((${activeIndex} % count) + count) % count : 0;
+  CSS.highlights.set('aurora-find', new Highlight(...ranges));
+  if (count) {
+    CSS.highlights.set('aurora-find-active', new Highlight(ranges[active]));
+    const rect = ranges[active].getBoundingClientRect();
+    if (rect.top < 0 || rect.bottom > innerHeight) {
+      const el = ranges[active].startContainer.parentElement;
+      if (el) el.scrollIntoView({ block: 'center' });
+    }
+  } else {
+    CSS.highlights.delete('aurora-find-active');
+  }
+  return { matches: count, activeMatchOrdinal: count ? active + 1 : 0 };
+})()`
+}
+
+const CLEAR_FIND_SCRIPT = `(() => {
+  CSS.highlights.delete('aurora-find');
+  CSS.highlights.delete('aurora-find-active');
+})()`
 
 export function isAllowedPageUrl(url: string): boolean {
   return (
@@ -36,9 +98,24 @@ main{text-align:center;max-width:32rem;padding:2rem}h1{font-size:1.1rem;font-wei
   return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
 }
 
+export interface TabOptions {
+  spaceId: string
+  kind?: TabKind
+  incognito?: boolean
+  url?: string
+  lazy?: boolean
+  title?: string
+  faviconUrl?: string | null
+}
+
 export class Tab {
   readonly id: string = randomUUID()
   readonly view: WebContentsView
+  readonly incognito: boolean
+
+  spaceId: string
+  kind: TabKind
+  lastActiveAt: number = Date.now()
 
   url = ''
   pendingUrl: string | null = null
@@ -50,13 +127,17 @@ export class Tab {
 
   constructor(
     private readonly host: TabHost,
-    opts: { url?: string; lazy?: boolean; title?: string; faviconUrl?: string | null } = {},
+    opts: TabOptions,
   ) {
+    this.spaceId = opts.spaceId
+    this.kind = opts.kind ?? 'today'
+    this.incognito = opts.incognito ?? false
     this.view = new WebContentsView({
       webPreferences: {
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
+        ...(this.incognito ? { partition: INCOGNITO_PARTITION } : {}),
       },
     })
     this.view.setBackgroundColor('#ffffff')
@@ -82,7 +163,7 @@ export class Tab {
     const wc = this.wc
 
     wc.setWindowOpenHandler(({ url, disposition }) => {
-      if (isAllowedPageUrl(url)) this.host.openUrl(url, disposition !== 'background-tab')
+      if (isAllowedPageUrl(url)) this.host.openUrl(this, url, disposition !== 'background-tab')
       return { action: 'deny' }
     })
 
@@ -98,18 +179,18 @@ export class Tab {
       this.url = url
       this.pendingUrl = null
       this.security = securityFor(url)
-      this.host.recordVisit(url)
+      this.host.recordVisit(this, url)
       this.host.changed(this)
     })
     wc.on('did-navigate-in-page', (_e, url, isMainFrame) => {
       if (!isMainFrame) return
       this.url = url
-      this.host.recordVisit(url)
+      this.host.recordVisit(this, url)
       this.host.changed(this)
     })
     wc.on('page-title-updated', (_e, title) => {
       this.title = title
-      this.host.updateTitle(this.url, title)
+      this.host.updateTitle(this, this.url, title)
       this.host.changed(this)
     })
     wc.on('page-favicon-updated', (_e, favicons) => {
@@ -123,7 +204,7 @@ export class Tab {
       this.host.changed(this)
     })
     wc.on('did-fail-load', (_e, code, description, failedUrl, isMainFrame) => {
-      // -3 is ERR_ABORTED (e.g. stop button, redirects) — not a failure to surface.
+      // -3 is ERR_ABORTED (e.g. stop button, downloads, redirects) — not a failure to surface.
       if (!isMainFrame || code === -3) return
       this.title = 'Can’t open page'
       void wc.loadURL(errorPage(failedUrl, description || `Error ${code}`))
@@ -136,7 +217,10 @@ export class Tab {
     const template: MenuItemConstructorOptions[] = []
     if (params.linkURL) {
       template.push(
-        { label: 'Open Link in New Tab', click: () => this.host.openUrl(params.linkURL, true) },
+        {
+          label: 'Open Link in New Tab',
+          click: () => this.host.openUrl(this, params.linkURL, true),
+        },
         { label: 'Copy Link Address', click: () => clipboard.writeText(params.linkURL) },
         { type: 'separator' },
       )
@@ -231,9 +315,44 @@ export class Tab {
     this.wc.openDevTools({ mode: 'detach' })
   }
 
+  private findText = ''
+  private findActiveIndex = 0
+
+  async findInPage(
+    text: string,
+    opts: { forward: boolean; findNext: boolean },
+  ): Promise<FindResult> {
+    if (!text) return { matches: 0, activeMatchOrdinal: 0 }
+    if (opts.findNext && text === this.findText) {
+      this.findActiveIndex += opts.forward ? 1 : -1
+    } else {
+      this.findText = text
+      this.findActiveIndex = 0
+    }
+    try {
+      const result = (await this.wc.executeJavaScript(
+        findScript(text, this.findActiveIndex),
+        true,
+      )) as FindResult
+      // Normalize the persistent index so prev/next stay in range.
+      this.findActiveIndex = result.matches ? result.activeMatchOrdinal - 1 : 0
+      return result
+    } catch {
+      return { matches: 0, activeMatchOrdinal: 0 }
+    }
+  }
+
+  stopFind(): void {
+    this.findText = ''
+    this.findActiveIndex = 0
+    this.wc.executeJavaScript(CLEAR_FIND_SCRIPT, true).catch(() => {})
+  }
+
   info(): TabInfo {
     return {
       id: this.id,
+      spaceId: this.spaceId,
+      kind: this.kind,
       url: this.url,
       pendingUrl: this.pendingUrl,
       title: this.title,

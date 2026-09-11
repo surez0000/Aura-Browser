@@ -1,8 +1,9 @@
-import type { RendererCommandId } from '@shared/ipc-contract'
+import type { RendererCommandId } from './ipc-contract'
 
 /**
  * Single source of truth for the keymap (Arc-style defaults). Pure data — no
- * Electron imports — so unit tests can verify it in plain Node.
+ * Electron imports — shared by the main-process menu, the chrome renderer's
+ * DOM fallback, and unit tests.
  *
  * scope 'main'     — handled in the main process (menu accelerator).
  * scope 'renderer' — handled by the chrome renderer. The menu shows the
@@ -10,12 +11,14 @@ import type { RendererCommandId } from '@shared/ipc-contract'
  *                    (registerAccelerator: false); a DOM keydown handler covers
  *                    chrome focus and a before-input-event hook on each tab
  *                    covers page focus, so the combo works everywhere without
- *                    double-firing.
+ *                    double-firing (macOS dispatches menu key equivalents
+ *                    before any web contents sees them).
  */
 export interface KeyCommand {
   id: string
   label: string
-  accelerator: string
+  /** Electron accelerator; omitted = menu item without a shortcut. */
+  accelerator?: string
   scope: 'main' | 'renderer'
   /** Only present for renderer-scope commands. */
   rendererCommand?: RendererCommandId
@@ -42,6 +45,52 @@ export const KEYMAP: readonly KeyCommand[] = [
     accelerator: 'CommandOrControl+S',
     scope: 'renderer',
     rendererCommand: 'sidebar:toggle',
+  },
+  {
+    id: 'find:open',
+    label: 'Find in Page…',
+    accelerator: 'CommandOrControl+F',
+    scope: 'renderer',
+    rendererCommand: 'find:open',
+  },
+  {
+    id: 'find:next',
+    label: 'Find Next',
+    accelerator: 'CommandOrControl+G',
+    scope: 'renderer',
+    rendererCommand: 'find:next',
+  },
+  {
+    id: 'find:prev',
+    label: 'Find Previous',
+    accelerator: 'Shift+CommandOrControl+G',
+    scope: 'renderer',
+    rendererCommand: 'find:prev',
+  },
+  {
+    id: 'downloads:toggle',
+    label: 'Downloads',
+    accelerator: 'CommandOrControl+J',
+    scope: 'renderer',
+    rendererCommand: 'downloads:toggle',
+  },
+  {
+    id: 'space:new',
+    label: 'New Space…',
+    scope: 'renderer',
+    rendererCommand: 'space:new',
+  },
+  {
+    id: 'tab:incognito',
+    label: 'New Incognito Tab',
+    accelerator: 'Shift+CommandOrControl+N',
+    scope: 'main',
+  },
+  {
+    id: 'favorite:toggle',
+    label: 'Toggle Favorite',
+    accelerator: 'CommandOrControl+D',
+    scope: 'main',
   },
   { id: 'tab:close', label: 'Close Tab', accelerator: 'CommandOrControl+W', scope: 'main' },
   {
@@ -72,9 +121,28 @@ export const KEYMAP: readonly KeyCommand[] = [
   },
 ] as const
 
-/** Keys (lowercase) the renderer scope claims when pressed with the platform modifier. */
-export const RENDERER_COMBO_KEYS: Readonly<Record<string, RendererCommandId>> = {
-  t: 'tab:new',
-  l: 'url:focus',
-  s: 'sidebar:toggle',
+/**
+ * Renderer-scope combos claimed when pressed with the platform modifier
+ * (⌘ / Ctrl). Used by both the tabs' before-input-event hook (page focus) and
+ * the chrome's DOM keydown handler (chrome focus).
+ */
+export interface ComboEntry {
+  key: string
+  shift?: boolean
+  command: RendererCommandId
+}
+
+export const RENDERER_COMBOS: readonly ComboEntry[] = [
+  { key: 't', command: 'tab:new' },
+  { key: 'l', command: 'url:focus' },
+  { key: 's', command: 'sidebar:toggle' },
+  { key: 'f', command: 'find:open' },
+  { key: 'j', command: 'downloads:toggle' },
+  { key: 'g', command: 'find:next' },
+  { key: 'g', shift: true, command: 'find:prev' },
+] as const
+
+export function matchCombo(key: string, shift: boolean): RendererCommandId | null {
+  const entry = RENDERER_COMBOS.find((c) => c.key === key && (c.shift ?? false) === shift)
+  return entry?.command ?? null
 }
