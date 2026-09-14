@@ -128,10 +128,12 @@ with two settings they asked for first.
   page instead of failing silently).
 - ✅ Versioning: semver in `package.json`, `npm version` + `v*` tags,
   `CHANGELOG.md` — see `docs/RELEASING.md`.
-- ☐ Set `build.publish.owner` / `repo` to the real GitHub repository (the
-  `CHANGE_ME` placeholder disables update checks on purpose).
-- ☐ macOS Developer ID signing + notarization — required for in-place macOS
-  updates. Windows code signing optional (SmartScreen warning otherwise).
+- ✅ `build.publish` points at `surez0000/Aura-Browser`; CI builds macOS for
+  Apple silicon and Intel.
+- ✅ macOS updates **without** an Apple Developer ID: the app downloads the
+  release zip, verifies SHA-512, checks the bundle id, swaps `Aurora.app` in
+  place, relaunches (`scripts/verify-mac-update.mjs` proves it). Signing stays
+  optional — a real signature flips the app to Squirrel.Mac automatically.
 - ☐ First-run onboarding: import bookmarks from Chrome/Edge (`Bookmarks` JSON)
   and Firefox (`places.sqlite`); default-browser registration.
 - Telemetry stays at zero (the update check carries no identifiers).

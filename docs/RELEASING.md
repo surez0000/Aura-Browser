@@ -13,19 +13,34 @@ in `package.json` is the single source of truth, each release is a git tag
    That block feeds both electron-builder (where to upload) and the running
    app (where to check, and the release page it links to). Until it is set,
    installed builds report "No update source is configured".
-3. **macOS signing (optional, but required for in-place updates on macOS).**
-   Add these repository secrets and uncomment the matching lines in
-   `.github/workflows/release.yml`:
-   - `MAC_CERT_P12_BASE64`, `MAC_CERT_PASSWORD` — a Developer ID Application
-     certificate exported as .p12, base64-encoded.
+3. **macOS without an Apple Developer ID (the current setup).** Nothing to
+   configure. Squirrel.Mac refuses to update an app that is not
+   Developer-ID-signed, so Aurora carries its own path for macOS: it downloads
+   the release zip, verifies the SHA-512 from `latest-mac.yml`, unpacks it with
+   `ditto`, checks the bundle identifier, swaps `Aurora.app` in place, and
+   relaunches. The swapped bundle was fetched by the app itself, not a browser,
+   so it is not quarantined and Gatekeeper does not prompt again. The only
+   remaining cost of not signing is the very first launch after installing the
+   DMG: right-click → **Open**. Prove the path locally after `npm run dist`:
+
+   ```bash
+   node scripts/verify-mac-update.mjs
+   ```
+
+   A copy that cannot replace itself (running from the mounted DMG, or from a
+   read-only folder) says so in Settings and links to the release page.
+
+4. **macOS signing (optional, later).** If a Developer ID Application
+   certificate ever becomes available, add these repository secrets and
+   uncomment the matching lines in `.github/workflows/release.yml`:
+   - `MAC_CERT_P12_BASE64`, `MAC_CERT_PASSWORD` — the certificate as .p12,
+     base64-encoded.
    - `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` — for
      notarization; then set `build.mac.notarize` to `true`.
 
-   Without a certificate the DMG still installs (right-click → Open the first
-   time, because Gatekeeper does not recognise the developer), but Squirrel.Mac
-   refuses to swap an unsigned app, so macOS users update by downloading the
-   new DMG from the release page — the in-app status tells them so. Windows and
-   Linux update in place unsigned (Windows shows a SmartScreen warning once).
+   The app detects a real signature at runtime and switches to Squirrel.Mac
+   automatically. Windows and Linux update in place unsigned (Windows shows a
+   SmartScreen warning once).
 
 ## Cutting a release
 
@@ -52,7 +67,8 @@ for that tag:
 Installed copies check the manifest 15 s after launch and every 6 hours, or
 when the user picks **Check for Updates…**. A newer version downloads in the
 background; the sidebar shows **Restart to update** and the Settings panel shows
-progress. One click quits, installs, and relaunches.
+progress. One click quits, installs, and relaunches — through electron-updater
+on Windows/Linux, and through Aurora's bundle swap on macOS (see above).
 
 ## Building locally
 

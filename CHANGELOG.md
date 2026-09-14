@@ -31,7 +31,8 @@ an in-app updater.
   in hover mode the page takes the full width and the sidebar floats in from
   the left edge over a snapshot of the page.
 - **Auto-update** — installed builds check GitHub Releases on launch and every
-  six hours; one click restarts into the new version. macOS needs a
-  code-signed build for in-place updates and says so in the panel.
+  six hours; one click restarts into the new version. On macOS, where the app
+  is not Apple-signed, Aurora swaps its own bundle (checksum-verified) instead
+  of relying on Squirrel.Mac.
 - **Packaging** — DMG + zip (macOS), one-click NSIS (Windows), AppImage + deb
   (Linux) via electron-builder; release workflow on `v*` tags.

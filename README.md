@@ -16,15 +16,16 @@ built with React, TypeScript, and design tokens.
 
 ## Install
 
-Installers are attached to each GitHub Release once `build.publish` in
-`package.json` points at the repository (see [docs/RELEASING.md](docs/RELEASING.md)):
-a DMG for macOS, a one-click installer for Windows, and an AppImage or .deb for
-Linux. Installed copies check for a newer release on launch and every six
-hours; when one has downloaded, the sidebar offers **Restart to update**.
+Installers are attached to each [GitHub Release](https://github.com/surez0000/Aura-Browser/releases):
+a DMG for macOS (Apple silicon and Intel), a one-click installer for Windows,
+and an AppImage or .deb for Linux. Installed copies check for a newer release
+on launch and every six hours; when one has downloaded, the sidebar offers
+**Restart to update** — one click installs and relaunches on every OS.
 
-macOS builds are unsigned until a Developer ID is added, so the first launch is
-right-click → **Open**, and macOS updates are a manual download — the Settings
-panel says so and links to the release page. To build an installer yourself:
+The macOS build is not Apple-signed, so the very first launch is right-click →
+**Open**. Updates after that need no prompt: Aurora swaps its own bundle
+instead of going through Squirrel.Mac (details in
+[docs/RELEASING.md](docs/RELEASING.md)). To build an installer yourself:
 
 ```bash
 npm run dist

@@ -72,8 +72,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "CHANGE_ME",
-      "repo": "aurora",
+      "owner": "surez0000",
+      "repo": "Aura-Browser",
       "releaseType": "release"
     },
     "mac": {
@@ -114,5 +114,10 @@
       "category": "Network",
       "maintainer": "Aurora contributors"
     }
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/surez0000/Aura-Browser.git"
+  },
+  "homepage": "https://github.com/surez0000/Aura-Browser"
 }

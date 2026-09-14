@@ -28,13 +28,20 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:unit
       - run: npm run build
-      - name: Package and publish to the release for this tag
+      - name: Package and publish (macOS, Apple silicon + Intel)
+        if: runner.os == 'macOS'
+        run: npx electron-builder --mac --arm64 --x64 --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Package and publish
+        if: runner.os != 'macOS'
         run: npx electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS signing + notarization — optional until a Developer ID exists.
-          # Without these the DMG/zip are unsigned (Gatekeeper: right-click → Open)
-          # and macOS cannot apply in-place updates.
+          # macOS signing + notarization are optional: without a Developer ID the
+          # DMG is unsigned (first launch: right-click → Open) and Aurora updates
+          # itself by swapping the app bundle instead of through Squirrel.Mac.
+          # To sign later, add these secrets to the macOS step above:
           # CSC_LINK: ${{ secrets.MAC_CERT_P12_BASE64 }}
           # CSC_KEY_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
           # APPLE_ID: ${{ secrets.APPLE_ID }}

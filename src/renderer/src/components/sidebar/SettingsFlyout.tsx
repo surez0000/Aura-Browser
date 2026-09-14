@@ -263,11 +263,21 @@ function UpdatesSection({ state }: { state: UpdateState | null }): React.JSX.Ele
     case 'error':
       text = state.message ?? 'Update check failed.'
       action = (
-        <SmallButton
-          label="Try again"
-          onClick={() => void invoke('updates:check', {})}
-          testId="updates-check"
-        />
+        <div className="flex items-center gap-1.5">
+          <SmallButton
+            label="Try again"
+            onClick={() => void invoke('updates:check', {})}
+            testId="updates-check"
+          />
+          {state.releasesUrl && (
+            <SmallButton
+              label="Release page"
+              icon={<ExternalLink size={12} />}
+              onClick={() => void invoke('updates:openReleases', {})}
+              testId="updates-releases"
+            />
+          )}
+        </div>
       )
       break
     case 'unsupported':

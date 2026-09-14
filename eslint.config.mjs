@@ -13,9 +13,8 @@ export default ts.config(
   },
   {
     // Build-time helpers run by Electron/Node directly (CommonJS).
-    files: ['scripts/**/*.cjs'],
+    files: ['scripts/**/*.{cjs,mjs}'],
     languageOptions: {
-      sourceType: 'commonjs',
       globals: {
         require: 'readonly',
         module: 'writable',
