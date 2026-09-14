@@ -1,8 +1,8 @@
 {
-  "name": "aurora",
-  "productName": "Aurora",
+  "name": "aura-browser",
+  "productName": "Aura Browser",
   "version": "0.1.0",
-  "description": "Aurora — an Arc-inspired desktop browser with the Aurora Glass theme, built on Electron.",
+  "description": "Aura Browser — an Arc-inspired desktop browser with the Aurora Glass theme, built on Electron.",
   "main": "./out/main/index.js",
   "author": "Aurora contributors",
   "license": "MIT",
@@ -55,10 +55,10 @@
     "zod": "^4.6.2"
   },
   "build": {
-    "appId": "dev.aurora.browser",
-    "productName": "Aurora",
+    "appId": "io.github.surez0000.aura-browser",
+    "productName": "Aura Browser",
     "copyright": "Copyright © 2026 Aurora contributors",
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "artifactName": "AuraBrowser-${version}-${os}-${arch}.${ext}",
     "directories": {
       "buildResources": "build",
       "output": "dist"
@@ -112,7 +112,8 @@
         "deb"
       ],
       "category": "Network",
-      "maintainer": "Aurora contributors"
+      "maintainer": "Aurora contributors",
+      "executableName": "aura-browser"
     }
   },
   "repository": {

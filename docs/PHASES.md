@@ -1,4 +1,4 @@
-# Aurora — phase plan
+# Aura Browser — phase plan
 
 Each phase ends with a user-visible, tested build. A phase starts only after
 explicit confirmation.
@@ -97,7 +97,7 @@ e2e tests green.
 - Split view 2–4 panes: the (a) layout protocol generalizes to N rects; drag
   dividers; keyboard management.
 - Peek: link preview in a floating card, promote-to-tab.
-- Mini window (Little-Arc-style) for links opened while Aurora is the default
+- Mini window (Little-Arc-style) for links opened while Aura Browser is the default
   browser.
 - MV3 extensions via `electron-chrome-extensions` (+ web store companion):
   documented supported-API subset, tested against a named list (uBlock Origin
@@ -119,7 +119,7 @@ with two settings they asked for first.
   edge over a page snapshot through the ref-counted overlay (ADR-0003), and
   adds a slim top strip for the traffic lights / window controls.
 - ✅ electron-builder targets: DMG + zip (macOS), one-click NSIS (Windows),
-  AppImage + deb (Linux); app icon rendered from `build/icon.svg`;
+  AppImage + deb (Linux); app icon rendered from the brand mark `build/logo.png`;
   `npm run dist` locally; `.github/workflows/release.yml` builds on `v*` tags
   and publishes to GitHub Releases.
 - ✅ electron-updater: checks 15 s after launch and every 6 h; background
@@ -131,7 +131,7 @@ with two settings they asked for first.
 - ✅ `build.publish` points at `surez0000/Aura-Browser`; CI builds macOS for
   Apple silicon and Intel.
 - ✅ macOS updates **without** an Apple Developer ID: the app downloads the
-  release zip, verifies SHA-512, checks the bundle id, swaps `Aurora.app` in
+  release zip, verifies SHA-512, checks the bundle id, swaps `Aura Browser.app` in
   place, relaunches (`scripts/verify-mac-update.mjs` proves it). Signing stays
   optional — a real signature flips the app to Squirrel.Mac automatically.
 - ☐ First-run onboarding: import bookmarks from Chrome/Edge (`Bookmarks` JSON)

@@ -73,7 +73,7 @@ function EmptyState(): React.JSX.Element {
       data-testid="empty-state"
     >
       <div className="text-2xl font-semibold tracking-tight" style={{ color: 'var(--ink-1)' }}>
-        Aurora
+        Aura Browser
       </div>
       <p className="text-sm" style={{ color: 'var(--ink-2)' }}>
         Press{' '}

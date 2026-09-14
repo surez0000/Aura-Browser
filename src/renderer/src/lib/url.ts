@@ -43,7 +43,7 @@ export function normalizeInput(
 export function displayLabel(url: string | null | undefined): string {
   if (!url) return 'New Tab'
   if (url === 'about:blank') return 'Blank'
-  if (url.startsWith('data:')) return 'Aurora'
+  if (url.startsWith('data:')) return 'Aura Browser'
   try {
     const parsed = new URL(url)
     const host = parsed.host.replace(/^www\./, '')

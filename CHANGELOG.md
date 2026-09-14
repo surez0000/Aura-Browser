@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Aurora. The format follows
+All notable changes to Aura Browser. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
@@ -32,7 +32,7 @@ an in-app updater.
   the left edge over a snapshot of the page.
 - **Auto-update** — installed builds check GitHub Releases on launch and every
   six hours; one click restarts into the new version. On macOS, where the app
-  is not Apple-signed, Aurora swaps its own bundle (checksum-verified) instead
+  is not Apple-signed, Aura Browser swaps its own bundle (checksum-verified) instead
   of relying on Squirrel.Mac.
 - **Packaging** — DMG + zip (macOS), one-click NSIS (Windows), AppImage + deb
   (Linux) via electron-builder; release workflow on `v*` tags.

@@ -4,7 +4,7 @@ import { invokeSchemas } from './schemas'
 
 let trusted: WebContents | null = null
 
-/** Only the chrome window's renderer may invoke Aurora IPC. */
+/** Only the chrome window's renderer may invoke Aura Browser IPC. */
 export function setTrustedWebContents(wc: WebContents): void {
   trusted = wc
 }

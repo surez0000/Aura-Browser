@@ -115,9 +115,9 @@ cross-fade. `MotionConfig reducedMotion="user"` is global.
 | Find bar, permission banner                 | opacity, y −8 in / −6 out                             | 500 / 34                                      |
 | Tab items                                   | y −6 in, x −14 out, layout on reorder                 | 500 / 34                                      |
 | Downloads flyout, Space editor, Settings    | opacity, y 10, scale 0.98                             | 460 / 32                                      |
-| Aurora palette change                       | shader mix prev→cur                                   | 650 ms ease-in-out cubic                      |
+| Aura Browser palette change                 | shader mix prev→cur                                   | 650 ms ease-in-out cubic                      |
 
-### Aurora backdrop runtime
+### Aura Browser backdrop runtime
 
 - WebGL 1 fragment shader, `powerPreference: 'low-power'`, backing store
   capped at 960 px wide, redraw capped near 30 fps (the drift is slow; a
@@ -132,7 +132,7 @@ cross-fade. `MotionConfig reducedMotion="user"` is global.
   `useReducedMotion` because width is neither.
 - CSS: a global `prefers-reduced-motion` rule collapses transitions and
   animations to a single frame.
-- Aurora: the render loop is off; one deterministic still frame per palette.
+- Aura Browser: the render loop is off; one deterministic still frame per palette.
 - Audit: `tests/e2e/motion.spec.ts` (sidebar collapse completes within a
   frame) and `tests/e2e/theme.spec.ts` (backdrop reports `data-animating=false`).
 

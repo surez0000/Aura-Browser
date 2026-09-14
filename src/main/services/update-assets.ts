@@ -59,7 +59,7 @@ export function assetUrl(config: UpdateConfig, version: string, file: string): s
 
 /**
  * Pick the macOS zip for this CPU architecture. electron-builder names assets
- * `Aurora-1.2.3-mac-arm64.zip`; a universal build carries no arch suffix.
+ * `AuraBrowser-1.2.3-mac-arm64.zip`; a universal build carries no arch suffix.
  */
 export function pickMacZip(files: ReleaseFile[], arch: string): ReleaseFile | null {
   const zips = files.filter((f) => f.url.toLowerCase().endsWith('.zip'))

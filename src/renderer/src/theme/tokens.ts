@@ -2,7 +2,7 @@ import type { ThemeName } from '@shared/theme'
 import { parseHex, rgba, type Rgba } from './contrast'
 
 /**
- * Aurora design tokens — single source of truth (TypeScript, not CSS), so the
+ * Aura Browser design tokens — single source of truth (TypeScript, not CSS), so the
  * same values feed the runtime (`apply.ts` injects them as CSS custom
  * properties) and the WCAG AA sweep in CI (`tests/unit/aurora-aa.test.ts`).
  */
@@ -65,7 +65,7 @@ export const SHARED_TOKENS: Record<string, string> = {
 }
 
 /**
- * Aurora mesh constraints per theme. Relative-luminance bands — not HSL
+ * Aura Browser mesh constraints per theme. Relative-luminance bands — not HSL
  * lightness — so perceptually bright hues (greens, yellows) are clamped too.
  * The AA sweep proves: any pixel the mesh can produce, composited under every
  * glass surface, keeps all three inks above their WCAG thresholds.

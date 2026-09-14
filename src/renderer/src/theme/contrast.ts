@@ -1,5 +1,5 @@
 /**
- * WCAG 2.1 color math — the foundation of Aurora's contrast guarantee.
+ * WCAG 2.1 color math — the foundation of Aura Browser's contrast guarantee.
  * Pure and dependency-free so CI can sweep every hue (see aurora-aa.test.ts).
  */
 

@@ -1,6 +1,6 @@
-# Releasing Aurora
+# Releasing Aura Browser
 
-Aurora ships as installers built by electron-builder and updates itself with
+Aura Browser ships as installers built by electron-builder and updates itself with
 electron-updater. Versions follow [semver](https://semver.org): `MAJOR.MINOR.PATCH`
 in `package.json` is the single source of truth, each release is a git tag
 `vX.Y.Z`, and the tag is what CI builds and publishes.
@@ -15,9 +15,9 @@ in `package.json` is the single source of truth, each release is a git tag
    installed builds report "No update source is configured".
 3. **macOS without an Apple Developer ID (the current setup).** Nothing to
    configure. Squirrel.Mac refuses to update an app that is not
-   Developer-ID-signed, so Aurora carries its own path for macOS: it downloads
+   Developer-ID-signed, so Aura Browser carries its own path for macOS: it downloads
    the release zip, verifies the SHA-512 from `latest-mac.yml`, unpacks it with
-   `ditto`, checks the bundle identifier, swaps `Aurora.app` in place, and
+   `ditto`, checks the bundle identifier, swaps `Aura Browser.app` in place, and
    relaunches. The swapped bundle was fetched by the app itself, not a browser,
    so it is not quarantined and Gatekeeper does not prompt again. The only
    remaining cost of not signing is the very first launch after installing the
@@ -58,24 +58,24 @@ git push --follow-tags
 CI then builds on macOS, Windows, and Linux and attaches to the GitHub Release
 for that tag:
 
-| OS      | Artifacts                                           | Used by the updater           |
-| ------- | --------------------------------------------------- | ----------------------------- |
-| macOS   | `Aurora-X.Y.Z-mac-arm64.dmg`, `…-mac-arm64.zip`     | zip + `latest-mac.yml`        |
-| Windows | `Aurora-X.Y.Z-win-x64.exe` (one-click NSIS)         | exe + `latest.yml`            |
-| Linux   | `Aurora-X.Y.Z-linux-x86_64.AppImage`, `…-amd64.deb` | AppImage + `latest-linux.yml` |
+| OS      | Artifacts                                                | Used by the updater           |
+| ------- | -------------------------------------------------------- | ----------------------------- |
+| macOS   | `AuraBrowser-X.Y.Z-mac-arm64.dmg`, `…-mac-arm64.zip`     | zip + `latest-mac.yml`        |
+| Windows | `AuraBrowser-X.Y.Z-win-x64.exe` (one-click NSIS)         | exe + `latest.yml`            |
+| Linux   | `AuraBrowser-X.Y.Z-linux-x86_64.AppImage`, `…-amd64.deb` | AppImage + `latest-linux.yml` |
 
 Installed copies check the manifest 15 s after launch and every 6 hours, or
 when the user picks **Check for Updates…**. A newer version downloads in the
 background; the sidebar shows **Restart to update** and the Settings panel shows
 progress. One click quits, installs, and relaunches — through electron-updater
-on Windows/Linux, and through Aurora's bundle swap on macOS (see above).
+on Windows/Linux, and through Aura Browser's bundle swap on macOS (see above).
 
 ## Building locally
 
 ```bash
 npm run dist       # installers for this OS into dist/ (unsigned, not published)
 npm run dist:dir   # just the unpacked app folder, fastest for a smoke test
-npm run icon       # re-render build/icon.png from build/icon.svg
+npm run icon       # re-render build/icon.png from build/logo.png (the brand mark)
 ```
 
 `npm run dist` never publishes. `npm run release` does (`--publish always`) and

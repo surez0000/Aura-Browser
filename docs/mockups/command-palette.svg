@@ -39,7 +39,7 @@
   <!-- selected: tab -->
   <rect x="332" y="186" width="616" height="48" rx="10" fill="rgba(255,255,255,0.12)"/>
   <rect x="348" y="200" width="16" height="14" rx="3" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.6"/>
-  <text x="378" y="207" fill="rgba(255,255,255,0.92)" font-size="14">Aurora shader notes</text>
+  <text x="378" y="207" fill="rgba(255,255,255,0.92)" font-size="14">Aura Browser shader notes</text>
   <text x="378" y="225" fill="rgba(255,255,255,0.54)" font-size="11.5">notes.dev — Personal</text>
   <text x="936" y="213" fill="rgba(255,255,255,0.54)" font-size="11.5" text-anchor="end">Switch to tab</text>
 
@@ -52,7 +52,7 @@
 
   <!-- favorite -->
   <path d="M356 306 l3 6 6.6 1 -4.8 4.6 1.1 6.6 -5.9 -3.1 -5.9 3.1 1.1 -6.6 -4.8 -4.6 6.6 -1 z" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.5"/>
-  <text x="378" y="313" fill="rgba(255,255,255,0.74)" font-size="14">Aurora repo — GitHub</text>
+  <text x="378" y="313" fill="rgba(255,255,255,0.74)" font-size="14">Aura Browser repo — GitHub</text>
   <text x="378" y="331" fill="rgba(255,255,255,0.54)" font-size="11.5">github.com — Work</text>
   <text x="936" y="320" fill="rgba(255,255,255,0.54)" font-size="11.5" text-anchor="end">Favorite</text>
 
@@ -63,7 +63,7 @@
 
   <!-- archived -->
   <path d="M348 402 h18 v5 h-18 z M350 407 v10 h14 v-10 M354 411 h6" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.5"/>
-  <text x="378" y="413" fill="rgba(255,255,255,0.74)" font-size="14">Aurora palette sketches</text>
+  <text x="378" y="413" fill="rgba(255,255,255,0.74)" font-size="14">Aura Browser palette sketches</text>
   <text x="378" y="431" fill="rgba(255,255,255,0.54)" font-size="11.5">figma.com — archived from Personal</text>
   <text x="936" y="420" fill="rgba(255,255,255,0.54)" font-size="11.5" text-anchor="end">Archived</text>
 
@@ -103,5 +103,5 @@
     <text x="40" y="192">&#160;&#160;&#160;&#160;⌘L targets the current tab.</text>
   </g>
 
-  <text x="20" y="852" fill="rgba(255,255,255,0.35)" font-size="11">Aurora — command palette (annotated mockup, phase c) · fuzzy ranking across tabs · history · favorites · actions · archive</text>
+  <text x="20" y="852" fill="rgba(255,255,255,0.35)" font-size="11">Aura Browser — command palette (annotated mockup, phase c) · fuzzy ranking across tabs · history · favorites · actions · archive</text>
 </svg>

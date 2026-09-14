@@ -1,5 +1,5 @@
 // End-to-end check of the macOS self-update path used by unsigned builds:
-// install a copy of dist/…/Aurora.app into a temp "Applications", publish a
+// install a copy of the packaged app into a temp "Applications", publish a
 // fake newer release on a local server, and watch the app download, verify,
 // swap its own bundle, and relaunch. Needs `npm run dist` first.
 // Run: node scripts/verify-mac-update.mjs
@@ -22,37 +22,39 @@ import { join } from 'node:path'
 
 const root = process.cwd()
 const arch = process.arch === 'arm64' ? 'arm64' : 'x64'
+const { productName, version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+const appName = `${productName}.app`
+const exe = ['Contents', 'MacOS', productName]
 const distApp = [
-  join(root, 'dist', `mac-${arch}`, 'Aurora.app'),
-  join(root, 'dist', 'mac', 'Aurora.app'),
+  join(root, 'dist', `mac-${arch}`, appName),
+  join(root, 'dist', 'mac', appName),
 ].find((p) => existsSync(p))
 if (!distApp) {
-  console.error('No packaged app found under dist/. Run `npm run dist` first.')
+  console.error(`No packaged ${appName} found under dist/. Run \`npm run dist\` first.`)
   process.exit(2)
 }
 
-const T = mkdtempSync(join(tmpdir(), 'aurora-update-'))
+const T = mkdtempSync(join(tmpdir(), 'aura-update-'))
 const log = (...a) => console.log('[verify-mac-update]', ...a)
 let server
 let app
 try {
   // 1. "Install" the current build.
-  const installed = join(T, 'Applications', 'Aurora.app')
+  const installed = join(T, 'Applications', appName)
   mkdirSync(join(T, 'Applications'), { recursive: true })
   execFileSync('/usr/bin/ditto', [distApp, installed])
 
   // 2. Fabricate the next version: same build + a marker file.
-  const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version
   const [maj, min, pat] = version.split('.').map(Number)
   const next = `${maj}.${min}.${pat + 1}`
-  const newApp = join(T, 'new', 'Aurora.app')
+  const newApp = join(T, 'new', appName)
   mkdirSync(join(T, 'new'), { recursive: true })
   execFileSync('/usr/bin/ditto', [distApp, newApp])
   writeFileSync(join(newApp, 'Contents', 'Resources', 'UPDATED-MARKER'), next)
 
   const feed = join(T, 'feed')
   mkdirSync(feed)
-  const zipName = `Aurora-${next}-mac-${arch}.zip`
+  const zipName = `AuraBrowser-${next}-mac-${arch}.zip`
   const zipPath = join(feed, zipName)
   log('zipping fake release', zipName)
   execFileSync('/usr/bin/ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', newApp, zipPath])
@@ -78,12 +80,12 @@ try {
   const port = server.address().port
   writeFileSync(
     join(installed, 'Contents', 'Resources', 'app-update.yml'),
-    `provider: generic\nurl: http://127.0.0.1:${port}/\nupdaterCacheDirName: aurora-updater\n`,
+    `provider: generic\nurl: http://127.0.0.1:${port}/\nupdaterCacheDirName: aura-browser-updater\n`,
   )
 
   // 4. Launch, check, wait for "ready", click Restart to update.
   app = await _electron.launch({
-    executablePath: join(installed, 'Contents', 'MacOS', 'Aurora'),
+    executablePath: join(installed, ...exe),
     args: [],
     env: { ...process.env, AURORA_USER_DATA_DIR: join(T, 'userData') },
   })
@@ -106,13 +108,13 @@ try {
   const marker = existsSync(join(installed, 'Contents', 'Resources', 'UPDATED-MARKER'))
   let pids = ''
   try {
-    pids = execFileSync('/usr/bin/pgrep', ['-f', join(installed, 'Contents', 'MacOS', 'Aurora')])
+    pids = execFileSync('/usr/bin/pgrep', ['-f', join(installed, ...exe)])
       .toString()
       .trim()
   } catch {
     pids = ''
   }
-  const previousLeft = existsSync(join(T, 'Applications', '.Aurora.app.previous'))
+  const previousLeft = existsSync(join(T, 'Applications', `.${appName}.previous`))
   log(
     'marker present:',
     marker,

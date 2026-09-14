@@ -4,7 +4,7 @@
 
 ## Decision
 
-Build Aurora on the latest stable Electron, one `WebContentsView` per tab,
+Build Aura Browser on the latest stable Electron, one `WebContentsView` per tab,
 with the browser chrome as a frameless `BrowserWindow` rendering our own
 HTML/TS UI.
 
@@ -27,4 +27,4 @@ teams for exactly this.
   strategy in ADR-0003.
 - Extension support is a documented subset via `electron-chrome-extensions`
   (phase d), not the full `chrome.*` surface.
-- Revisit only if Aurora outgrows these constraints.
+- Revisit only if Aura Browser outgrows these constraints.

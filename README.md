@@ -1,4 +1,4 @@
-# Aurora
+# Aura Browser
 
 An Arc-inspired desktop browser with an original **Aurora Glass** look — a real
 Chromium engine (Electron + `WebContentsView` per tab) under a frameless chrome
@@ -23,7 +23,7 @@ on launch and every six hours; when one has downloaded, the sidebar offers
 **Restart to update** — one click installs and relaunches on every OS.
 
 The macOS build is not Apple-signed, so the very first launch is right-click →
-**Open**. Updates after that need no prompt: Aurora swaps its own bundle
+**Open**. Updates after that need no prompt: Aura Browser swaps its own bundle
 instead of going through Squirrel.Mac (details in
 [docs/RELEASING.md](docs/RELEASING.md)). To build an installer yourself:
 
@@ -48,7 +48,7 @@ npm run dev        # hot-reloading chrome UI + Electron
 | `npm run test:e2e`  | Build, then Playwright drives the real app         |
 | `npm run dist`      | Installers for this OS into `dist/` (unsigned)     |
 | `npm run release`   | Same, and publish to GitHub Releases (CI uses it)  |
-| `npm run icon`      | Re-render `build/icon.png` from `build/icon.svg`   |
+| `npm run icon`      | Re-render `build/icon.png` from `build/logo.png`   |
 
 ## Architecture
 
@@ -99,7 +99,7 @@ src/shared     types + the IPC contract, imported by all three
 tests/unit     Vitest
 tests/e2e      Playwright, driving the built app with local fixtures
 docs           phase plan, design spec, ADRs, releasing guide
-build          app icon (SVG source + rendered PNG) for electron-builder
+build          app icon: logo.png (source) + icon.png (rendered) for electron-builder
 scripts        build helpers (icon renderer)
 ```
 

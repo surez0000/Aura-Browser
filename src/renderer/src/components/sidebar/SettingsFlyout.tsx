@@ -295,7 +295,7 @@ function UpdatesSection({ state }: { state: UpdateState | null }): React.JSX.Ele
 
   return (
     <>
-      <Row label={<span data-testid="app-version">Aurora {version}</span>}>{action}</Row>
+      <Row label={<span data-testid="app-version">Aura Browser {version}</span>}>{action}</Row>
       <p
         className="px-2 pb-1 text-[11px] leading-snug"
         style={{ color: 'var(--ink-3)' }}

@@ -1,5 +1,6 @@
 import { app, nativeTheme, session, type BrowserWindow } from 'electron'
-import { join } from 'node:path'
+import { existsSync, readdirSync, renameSync, rmSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { DEFAULT_SETTINGS, type AuroraSettings } from '@shared/models'
 import { WINDOW_BG } from '@shared/theme'
 import { RENDERER_COMBOS } from '@shared/keymap'
@@ -28,8 +29,10 @@ if (process.env.AURORA_USER_DATA_DIR) {
 if (process.env.AURORA_FORCE_REDUCED_MOTION === '1') {
   app.commandLine.appendSwitch('force-prefers-reduced-motion')
 }
-app.setName('Aurora')
-app.setAboutPanelOptions({ applicationName: 'Aurora', applicationVersion: app.getVersion() })
+app.setName('Aura Browser')
+// The app was called "Aurora" before its first release: carry that profile over.
+if (!process.env.AURORA_USER_DATA_DIR) migrateLegacyUserData()
+app.setAboutPanelOptions({ applicationName: 'Aura Browser', applicationVersion: app.getVersion() })
 
 let win: BrowserWindow | null = null
 let manager: TabManager | null = null
@@ -143,6 +146,19 @@ function bootstrap(): void {
   w.on('closed', () => {
     win = null
   })
+}
+
+function migrateLegacyUserData(): void {
+  const current = app.getPath('userData')
+  const legacy = join(dirname(current), 'Aurora')
+  if (!existsSync(legacy)) return
+  try {
+    if (existsSync(current) && readdirSync(current).length > 0) return
+    rmSync(current, { recursive: true, force: true })
+    renameSync(legacy, current)
+  } catch {
+    // Start with a fresh profile rather than fail to launch.
+  }
 }
 
 function restoreSession(kv: KvStore, m: TabManager): void {

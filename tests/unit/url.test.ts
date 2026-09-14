@@ -53,6 +53,6 @@ describe('displayLabel', () => {
 
   it('labels internal pages', () => {
     expect(displayLabel('about:blank')).toBe('Blank')
-    expect(displayLabel('data:text/html,hello')).toBe('Aurora')
+    expect(displayLabel('data:text/html,hello')).toBe('Aura Browser')
   })
 })

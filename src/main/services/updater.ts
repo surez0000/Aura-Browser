@@ -39,7 +39,7 @@ const RECHECK_INTERVAL_MS = 6 * 60 * 60_000
  *  - native   — electron-updater downloads and installs (Windows NSIS, Linux
  *               AppImage, and macOS *when the app is Developer-ID signed*).
  *  - mac-swap — macOS without a signing certificate. Squirrel.Mac refuses to
- *               update ad-hoc/unsigned apps, so Aurora does it itself: fetch
+ *               update ad-hoc/unsigned apps, so Aura Browser does it itself: fetch
  *               the release zip, verify its SHA-512 from the manifest, unpack
  *               with ditto, check the bundle id, swap the .app in place, and
  *               relaunch. The new bundle was never quarantined (Node fetched
@@ -186,13 +186,13 @@ export class UpdaterService {
     }
     if (!bundle) {
       this.unsupported(
-        'Aurora is running from a disk image or outside an app bundle. Drag it into Applications to enable updates.',
+        'Aura Browser is running from a disk image or outside an app bundle. Drag it into Applications to enable updates.',
       )
       return
     }
     if (!isWritable(dirname(bundle)) || !isWritable(bundle)) {
       this.unsupported(
-        "Aurora's folder is read-only, so it cannot replace itself. Download new versions from the release page.",
+        "Aura Browser's folder is read-only, so it cannot replace itself. Download new versions from the release page.",
       )
       return
     }
@@ -240,7 +240,7 @@ export class UpdaterService {
 
       const ours = bundleIdFromPlist(readFileSync(join(bundle, 'Contents', 'Info.plist'), 'utf8'))
       const theirs = bundleIdFromPlist(readFileSync(join(newApp, 'Contents', 'Info.plist'), 'utf8'))
-      if (!ours || ours !== theirs) throw new Error('the package is not Aurora')
+      if (!ours || ours !== theirs) throw new Error('the package is not Aura Browser')
 
       await execFileAsync('/usr/bin/xattr', ['-dr', 'com.apple.quarantine', newApp]).catch(
         () => undefined,
@@ -334,7 +334,7 @@ interface PackageJson {
 }
 
 /**
- * Aurora's own package.json: inside the asar when packaged; in development the
+ * Aura Browser's own package.json: inside the asar when packaged; in development the
  * app path is `out/main`, so walk to the project root instead.
  */
 function readPackageJson(): PackageJson | null {
@@ -347,7 +347,7 @@ function readPackageJson(): PackageJson | null {
     try {
       if (!existsSync(file)) continue
       const pkg = JSON.parse(readFileSync(file, 'utf8')) as PackageJson
-      if (pkg.name === 'aurora') return pkg
+      if (pkg.name === 'aura-browser') return pkg
     } catch {
       // try the next candidate
     }

@@ -15,7 +15,7 @@ export interface TabHost {
 
 /**
  * Find-in-page, injected. Electron 44's webContents.findInPage never emits
- * 'found-in-page' (verified with a minimal repro), so Aurora searches text
+ * 'found-in-page' (verified with a minimal repro), so Aura Browser searches text
  * nodes itself and paints matches with the CSS Custom Highlight API. Matches
  * inside cross-origin iframes are not found — same-document text only.
  */
@@ -94,7 +94,7 @@ function errorPage(url: string, description: string): string {
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>Can’t open page</title>
 <style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#101321;color:rgba(255,255,255,.9);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
 main{text-align:center;max-width:32rem;padding:2rem}h1{font-size:1.1rem;font-weight:600}p{color:rgba(255,255,255,.55);font-size:.85rem;word-break:break-all}</style></head>
-<body><main><h1>Aurora can’t open this page</h1><p>${esc(url)}</p><p>${esc(description)}</p></main></body></html>`
+<body><main><h1>Aura Browser can’t open this page</h1><p>${esc(url)}</p><p>${esc(description)}</p></main></body></html>`
   return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
 }
 

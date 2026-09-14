@@ -26,8 +26,8 @@ describe('update config', () => {
   it('derives the release page and asset URLs for GitHub', () => {
     const cfg = { provider: 'github', owner: 'surez0000', repo: 'Aura-Browser' }
     expect(releasesPageUrl(cfg)).toBe('https://github.com/surez0000/Aura-Browser/releases')
-    expect(assetUrl(cfg, '0.2.0', 'Aurora-0.2.0-mac-arm64.zip')).toBe(
-      'https://github.com/surez0000/Aura-Browser/releases/download/v0.2.0/Aurora-0.2.0-mac-arm64.zip',
+    expect(assetUrl(cfg, '0.2.0', 'AuraBrowser-0.2.0-mac-arm64.zip')).toBe(
+      'https://github.com/surez0000/Aura-Browser/releases/download/v0.2.0/AuraBrowser-0.2.0-mac-arm64.zip',
     )
   })
 
@@ -45,26 +45,26 @@ describe('update config', () => {
 
 describe('asset selection', () => {
   const files = [
-    { url: 'Aurora-0.2.0-mac-x64.zip', sha512: 'x' },
-    { url: 'Aurora-0.2.0-mac-x64.dmg', sha512: 'y' },
-    { url: 'Aurora-0.2.0-mac-arm64.zip', sha512: 'z' },
-    { url: 'Aurora-0.2.0-mac-arm64.dmg', sha512: 'w' },
+    { url: 'AuraBrowser-0.2.0-mac-x64.zip', sha512: 'x' },
+    { url: 'AuraBrowser-0.2.0-mac-x64.dmg', sha512: 'y' },
+    { url: 'AuraBrowser-0.2.0-mac-arm64.zip', sha512: 'z' },
+    { url: 'AuraBrowser-0.2.0-mac-arm64.dmg', sha512: 'w' },
   ]
   it('picks the zip for the running architecture', () => {
-    expect(pickMacZip(files, 'arm64')?.url).toBe('Aurora-0.2.0-mac-arm64.zip')
-    expect(pickMacZip(files, 'x64')?.url).toBe('Aurora-0.2.0-mac-x64.zip')
+    expect(pickMacZip(files, 'arm64')?.url).toBe('AuraBrowser-0.2.0-mac-arm64.zip')
+    expect(pickMacZip(files, 'x64')?.url).toBe('AuraBrowser-0.2.0-mac-x64.zip')
   })
   it('falls back to a universal zip', () => {
-    expect(pickMacZip([{ url: 'Aurora-0.2.0-mac.zip', sha512: 'u' }], 'arm64')?.url).toBe(
-      'Aurora-0.2.0-mac.zip',
+    expect(pickMacZip([{ url: 'AuraBrowser-0.2.0-mac.zip', sha512: 'u' }], 'arm64')?.url).toBe(
+      'AuraBrowser-0.2.0-mac.zip',
     )
-    expect(pickMacZip([{ url: 'Aurora.dmg', sha512: 'd' }], 'arm64')).toBeNull()
+    expect(pickMacZip([{ url: 'Aura Browser.dmg', sha512: 'd' }], 'arm64')).toBeNull()
   })
 })
 
 describe('macOS specifics', () => {
   it('classifies codesign output', () => {
-    expect(classifyCodesign('Aurora.app: code object is not signed at all')).toBe('unsigned')
+    expect(classifyCodesign('Aura Browser.app: code object is not signed at all')).toBe('unsigned')
     expect(classifyCodesign('Identifier=dev.aurora\nSignature=adhoc\nTeamIdentifier=not set')).toBe(
       'adhoc',
     )
@@ -84,10 +84,12 @@ describe('macOS specifics', () => {
   })
 
   it('finds the bundle from the executable, refusing disk images', () => {
-    expect(macBundleFromExe('/Applications/Aurora.app/Contents/MacOS/Aurora')).toBe(
-      '/Applications/Aurora.app',
+    expect(macBundleFromExe('/Applications/Aura Browser.app/Contents/MacOS/Aura Browser')).toBe(
+      '/Applications/Aura Browser.app',
     )
-    expect(macBundleFromExe('/Volumes/Aurora 0.1.0/Aurora.app/Contents/MacOS/Aurora')).toBeNull()
+    expect(
+      macBundleFromExe('/Volumes/Aura Browser 0.1.0/Aura Browser.app/Contents/MacOS/Aura Browser'),
+    ).toBeNull()
     expect(macBundleFromExe('/usr/local/bin/aurora')).toBeNull()
   })
 })

@@ -14,7 +14,7 @@
     </filter>
   </defs>
 
-  <!-- ══ Aurora ground (WebGL mesh in the app; ADR-0002: self-painted) ══ -->
+  <!-- ══ Aura Browser ground (WebGL mesh in the app; ADR-0002: self-painted) ══ -->
   <rect width="1280" height="860" fill="#0c0e1a"/>
   <rect width="1280" height="860" fill="url(#blobA)"/>
   <rect width="1280" height="860" fill="url(#blobB)"/>
@@ -76,7 +76,7 @@
     <!-- inactive tabs -->
     <rect x="20" y="364" width="224" height="32" rx="8" fill="none"/>
     <circle cx="36" cy="380" r="6" fill="#b98a3c"/>
-    <text x="50" y="384" fill="rgba(255,255,255,0.74)" font-size="13">Aurora shader notes</text>
+    <text x="50" y="384" fill="rgba(255,255,255,0.74)" font-size="13">Aura Browser shader notes</text>
     <rect x="20" y="400" width="224" height="32" rx="8" fill="none"/>
     <circle cx="36" cy="416" r="6" fill="#a3599a"/>
     <text x="50" y="420" fill="rgba(255,255,255,0.74)" font-size="13">WCAG quick reference</text>
@@ -113,10 +113,10 @@
       <text x="482" y="312">③ Active tab — ink-1 on strong glass (AA-enforced pair); ✕ on hover; drag to reorder or onto a Space dot.</text>
       <text x="482" y="532">④ Today auto-archives after a configurable idle window; the archive stays searchable in the palette.</text>
       <text x="482" y="774">⑤ Space rail — accent-tinted dots (one hue per Space); click to switch, drop a tab to move it, + to create.</text>
-      <text x="482" y="608">⑥ Aurora mesh (behind the glass): 4 hue-derived fields, luminance-band-clamped,</text>
+      <text x="482" y="608">⑥ Aura Browser mesh (behind the glass): 4 hue-derived fields, luminance-band-clamped,</text>
       <text x="482" y="626">     cross-fades on Space switch, static under prefers-reduced-motion, paused when hidden.</text>
     </g>
   </g>
 
-  <text x="20" y="852" fill="rgba(255,255,255,0.35)" font-size="11">Aurora — sidebar (annotated mockup, phase c) · dark theme, Space hue 226</text>
+  <text x="20" y="852" fill="rgba(255,255,255,0.35)" font-size="11">Aura Browser — sidebar (annotated mockup, phase c) · dark theme, Space hue 226</text>
 </svg>
