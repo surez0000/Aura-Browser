@@ -64,6 +64,13 @@ export function buildActions(ctx: {
     { id: 'archive:set:0', title: 'Auto-archive Today: Off', keywords: 'settings archive never' },
     { id: 'archive:set:12', title: 'Auto-archive Today: 12 hours', keywords: 'settings archive' },
     { id: 'archive:set:24', title: 'Auto-archive Today: 24 hours', keywords: 'settings archive' },
+    {
+      id: 'theme:set:system',
+      title: 'Theme: Sync with System',
+      keywords: 'appearance auto os color scheme',
+    },
+    { id: 'theme:set:light', title: 'Theme: Light', keywords: 'appearance color scheme day' },
+    { id: 'theme:set:dark', title: 'Theme: Dark', keywords: 'appearance color scheme night' },
   ]
 
   if (ctx.activeTab) {

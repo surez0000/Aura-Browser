@@ -21,6 +21,8 @@ test('creates a space, keeps tabs per space, and persists across restarts', asyn
     await expect(chrome.getByTestId('space-dot')).toHaveCount(2)
     await expect(chrome.getByTestId('space-name')).toHaveText('Work')
     await expect(chrome.getByTestId('tab-item')).toHaveCount(0)
+    // The empty state is per-Space: it shows here although Personal still has a tab.
+    await expect(chrome.getByTestId('empty-state')).toBeVisible()
 
     // A tab created here belongs to Work only.
     await createTabViaPalette(chrome, `${server.url}/b.html`)
@@ -82,6 +84,8 @@ test('drags a tab onto a space dot to move it', async () => {
 
     // The tab left Personal…
     await expect(chrome.getByTestId('tab-item')).toHaveCount(0)
+    // The empty state is per-Space: it shows here although Personal still has a tab.
+    await expect(chrome.getByTestId('empty-state')).toBeVisible()
     // …and lives in Work now.
     await chrome.getByTestId('space-dot').nth(1).click()
     await expect(chrome.getByTestId('tab-title').filter({ hasText: 'Fixture A' })).toBeVisible()

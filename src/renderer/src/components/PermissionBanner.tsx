@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { ShieldQuestion } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
 import { useUi } from '@/state/ui'
@@ -8,10 +9,23 @@ import type { PermissionRequestInfo } from '@shared/models'
  * In-chrome permission prompt (deny-by-default). Renders above the page card,
  * so the page shrinks under it — nothing floats over the native view.
  */
-export function PermissionBanner(): React.JSX.Element | null {
+export function PermissionBanner(): React.JSX.Element {
   const request = useUi((s) => s.permissionQueue[0])
-  if (!request) return null
-  return <Banner key={request.id} request={request} />
+  return (
+    <AnimatePresence>
+      {request && (
+        <motion.div
+          key={request.id}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 34 }}
+        >
+          <Banner key={request.id} request={request} />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
 }
 
 function Banner({ request }: { request: PermissionRequestInfo }): React.JSX.Element {

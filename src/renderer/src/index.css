@@ -1,5 +1,7 @@
 @import 'tailwindcss';
-@import './theme/tokens.css';
+
+/* Design tokens are injected as CSS custom properties at startup from
+   src/renderer/src/theme/tokens.ts (single source, shared with the AA tests). */
 
 html,
 body,
@@ -28,12 +30,9 @@ img {
   -webkit-app-region: no-drag;
 }
 
-/* Self-painted aurora backdrop (ADR-0002): identical on every OS. */
+/* Ground under the AuroraBackdrop canvas (ADR-0002: self-painted, every OS). */
 .app-bg {
-  background:
-    radial-gradient(1100px 750px at 12% -8%, var(--aurora-a), transparent 62%),
-    radial-gradient(1000px 700px at 108% 18%, var(--aurora-c), transparent 58%),
-    radial-gradient(950px 900px at 38% 118%, var(--aurora-b), transparent 60%), var(--bg-base);
+  background: var(--bg-base);
 }
 
 .glass {
@@ -63,4 +62,17 @@ img {
 }
 *::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Reduced motion: CSS transitions/animations collapse to a single frame.
+   Motion springs are handled by MotionConfig reducedMotion="user" (+
+   useReducedMotion for the sidebar width); the aurora canvas draws a still. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

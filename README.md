@@ -4,11 +4,14 @@ An Arc-inspired desktop browser with an original **Aurora Glass** look — a rea
 Chromium engine (Electron + `WebContentsView` per tab) under a frameless chrome
 built with React, TypeScript, and design tokens.
 
-> Phases (a) and (b) are complete: shell, tab engine, sidebar, command palette
+> Phases (a)–(c) are complete: shell, tab engine, sidebar, command palette
 > (tabs/history/favorites/actions), Spaces with per-space favorites + pinned +
 > Today, incognito Space, Today auto-archive, find-in-page, downloads panel,
-> in-chrome permission prompts, session restore, and a 3-OS test rig.
-> See [docs/PHASES.md](docs/PHASES.md) for the roadmap.
+> in-chrome permission prompts, session restore, a 3-OS test rig, and the
+> Aurora Glass theme — per-Space WebGL aurora palettes, light/dark/system,
+> WCAG AA proven in CI, spring motion with a reduced-motion audit.
+> See [docs/PHASES.md](docs/PHASES.md) for the roadmap and
+> [docs/DESIGN-SPEC.md](docs/DESIGN-SPEC.md) for the design system.
 
 ## Quick start
 
@@ -23,7 +26,7 @@ npm run dev        # hot-reloading chrome UI + Electron
 | `npm run build`     | Production bundles into `out/`                     |
 | `npm run typecheck` | Strict TS across main, preload, renderer, tests    |
 | `npm run lint`      | ESLint (typescript-eslint + react-hooks)           |
-| `npm run test:unit` | Vitest: stores, IPC contract, keymap, URL handling |
+| `npm run test:unit` | Vitest: stores, IPC contract, keymap, URL, WCAG AA |
 | `npm run test:e2e`  | Build, then Playwright drives the real app         |
 
 ## Architecture

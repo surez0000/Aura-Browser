@@ -1,5 +1,6 @@
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, nativeTheme } from 'electron'
 import { join } from 'node:path'
+import { WINDOW_BG } from '@shared/theme'
 import { isDev } from '../env'
 
 /**
@@ -14,7 +15,7 @@ export function createChromeWindow(): BrowserWindow {
     minWidth: 800,
     minHeight: 520,
     show: false,
-    backgroundColor: '#0c0e1a',
+    backgroundColor: WINDOW_BG[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'],
     ...(process.platform === 'darwin'
       ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 14, y: 13 } }
       : { frame: false as const }),

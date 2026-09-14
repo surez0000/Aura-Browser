@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Reorder } from 'motion/react'
+import { AnimatePresence, Reorder } from 'motion/react'
 import { Globe, Loader2, X } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
 import { displayLabel } from '@/lib/url'
@@ -30,6 +30,11 @@ function TabItem({ tab, isActive }: { tab: TabInfo; isActive: boolean }): React.
     <Reorder.Item
       value={tab}
       id={tab.id}
+      layout
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -14 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 34 }}
       className="group no-drag relative flex h-8 cursor-default items-center gap-2 rounded-lg px-2 select-none"
       style={{
         background: isActive ? 'var(--surface-glass-strong)' : 'transparent',
@@ -103,9 +108,11 @@ export function TabSection({ kind }: { kind: TabKind }): React.JSX.Element {
       className="space-y-0.5"
       data-testid={`section-${kind}`}
     >
-      {sectionTabs.map((tab) => (
-        <TabItem key={tab.id} tab={tab} isActive={tab.id === activeTabId} />
-      ))}
+      <AnimatePresence initial={false}>
+        {sectionTabs.map((tab) => (
+          <TabItem key={tab.id} tab={tab} isActive={tab.id === activeTabId} />
+        ))}
+      </AnimatePresence>
     </Reorder.Group>
   )
 }

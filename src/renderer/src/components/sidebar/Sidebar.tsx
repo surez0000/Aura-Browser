@@ -1,4 +1,4 @@
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { Archive, Plus } from 'lucide-react'
 import { isMac, modKeyLabel, invoke } from '@/lib/ipc'
 import { useTabs, tabsOf } from '@/state/tabs'
@@ -35,14 +35,18 @@ function SectionLabel({
 
 export function Sidebar(): React.JSX.Element {
   const collapsed = useUi((s) => s.sidebarCollapsed)
+  // `width` is neither a transform nor a layout animation, so MotionConfig's
+  // reducedMotion="user" would still spring it — gate it explicitly.
+  const reduceMotion = useReducedMotion()
   const openPalette = useUi((s) => s.openPalette)
+  const activeSpaceId = useTabs((s) => s.activeSpaceId)
   const hasPinned = useTabs((s) => tabsOf(s.tabs, s.activeSpaceId, 'pinned').length > 0)
 
   return (
     <motion.aside
       initial={false}
       animate={{ width: collapsed ? 0 : SIDEBAR_WIDTH, opacity: collapsed ? 0 : 1 }}
-      transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+      transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 36 }}
       className="relative h-full shrink-0 overflow-hidden"
       data-testid="sidebar"
       aria-hidden={collapsed}
@@ -60,34 +64,44 @@ export function Sidebar(): React.JSX.Element {
 
         <NavCluster />
         <UrlPill />
-        <SpaceHeader />
-        <FavoritesGrid />
 
-        <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-1 pt-1">
-          {hasPinned && (
-            <>
-              <SectionLabel>Pinned</SectionLabel>
-              <TabSection kind="pinned" />
-            </>
-          )}
-          <SectionLabel
-            action={
-              <button
-                type="button"
-                title="Archive Today tabs"
-                aria-label="Archive Today tabs"
-                onClick={() => void invoke('tabs:archiveToday', {})}
-                className="no-drag cursor-pointer rounded p-0.5 transition-colors hover:bg-(--surface-hover)"
-                data-testid="archive-today"
-              >
-                <Archive size={11} />
-              </button>
-            }
-          >
-            Today
-          </SectionLabel>
-          <TabSection kind="today" />
-        </div>
+        {/* Space-scoped content slides in on space switches. */}
+        <motion.div
+          key={activeSpaceId}
+          initial={{ opacity: 0, x: 12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+          className="flex min-h-0 flex-1 flex-col gap-2"
+        >
+          <SpaceHeader />
+          <FavoritesGrid />
+
+          <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-1 pt-1">
+            {hasPinned && (
+              <>
+                <SectionLabel>Pinned</SectionLabel>
+                <TabSection kind="pinned" />
+              </>
+            )}
+            <SectionLabel
+              action={
+                <button
+                  type="button"
+                  title="Archive Today tabs"
+                  aria-label="Archive Today tabs"
+                  onClick={() => void invoke('tabs:archiveToday', {})}
+                  className="no-drag cursor-pointer rounded p-0.5 transition-colors hover:bg-(--surface-hover)"
+                  data-testid="archive-today"
+                >
+                  <Archive size={11} />
+                </button>
+              }
+            >
+              Today
+            </SectionLabel>
+            <TabSection kind="today" />
+          </div>
+        </motion.div>
 
         <button
           type="button"

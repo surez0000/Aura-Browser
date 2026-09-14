@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="860" viewBox="0 0 1280 860" font-family="-apple-system, 'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <radialGradient id="sA" cx="14%" cy="-4%" r="70%">
+      <stop offset="0%" stop-color="#1d4636"/><stop offset="100%" stop-color="#1d4636" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sB" cx="104%" cy="22%" r="62%">
+      <stop offset="0%" stop-color="#14424a"/><stop offset="100%" stop-color="#14424a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sC" cx="38%" cy="112%" r="66%">
+      <stop offset="0%" stop-color="#2c3f1c"/><stop offset="100%" stop-color="#2c3f1c" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- aurora ground — a green Space (hue 152) to show per-Space palettes -->
+  <rect width="1280" height="860" fill="#0b120e"/>
+  <rect width="1280" height="860" fill="url(#sA)"/>
+  <rect width="1280" height="860" fill="url(#sB)"/>
+  <rect width="1280" height="860" fill="url(#sC)"/>
+
+  <!-- traffic lights -->
+  <circle cx="34" cy="30" r="6" fill="#ff5f57"/>
+  <circle cx="54" cy="30" r="6" fill="#febc2e"/>
+  <circle cx="74" cy="30" r="6" fill="#28c840"/>
+
+  <!-- slim sidebar summary -->
+  <rect x="20" y="96" width="224" height="34" rx="17" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+  <text x="40" y="118" fill="rgba(255,255,255,0.74)" font-size="13">docs.aurora.dev</text>
+  <circle cx="30" cy="152" r="5" fill="#63c69a"/>
+  <text x="44" y="157" fill="rgba(255,255,255,0.74)" font-size="12" font-weight="600" letter-spacing="0.4">FOREST</text>
+  <g fill="rgba(255,255,255,0.74)" font-size="13">
+    <rect x="20" y="176" width="224" height="30" rx="8" fill="rgba(255,255,255,0.12)"/>
+    <text x="36" y="196">▣ Spec — Split View</text>
+    <text x="36" y="232" opacity="0.7">▢ Layout protocol ADR</text>
+    <text x="36" y="264" opacity="0.7">▢ Peek interactions</text>
+  </g>
+  <circle cx="112" cy="815" r="8" fill="#8aa6ff"/>
+  <circle cx="140" cy="815" r="9" fill="#63c69a" stroke="rgba(255,255,255,0.62)" stroke-width="2"/>
+
+  <!-- ══ Split view: two page cards from ONE layout protocol ══ -->
+  <rect x="264" y="14" width="494" height="830" rx="12" fill="#10131f" stroke="rgba(255,255,255,0.24)" filter="url(#sShadow)"/>
+  <rect x="770" y="14" width="494" height="830" rx="12" fill="#10131f" stroke="rgba(255,255,255,0.10)" filter="url(#sShadow)"/>
+
+  <!-- focused pane marker -->
+  <rect x="264" y="14" width="494" height="3" rx="1.5" fill="#63c69a"/>
+
+  <!-- pane content hints -->
+  <text x="511" y="420" fill="rgba(255,255,255,0.3)" font-size="14" text-anchor="middle">Pane 1 · WebContentsView</text>
+  <text x="1017" y="420" fill="rgba(255,255,255,0.3)" font-size="14" text-anchor="middle">Pane 2 · WebContentsView</text>
+
+  <!-- divider handle -->
+  <rect x="760" y="14" width="8" height="830" fill="transparent"/>
+  <rect x="762" y="398" width="4" height="64" rx="2" fill="rgba(255,255,255,0.35)"/>
+
+  <!-- Peek card floating over pane 2 -->
+  <g filter="url(#sShadow)">
+    <rect x="850" y="150" width="340" height="420" rx="14" fill="#161a29" stroke="rgba(255,255,255,0.16)"/>
+  </g>
+  <rect x="850" y="150" width="340" height="40" rx="14" fill="rgba(255,255,255,0.05)"/>
+  <text x="870" y="175" fill="rgba(255,255,255,0.74)" font-size="12.5">Peek — en.wikipedia.org/Aurora</text>
+  <text x="1156" y="176" fill="rgba(255,255,255,0.54)" font-size="12">⧉</text>
+  <text x="1020" y="380" fill="rgba(255,255,255,0.28)" font-size="12.5" text-anchor="middle">link preview (promote to tab ⧉ · esc dismiss)</text>
+
+  <!-- ══ Annotations ══ -->
+  <g font-size="13" fill="#ffd9a0">
+    <g stroke="#ffd9a0" stroke-dasharray="4 4" fill="none" opacity="0.85">
+      <path d="M511 22 C 511 60, 490 84, 470 96"/>
+      <path d="M764 430 C 700 500, 640 540, 600 560"/>
+      <path d="M1020 570 C 1000 620, 980 650, 960 670"/>
+      <path d="M244 191 C 300 191, 330 200, 350 208"/>
+      <path d="M140 806 C 180 780, 220 770, 260 764"/>
+    </g>
+    <text x="330" y="88">① Focused pane carries the accent bar; ⌘-keys act on it. 2–4 panes.</text>
+    <text x="380" y="586">② Divider drags to resize — the (a) layout protocol already positions N rects;</text>
+    <text x="380" y="604">&#160;&#160;&#160;&#160;split view is divider math, not new machinery (ADR-0003).</text>
+    <text x="620" y="700">③ Peek: a link preview in a floating card — its own WebContentsView layered above</text>
+    <text x="620" y="718">&#160;&#160;&#160;&#160;the panes; promote to a Today tab or dismiss without leaving the page.</text>
+    <text x="358" y="212">④ Sidebar shows the split as one entry with pane children.</text>
+    <text x="268" y="768">⑤ Per-Space aurora: this Space (hue 152) drives mesh, accent, dots —</text>
+    <text x="268" y="786">&#160;&#160;&#160;&#160;switching Spaces cross-fades the whole palette in the shader.</text>
+  </g>
+
+  <text x="20" y="852" fill="rgba(255,255,255,0.35)" font-size="11">Aurora — split view + Peek (annotated design mockup for phase d) · green Space, hue 152</text>
+</svg>

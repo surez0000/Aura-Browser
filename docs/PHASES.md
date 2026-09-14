@@ -57,20 +57,40 @@ session; shortcuts work; suites green.
 
 **Exit met:** daily-drivable. 47 unit + 17 e2e tests green.
 
-## (c) Aurora Glass theming + motion
+## (c) Aurora Glass theming + motion — ✅ complete
 
-- Finalize tokens (light/dark/OS-sync); every Space gets an aurora palette.
-- Animated aurora mesh: WebGL shader layer, cross-fades on Space switch,
-  paused when unfocused, static gradient under `prefers-reduced-motion` or
-  low-power.
-- Adaptive contrast: palettes constrained to luminance bands, WCAG AA checks in
-  CI over every token pair, runtime ink-swap with hysteresis.
-- Spring motion pass (sidebar, palette, reorder, Space switch), 60 fps traces.
-- **Design spec deliverable:** token table, component inventory, 3 annotated
-  mockups (sidebar, palette, split view).
+- Tokens finalized as a TypeScript source (`theme/tokens.ts`), injected as CSS
+  custom properties before first paint; light / dark / system through
+  `nativeTheme.themeSource` → `prefers-color-scheme` (one pipe), switchable
+  from palette actions; the window ground color follows.
+- Per-Space aurora palettes derived from one hue (`theme/aurora.ts`): mesh base
+  - 4 blobs, accent, accent ink — all clamped into relative-luminance bands;
+    incognito is the muted variant.
+- Animated aurora mesh (`AuroraBackdrop`): WebGL fragment shader, low-power
+  context, ≤ 960 px backing store, ~30 fps redraw cap (every frame during a
+  cross-fade), 650 ms cross-fade on Space/theme change, paused when hidden or
+  unfocused, one still frame under `prefers-reduced-motion`, CSS
+  radial-gradient fallback when GL is unavailable.
+- Contrast: WCAG AA sweep in CI (`aurora-aa.test.ts`) over 24 hues × 2 themes ×
+  normal/incognito × 5 mesh extremes × 4 surfaces, plus accent and danger
+  pairs. The planned "runtime ink-swap with hysteresis" was **superseded**:
+  the palette is band-clamped ahead of time, so the ink choice is static and
+  proven; a runtime swap has nothing to correct.
+- Spring motion pass: sidebar collapse, Space column slide, palette, find bar,
+  permission banner, downloads flyout, Space editor, tab enter/exit/reorder.
+  Reduced motion: Motion's `reducedMotion="user"`, an explicit gate on the
+  sidebar width spring, and a global CSS rule for transitions/animations.
+- Design spec v1 (`docs/DESIGN-SPEC.md`): token table, palette derivation,
+  contrast contract, component inventory, motion table; 3 annotated mockups in
+  `docs/mockups/` (sidebar, command palette, split view + Peek).
+- Fixed in passing: the page-card empty state was global; it is now per Space.
 
-**Exit:** AA verified in CI; reduced-motion audit clean; 60 fps on reference
-hardware.
+**Exit met:** AA verified in CI; reduced-motion audit clean (`motion.spec.ts`,
+`theme.spec.ts`); frame-time probe on reference hardware (Apple M5 Pro, 120 Hz
+display): 288 frames sampled across a sidebar spring and a Space switch,
+median 8.3 ms, p95 8.6 ms, max 9.2 ms — no long frames. The aurora itself is
+deliberately capped near 30 fps; UI springs run at display rate. 60 unit + 22
+e2e tests green.
 
 ## (d) Split view, Peek, mini window, extensions
 

@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="860" viewBox="0 0 1280 860" font-family="-apple-system, 'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <radialGradient id="pA" cx="14%" cy="-4%" r="70%">
+      <stop offset="0%" stop-color="#233469"/><stop offset="100%" stop-color="#233469" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pB" cx="104%" cy="22%" r="62%">
+      <stop offset="0%" stop-color="#301d5e"/><stop offset="100%" stop-color="#301d5e" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pC" cx="38%" cy="112%" r="66%">
+      <stop offset="0%" stop-color="#123a41"/><stop offset="100%" stop-color="#123a41" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="pShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="22" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="860" fill="#0c0e1a"/>
+  <rect width="1280" height="860" fill="url(#pA)"/>
+  <rect width="1280" height="860" fill="url(#pB)"/>
+  <rect width="1280" height="860" fill="url(#pC)"/>
+
+  <!-- dimmed page snapshot behind the scrim -->
+  <rect x="264" y="14" width="1000" height="830" rx="12" fill="#10131f" opacity="0.9"/>
+  <text x="760" y="800" fill="rgba(255,255,255,0.22)" font-size="13" text-anchor="middle">page snapshot (capturePage) — the native view is detached while any overlay is open (ADR-0003)</text>
+  <rect width="1280" height="860" fill="#05070e" opacity="0.45"/>
+
+  <!-- ══ Palette ══ -->
+  <g filter="url(#pShadow)">
+    <rect x="320" y="120" width="640" height="424" rx="16" fill="#181c2e" stroke="rgba(255,255,255,0.14)"/>
+  </g>
+  <!-- input row -->
+  <circle cx="352" cy="152" r="7" fill="none" stroke="rgba(255,255,255,0.48)" stroke-width="2"/>
+  <path d="M357 157 l6 6" stroke="rgba(255,255,255,0.48)" stroke-width="2" stroke-linecap="round"/>
+  <text x="376" y="158" fill="rgba(255,255,255,0.92)" font-size="15">aur</text>
+  <rect x="404" y="143" width="2" height="18" fill="#8aa6ff"/>
+  <line x1="336" y1="176" x2="944" y2="176" stroke="rgba(255,255,255,0.12)"/>
+
+  <!-- result rows: [icon] title/subtitle [hint] -->
+  <!-- selected: tab -->
+  <rect x="332" y="186" width="616" height="48" rx="10" fill="rgba(255,255,255,0.12)"/>
+  <rect x="348" y="200" width="16" height="14" rx="3" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.6"/>
+  <text x="378" y="207" fill="rgba(255,255,255,0.92)" font-size="14">Aurora shader notes</text>
+  <text x="378" y="225" fill="rgba(255,255,255,0.54)" font-size="11.5">notes.dev — Personal</text>
+  <text x="936" y="213" fill="rgba(255,255,255,0.54)" font-size="11.5" text-anchor="end">Switch to tab</text>
+
+  <!-- history -->
+  <circle cx="356" cy="262" r="8" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.6"/>
+  <path d="M356 257 v5 l4 2" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.6"/>
+  <text x="378" y="259" fill="rgba(255,255,255,0.74)" font-size="14">Aurora borealis — Wikipedia</text>
+  <text x="378" y="277" fill="rgba(255,255,255,0.54)" font-size="11.5">en.wikipedia.org · 14 visits</text>
+  <text x="936" y="266" fill="rgba(255,255,255,0.54)" font-size="11.5" text-anchor="end">History</text>
+
+  <!-- favorite -->
+  <path d="M356 306 l3 6 6.6 1 -4.8 4.6 1.1 6.6 -5.9 -3.1 -5.9 3.1 1.1 -6.6 -4.8 -4.6 6.6 -1 z" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.5"/>
+  <text x="378" y="313" fill="rgba(255,255,255,0.74)" font-size="14">Aurora repo — GitHub</text>
+  <text x="378" y="331" fill="rgba(255,255,255,0.54)" font-size="11.5">github.com — Work</text>
+  <text x="936" y="320" fill="rgba(255,255,255,0.54)" font-size="11.5" text-anchor="end">Favorite</text>
+
+  <!-- action -->
+  <path d="M360 356 l-8 12 h7 l-3 10 9 -13 h-7 z" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.5" stroke-linejoin="round"/>
+  <text x="378" y="367" fill="rgba(255,255,255,0.74)" font-size="14">Auto-archive Today: 12 hours</text>
+  <text x="936" y="367" fill="rgba(255,255,255,0.54)" font-size="11.5" text-anchor="end">Action</text>
+
+  <!-- archived -->
+  <path d="M348 402 h18 v5 h-18 z M350 407 v10 h14 v-10 M354 411 h6" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.5"/>
+  <text x="378" y="413" fill="rgba(255,255,255,0.74)" font-size="14">Aurora palette sketches</text>
+  <text x="378" y="431" fill="rgba(255,255,255,0.54)" font-size="11.5">figma.com — archived from Personal</text>
+  <text x="936" y="420" fill="rgba(255,255,255,0.54)" font-size="11.5" text-anchor="end">Archived</text>
+
+  <!-- search fallback -->
+  <circle cx="355" cy="462" r="7" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.6"/>
+  <path d="M360 467 l5 5" stroke="rgba(255,255,255,0.62)" stroke-width="1.6" stroke-linecap="round"/>
+  <text x="378" y="468" fill="rgba(255,255,255,0.74)" font-size="14">Search DuckDuckGo for “aur”</text>
+  <text x="936" y="468" fill="rgba(255,255,255,0.54)" font-size="11.5" text-anchor="end">New tab</text>
+
+  <!-- footer hints -->
+  <line x1="336" y1="492" x2="944" y2="492" stroke="rgba(255,255,255,0.12)"/>
+  <text x="344" y="522" fill="rgba(255,255,255,0.48)" font-size="11.5">↑↓ Navigate&#160;&#160;&#160;↵ Open&#160;&#160;&#160;esc Close</text>
+  <text x="936" y="522" fill="rgba(255,255,255,0.48)" font-size="11.5" text-anchor="end">Searches DuckDuckGo</text>
+
+  <!-- ══ Annotations ══ -->
+  <g font-size="13" fill="#ffd9a0">
+    <g stroke="#ffd9a0" stroke-dasharray="4 4" fill="none" opacity="0.85">
+      <path d="M948 210 C 990 210, 1010 202, 1024 198"/>
+      <path d="M948 266 C 990 266, 1010 262, 1024 260"/>
+      <path d="M948 363 C 990 363, 1010 358, 1024 354"/>
+      <path d="M948 464 C 990 464, 1010 460, 1024 456"/>
+      <path d="M640 560 C 640 600, 640 620, 640 640"/>
+      <path d="M320 150 C 250 150, 200 160, 160 170"/>
+    </g>
+    <text x="1032" y="192">① Open tabs rank first</text>
+    <text x="1032" y="209">&#160;&#160;&#160;&#160;(2×), same-Space boosted.</text>
+    <text x="1032" y="256">② History: SQLite ranks</text>
+    <text x="1032" y="273">&#160;&#160;&#160;&#160;visit-count × recency.</text>
+    <text x="1032" y="341">③ Actions from the keymap</text>
+    <text x="1032" y="358">&#160;&#160;&#160;&#160;registry + dynamic Space</text>
+    <text x="1032" y="375">&#160;&#160;&#160;&#160;entries (“Move Tab to…”).</text>
+    <text x="1032" y="452">④ Web-search fallback</text>
+    <text x="1032" y="469">&#160;&#160;&#160;&#160;is always present.</text>
+    <text x="420" y="666">⑤ Scrim + glass over a live snapshot: chrome HTML can’t composite above a WebContentsView,</text>
+    <text x="420" y="684">&#160;&#160;&#160;&#160;so the view is swapped for its capturePage image while the palette is open.</text>
+    <text x="40" y="176">⑥ ⌘T opens “new tab” mode;</text>
+    <text x="40" y="192">&#160;&#160;&#160;&#160;⌘L targets the current tab.</text>
+  </g>
+
+  <text x="20" y="852" fill="rgba(255,255,255,0.35)" font-size="11">Aurora — command palette (annotated mockup, phase c) · fuzzy ranking across tabs · history · favorites · actions · archive</text>
+</svg>

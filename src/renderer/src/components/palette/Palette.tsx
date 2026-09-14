@@ -131,6 +131,12 @@ export function Palette(): React.JSX.Element {
       })
       return
     }
+    if (actionId.startsWith('theme:set:')) {
+      void invoke('settings:set', {
+        theme: actionId.slice('theme:set:'.length) as 'system' | 'light' | 'dark',
+      })
+      return
+    }
     switch (actionId) {
       case 'space:new':
         ui.openSpaceEditor(null)

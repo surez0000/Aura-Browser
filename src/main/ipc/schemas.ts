@@ -93,6 +93,7 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
         .min(0)
         .max(24 * 30)
         .optional(),
+      theme: z.enum(['system', 'light', 'dark']).optional(),
     })
     .strict(),
 

@@ -15,7 +15,10 @@ export interface LaunchedApp {
 }
 
 /** Launch the built app (out/) with an isolated profile directory. */
-export async function launchAurora(userDataDir?: string): Promise<LaunchedApp> {
+export async function launchAurora(
+  userDataDir?: string,
+  opts: { env?: Record<string, string> } = {},
+): Promise<LaunchedApp> {
   const profiles = join(root, 'test-results', 'profiles')
   mkdirSync(profiles, { recursive: true })
   const dir = userDataDir ?? mkdtempSync(join(profiles, 'aurora-'))
@@ -26,6 +29,7 @@ export async function launchAurora(userDataDir?: string): Promise<LaunchedApp> {
   }
   env.AURORA_USER_DATA_DIR = dir
   env.AURORA_E2E = '1'
+  Object.assign(env, opts.env ?? {})
 
   const app = await _electron.launch({
     executablePath: electronPath as unknown as string,
@@ -41,6 +45,10 @@ export async function launchAurora(userDataDir?: string): Promise<LaunchedApp> {
       app.on('close', () => reject(new Error('aurora exited before opening a window'))),
     ),
   ])
+  // Playwright pins colorScheme/reducedMotion emulation on attached pages by
+  // default, which would mask nativeTheme and reduced-motion behavior — clear
+  // it so the app behaves exactly as it does outside the harness.
+  await chrome.emulateMedia({ colorScheme: null, reducedMotion: null })
   await chrome.waitForSelector('[data-testid="sidebar"]')
   return { app, chrome, userDataDir: dir }
 }

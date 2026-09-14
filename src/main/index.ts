@@ -1,6 +1,7 @@
-import { app, session, type BrowserWindow } from 'electron'
+import { app, nativeTheme, session, type BrowserWindow } from 'electron'
 import { join } from 'node:path'
 import { DEFAULT_SETTINGS, type AuroraSettings } from '@shared/models'
+import { WINDOW_BG } from '@shared/theme'
 import { RENDERER_COMBOS } from '@shared/keymap'
 import { openDb } from './services/db'
 import { KvStore } from './services/db/kv'
@@ -21,6 +22,10 @@ const AUTO_ARCHIVE_SWEEP_MS = 5 * 60_000
 // Must happen before `ready`: the e2e harness isolates each run's profile.
 if (process.env.AURORA_USER_DATA_DIR) {
   app.setPath('userData', process.env.AURORA_USER_DATA_DIR)
+}
+// Deterministic reduced-motion for the e2e audit.
+if (process.env.AURORA_FORCE_REDUCED_MOTION === '1') {
+  app.commandLine.appendSwitch('force-prefers-reduced-motion')
 }
 app.setName('Aurora')
 
@@ -59,6 +64,14 @@ function bootstrap(): void {
     ...(kv.get<AuroraSettings>('settings') ?? {}),
   }
 
+  // The theme setting drives prefers-color-scheme in every renderer via
+  // nativeTheme — one pipe for system/light/dark. Set before window creation
+  // so the first paint uses the right ground color.
+  nativeTheme.themeSource = settings.theme
+  nativeTheme.on('updated', () => {
+    win?.setBackgroundColor(WINDOW_BG[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'])
+  })
+
   const w = createChromeWindow()
   win = w
   const m = new TabManager(w, {
@@ -96,6 +109,7 @@ function bootstrap(): void {
     setSettings: (patch) => {
       settings = { ...settings, ...patch }
       kv.set('settings', settings)
+      if (patch.theme !== undefined) nativeTheme.themeSource = settings.theme
       return settings
     },
     win: w,

@@ -1,9 +1,13 @@
 import { create } from 'zustand'
 import type { DownloadInfo, FindResult, PermissionRequestInfo } from '@shared/models'
+import type { ThemeName } from '@shared/theme'
 
 export type PaletteMode = 'new' | 'edit'
 
 export interface UiState {
+  /** Effective theme (resolved from the system/light/dark setting). */
+  themeName: ThemeName
+  setThemeName(theme: ThemeName): void
   sidebarCollapsed: boolean
   paletteOpen: boolean
   paletteMode: PaletteMode
@@ -48,6 +52,8 @@ export interface UiState {
 }
 
 export const useUi = create<UiState>()((set) => ({
+  themeName: 'dark',
+  setThemeName: (themeName) => set({ themeName }),
   sidebarCollapsed: false,
   paletteOpen: false,
   paletteMode: 'new',

@@ -12,7 +12,9 @@ import { useUi } from '@/state/ui'
 export function PageCard(): React.JSX.Element {
   const innerRef = useRef<HTMLDivElement | null>(null)
   const active = useTabs(selectActiveTab)
-  const hasTabs = useTabs((s) => s.tabs.length > 0)
+  // Per-Space: a Space with no tabs shows the empty state even while other
+  // Spaces still hold tabs (the main process detaches the view in that case).
+  const hasTabs = useTabs((s) => s.tabs.some((t) => t.spaceId === s.activeSpaceId))
   const snapshot = useUi((s) => s.pageSnapshot)
 
   useLayoutEffect(() => {
@@ -77,7 +79,7 @@ function EmptyState(): React.JSX.Element {
         Press{' '}
         <kbd
           className="rounded px-1.5 py-0.5 text-xs"
-          style={{ background: 'var(--surface-glass-strong)' }}
+          style={{ background: 'var(--surface-glass-strong)', color: 'var(--ink-1)' }}
         >
           {modKeyLabel()}T
         </kbd>{' '}

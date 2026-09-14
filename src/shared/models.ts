@@ -120,9 +120,13 @@ export interface FindResult {
   matches: number
 }
 
+import type { ThemeMode } from './theme'
+
 export interface AuroraSettings {
   /** Today tabs idle longer than this are auto-archived; 0 disables. */
   todayArchiveHours: number
+  /** Appearance: follow the OS or force light/dark. */
+  theme: ThemeMode
 }
 
-export const DEFAULT_SETTINGS: AuroraSettings = { todayArchiveHours: 12 }
+export const DEFAULT_SETTINGS: AuroraSettings = { todayArchiveHours: 12, theme: 'system' }

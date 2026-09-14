@@ -1,7 +1,6 @@
 import { EyeOff, Pencil } from 'lucide-react'
 import { useTabs, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
-import { spaceColor } from './SpaceSwitcher'
 
 /** Active space name; click to edit (rename, accent, delete). */
 export function SpaceHeader(): React.JSX.Element | null {
@@ -11,10 +10,7 @@ export function SpaceHeader(): React.JSX.Element | null {
 
   return (
     <div className="flex h-6 shrink-0 items-center gap-2 px-1" data-testid="space-header">
-      <span
-        className="h-2.5 w-2.5 shrink-0 rounded-full"
-        style={{ background: spaceColor(space) }}
-      />
+      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: 'var(--accent)' }} />
       <button
         type="button"
         onClick={() => openSpaceEditor(space.id)}

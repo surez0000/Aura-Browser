@@ -1,12 +1,8 @@
 import { EyeOff, Plus } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
+import { accentColor } from '@/theme/aurora'
 import { useTabs } from '@/state/tabs'
 import { useUi } from '@/state/ui'
-import type { SpaceInfo } from '@shared/models'
-
-export function spaceColor(space: Pick<SpaceInfo, 'accentHue' | 'incognito'>): string {
-  return space.incognito ? 'hsl(275 12% 55%)' : `hsl(${space.accentHue} 70% 62%)`
-}
 
 /**
  * The dot rail at the sidebar's foot: click to switch, drop a dragged tab on a
@@ -15,6 +11,7 @@ export function spaceColor(space: Pick<SpaceInfo, 'accentHue' | 'incognito'>): s
 export function SpaceSwitcher(): React.JSX.Element {
   const spaces = useTabs((s) => s.spaces)
   const activeSpaceId = useTabs((s) => s.activeSpaceId)
+  const theme = useUi((s) => s.themeName)
   const openSpaceEditor = useUi((s) => s.openSpaceEditor)
 
   return (
@@ -33,7 +30,7 @@ export function SpaceSwitcher(): React.JSX.Element {
             onClick={() => void invoke('spaces:activate', { spaceId: space.id })}
             className="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform hover:scale-110"
             style={{
-              background: spaceColor(space),
+              background: accentColor(space, theme),
               outline: isActive ? '2px solid var(--ink-2)' : '1px solid var(--border-glass)',
               outlineOffset: 1,
             }}

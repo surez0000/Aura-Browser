@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="860" viewBox="0 0 1280 860" font-family="-apple-system, 'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <radialGradient id="blobA" cx="14%" cy="-4%" r="70%">
+      <stop offset="0%" stop-color="#233469"/><stop offset="100%" stop-color="#233469" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blobB" cx="104%" cy="22%" r="62%">
+      <stop offset="0%" stop-color="#301d5e"/><stop offset="100%" stop-color="#301d5e" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blobC" cx="38%" cy="112%" r="66%">
+      <stop offset="0%" stop-color="#123a41"/><stop offset="100%" stop-color="#123a41" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- ══ Aurora ground (WebGL mesh in the app; ADR-0002: self-painted) ══ -->
+  <rect width="1280" height="860" fill="#0c0e1a"/>
+  <rect width="1280" height="860" fill="url(#blobA)"/>
+  <rect width="1280" height="860" fill="url(#blobB)"/>
+  <rect width="1280" height="860" fill="url(#blobC)"/>
+
+  <!-- ══ Window ══ -->
+  <g>
+    <!-- traffic lights -->
+    <circle cx="34" cy="30" r="6" fill="#ff5f57"/>
+    <circle cx="54" cy="30" r="6" fill="#febc2e"/>
+    <circle cx="74" cy="30" r="6" fill="#28c840"/>
+
+    <!-- ── Sidebar column (264 px) ── -->
+    <!-- nav cluster -->
+    <g fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M32 66 l-8 8 l8 8 M24 74 h18"/>
+      <path d="M64 66 l8 8 l-8 8 M72 74 h-18" opacity="0.35"/>
+      <path d="M96 68 a7 7 0 1 1 -2 12 M96 68 v-5 M96 68 h5"/>
+    </g>
+
+    <!-- URL pill -->
+    <rect x="20" y="96" width="224" height="34" rx="17" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+    <path d="M36 108 v-3 a5 5 0 0 1 10 0 v3 M34 108 h14 v9 h-14 z" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.6"/>
+    <text x="58" y="118" fill="rgba(255,255,255,0.74)" font-size="13">linear.app</text>
+    <path d="M222 106 l2.6 5.3 5.8 .8 -4.2 4.1 1 5.8 -5.2 -2.7 -5.2 2.7 1 -5.8 -4.2 -4.1 5.8 -.8 z" fill="#8aa6ff"/>
+
+    <!-- Space header -->
+    <circle cx="30" cy="152" r="5" fill="#8aa6ff"/>
+    <text x="44" y="157" fill="rgba(255,255,255,0.74)" font-size="12" font-weight="600" letter-spacing="0.4">PERSONAL</text>
+
+    <!-- Favorites grid -->
+    <g>
+      <rect x="20"  y="170" width="50" height="50" rx="12" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+      <rect x="78"  y="170" width="50" height="50" rx="12" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+      <rect x="136" y="170" width="50" height="50" rx="12" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+      <rect x="194" y="170" width="50" height="50" rx="12" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+      <rect x="35" y="185" width="20" height="20" rx="5" fill="#4b6bd6"/>
+      <rect x="93" y="185" width="20" height="20" rx="5" fill="#3d8f6b"/>
+      <rect x="151" y="185" width="20" height="20" rx="5" fill="#a3599a"/>
+      <rect x="209" y="185" width="20" height="20" rx="5" fill="#b98a3c"/>
+    </g>
+
+    <!-- PINNED section -->
+    <text x="24" y="252" fill="rgba(255,255,255,0.48)" font-size="10.5" font-weight="600" letter-spacing="1.2">PINNED</text>
+    <rect x="20" y="262" width="224" height="30" rx="8" fill="rgba(255,255,255,0.03)"/>
+    <circle cx="36" cy="277" r="6" fill="#3d8f6b"/>
+    <text x="50" y="281" fill="rgba(255,255,255,0.74)" font-size="13">Team wiki</text>
+
+    <!-- TODAY section -->
+    <text x="24" y="318" fill="rgba(255,255,255,0.48)" font-size="10.5" font-weight="600" letter-spacing="1.2">TODAY</text>
+    <path d="M226 310 h12 v10 h-12 z M224 310 h16 M230 315 h4" fill="none" stroke="rgba(255,255,255,0.48)" stroke-width="1.4"/>
+
+    <!-- active tab -->
+    <rect x="20" y="328" width="224" height="32" rx="8" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.12)"/>
+    <circle cx="36" cy="344" r="6" fill="#4b6bd6"/>
+    <text x="50" y="348" fill="rgba(255,255,255,0.92)" font-size="13">Roadmap — Linear</text>
+    <path d="M228 340 l8 8 M236 340 l-8 8" stroke="rgba(255,255,255,0.48)" stroke-width="1.6"/>
+
+    <!-- inactive tabs -->
+    <rect x="20" y="364" width="224" height="32" rx="8" fill="none"/>
+    <circle cx="36" cy="380" r="6" fill="#b98a3c"/>
+    <text x="50" y="384" fill="rgba(255,255,255,0.74)" font-size="13">Aurora shader notes</text>
+    <rect x="20" y="400" width="224" height="32" rx="8" fill="none"/>
+    <circle cx="36" cy="416" r="6" fill="#a3599a"/>
+    <text x="50" y="420" fill="rgba(255,255,255,0.74)" font-size="13">WCAG quick reference</text>
+
+    <!-- New Tab -->
+    <text x="24" y="463" fill="rgba(255,255,255,0.74)" font-size="13">＋  New Tab</text>
+    <text x="216" y="463" fill="rgba(255,255,255,0.48)" font-size="11">⌘T</text>
+
+    <!-- footer: downloads + space dots + add -->
+    <path d="M30 806 v12 m-5 -5 l5 5 l5 -5 M22 822 h16" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="112" cy="815" r="9" fill="#8aa6ff" stroke="rgba(255,255,255,0.62)" stroke-width="2"/>
+    <circle cx="140" cy="815" r="8" fill="#63c69a"/>
+    <circle cx="168" cy="815" r="8" fill="none" stroke="rgba(255,255,255,0.3)" stroke-dasharray="3 3"/>
+    <text x="164" y="820" fill="rgba(255,255,255,0.48)" font-size="12">+</text>
+
+    <!-- ── Page card ── -->
+    <rect x="264" y="14" width="1000" height="830" rx="12" fill="#10131f" stroke="rgba(255,255,255,0.12)" filter="url(#cardShadow)"/>
+    <text x="740" y="420" fill="rgba(255,255,255,0.3)" font-size="15" text-anchor="middle">WebContentsView (native, positioned by the layout protocol)</text>
+  </g>
+
+  <!-- ══ Annotations ══ -->
+  <g font-size="13" fill="#ffd9a0">
+    <g stroke="#ffd9a0" stroke-dasharray="4 4" fill="none" opacity="0.85">
+      <path d="M250 113 C 340 113, 420 88, 470 78"/>
+      <path d="M250 195 C 360 195, 430 168, 480 160"/>
+      <path d="M248 344 C 350 344, 420 320, 470 308"/>
+      <path d="M180 815 C 320 815, 420 790, 470 770"/>
+      <path d="M244 470 C 340 500, 420 520, 470 528"/>
+      <path d="M472 612 C 380 630, 300 650, 235 655"/>
+    </g>
+    <g>
+      <text x="482" y="82">① URL pill — compact host + HTTPS state; ⌘L expands inline. ★ favorites the page (per Space).</text>
+      <text x="492" y="164">② Favorites grid — per-Space quick tiles; favicon or letter fallback (no remote lookups).</text>
+      <text x="482" y="312">③ Active tab — ink-1 on strong glass (AA-enforced pair); ✕ on hover; drag to reorder or onto a Space dot.</text>
+      <text x="482" y="532">④ Today auto-archives after a configurable idle window; the archive stays searchable in the palette.</text>
+      <text x="482" y="774">⑤ Space rail — accent-tinted dots (one hue per Space); click to switch, drop a tab to move it, + to create.</text>
+      <text x="482" y="608">⑥ Aurora mesh (behind the glass): 4 hue-derived fields, luminance-band-clamped,</text>
+      <text x="482" y="626">     cross-fades on Space switch, static under prefers-reduced-motion, paused when hidden.</text>
+    </g>
+  </g>
+
+  <text x="20" y="852" fill="rgba(255,255,255,0.35)" font-size="11">Aurora — sidebar (annotated mockup, phase c) · dark theme, Space hue 226</text>
+</svg>
