@@ -42,6 +42,24 @@ img {
   -webkit-backdrop-filter: blur(var(--blur-glass));
 }
 
+/* Popovers stack over other chrome (tab rows, a page snapshot), so unlike
+   .glass they need a mostly opaque ground: the card color, still blurred. */
+.popover {
+  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  border: 1px solid var(--border-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+}
+
+/* The show-on-hover sidebar floats over the page (any color) — ground it on
+   the theme's base color so the inks keep their proven contrast. */
+.floating-panel {
+  background: color-mix(in srgb, var(--bg-base) 92%, transparent);
+  border: 1px solid var(--border-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+}
+
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border-glass);

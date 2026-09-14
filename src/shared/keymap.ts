@@ -81,6 +81,13 @@ export const KEYMAP: readonly KeyCommand[] = [
     rendererCommand: 'space:new',
   },
   {
+    id: 'settings:toggle',
+    label: 'Settings…',
+    accelerator: 'CommandOrControl+,',
+    scope: 'renderer',
+    rendererCommand: 'settings:toggle',
+  },
+  {
     id: 'tab:incognito',
     label: 'New Incognito Tab',
     accelerator: 'Shift+CommandOrControl+N',
@@ -140,6 +147,7 @@ export const RENDERER_COMBOS: readonly ComboEntry[] = [
   { key: 'j', command: 'downloads:toggle' },
   { key: 'g', command: 'find:next' },
   { key: 'g', shift: true, command: 'find:prev' },
+  { key: ',', command: 'settings:toggle' },
 ] as const
 
 export function matchCombo(key: string, shift: boolean): RendererCommandId | null {

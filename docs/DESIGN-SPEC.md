@@ -80,40 +80,42 @@ measuring. Adding a token or changing a band without keeping AA fails CI.
 
 ## Component inventory
 
-| Component              | File                                                                                               | Notes                                                                     |
-| ---------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| App shell              | `App.tsx`                                                                                          | derives the palette from the active Space; sets `--accent`/`--accent-ink` |
-| AuroraBackdrop         | `components/AuroraBackdrop.tsx`                                                                    | WebGL mesh; CSS radial-gradient fallback; see Motion                      |
-| Sidebar                | `components/sidebar/Sidebar.tsx`                                                                   | spring collapse (⌘S), Space column slide, sections, footer rail           |
-| NavCluster             | `components/sidebar/NavCluster.tsx`                                                                | back / forward / reload-stop                                              |
-| UrlPill                | `components/sidebar/UrlPill.tsx`                                                                   | security icon, host label, ★, inline edit                                 |
-| SpaceHeader            | `components/sidebar/SpaceHeader.tsx`                                                               | accent dot, name, edit affordance, incognito badge                        |
-| FavoritesGrid          | `components/sidebar/FavoritesGrid.tsx`                                                             | per-Space 4-col glass tiles, letter fallback                              |
-| TabSection / TabItem   | `components/sidebar/TabSection.tsx`                                                                | pinned + Today; enter/exit springs, reorder, drag-to-dot, context menu    |
-| SpaceSwitcher          | `components/sidebar/SpaceSwitcher.tsx`                                                             | dot rail: accent-colored dots, switch, drop target, add                   |
-| SpaceEditor            | `components/sidebar/SpaceEditor.tsx`                                                               | create/edit popover; hue swatches rendered through the accent pipeline    |
-| DownloadsButton/Flyout | `components/sidebar/DownloadsFlyout.tsx`                                                           | accent badge with `--accent-ink`, progress rows                           |
-| WindowControls         | `components/sidebar/WindowControls.tsx`                                                            | Windows/Linux only                                                        |
-| PageCard               | `components/PageCard.tsx`                                                                          | measures view bounds; per-Space empty state; crash + snapshot states      |
-| FindBar                | `components/FindBar.tsx`                                                                           | above the card (view shrinks); spring in/out                              |
-| PermissionBanner       | `components/PermissionBanner.tsx`                                                                  | queued, remember checkbox; spring in/out                                  |
-| Palette                | `components/palette/Palette.tsx`                                                                   | scrim + glass card over a page snapshot; theme actions                    |
-| Theme modules          | `theme/tokens.ts` · `theme/aurora.ts` · `theme/contrast.ts` · `theme/apply.ts` · `shared/theme.ts` | tokens, palette derivation, WCAG math, runtime injection, window ground   |
+| Component              | File                                                                                               | Notes                                                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| App shell              | `App.tsx`                                                                                          | derives the palette from the active Space; sets `--accent`/`--accent-ink`                                            |
+| AuroraBackdrop         | `components/AuroraBackdrop.tsx`                                                                    | WebGL mesh; CSS radial-gradient fallback; see Motion                                                                 |
+| Sidebar                | `components/sidebar/Sidebar.tsx`                                                                   | two modes (⌘S): fixed in the layout, or show-on-hover floating over a page snapshot; Space column slide; footer rail |
+| NavCluster             | `components/sidebar/NavCluster.tsx`                                                                | back / forward / reload-stop                                                                                         |
+| UrlPill                | `components/sidebar/UrlPill.tsx`                                                                   | security icon, host label, ★, inline edit                                                                            |
+| SpaceHeader            | `components/sidebar/SpaceHeader.tsx`                                                               | accent dot, name, edit affordance, incognito badge                                                                   |
+| FavoritesGrid          | `components/sidebar/FavoritesGrid.tsx`                                                             | per-Space 4-col glass tiles, letter fallback                                                                         |
+| TabSection / TabItem   | `components/sidebar/TabSection.tsx`                                                                | pinned + Today; enter/exit springs, reorder, drag-to-dot, context menu                                               |
+| SpaceSwitcher          | `components/sidebar/SpaceSwitcher.tsx`                                                             | dot rail: accent-colored dots, switch, drop target, add                                                              |
+| SpaceEditor            | `components/sidebar/SpaceEditor.tsx`                                                               | create/edit popover; hue swatches rendered through the accent pipeline                                               |
+| DownloadsButton/Flyout | `components/sidebar/DownloadsFlyout.tsx`                                                           | accent badge with `--accent-ink`, progress rows                                                                      |
+| WindowControls         | `components/sidebar/WindowControls.tsx`                                                            | Windows/Linux only                                                                                                   |
+| PageCard               | `components/PageCard.tsx`                                                                          | measures view bounds; per-Space empty state; crash + snapshot states                                                 |
+| FindBar                | `components/FindBar.tsx`                                                                           | above the card (view shrinks); spring in/out                                                                         |
+| PermissionBanner       | `components/PermissionBanner.tsx`                                                                  | queued, remember checkbox; spring in/out                                                                             |
+| Palette                | `components/palette/Palette.tsx`                                                                   | scrim + glass card over a page snapshot; theme actions                                                               |
+| SettingsButton/Flyout  | `components/sidebar/SettingsFlyout.tsx`                                                            | appearance, sidebar mode, search engine, auto-archive, update status (segmented controls + selects)                  |
+| TopStrip               | `App.tsx`                                                                                          | hover mode only: drag strip clearing the traffic lights / hosting window controls                                    |
+| Theme modules          | `theme/tokens.ts` · `theme/aurora.ts` · `theme/contrast.ts` · `theme/apply.ts` · `shared/theme.ts` | tokens, palette derivation, WCAG math, runtime injection, window ground                                              |
 
 ## Motion
 
 Springs only — no duration curves except the palette scrim and the shader
 cross-fade. `MotionConfig reducedMotion="user"` is global.
 
-| Element                        | Animates                                              | Spring (stiffness / damping)                  |
-| ------------------------------ | ----------------------------------------------------- | --------------------------------------------- |
-| Sidebar collapse (⌘S)          | width 264→0, opacity                                  | 380 / 36 · `duration: 0` under reduced motion |
-| Space column on Space switch   | opacity, x 12→0                                       | 420 / 36                                      |
-| Palette                        | scrim opacity 150 ms; card opacity, y −14, scale 0.98 | 480 / 34                                      |
-| Find bar, permission banner    | opacity, y −8 in / −6 out                             | 500 / 34                                      |
-| Tab items                      | y −6 in, x −14 out, layout on reorder                 | 500 / 34                                      |
-| Downloads flyout, Space editor | opacity, y 10, scale 0.98                             | 460 / 32                                      |
-| Aurora palette change          | shader mix prev→cur                                   | 650 ms ease-in-out cubic                      |
+| Element                                     | Animates                                              | Spring (stiffness / damping)                  |
+| ------------------------------------------- | ----------------------------------------------------- | --------------------------------------------- |
+| Sidebar mode / hover reveal (⌘S, left edge) | panel x −280→0 + opacity; layout spacer width 264→0   | 380 / 36 · `duration: 0` under reduced motion |
+| Space column on Space switch                | opacity, x 12→0                                       | 420 / 36                                      |
+| Palette                                     | scrim opacity 150 ms; card opacity, y −14, scale 0.98 | 480 / 34                                      |
+| Find bar, permission banner                 | opacity, y −8 in / −6 out                             | 500 / 34                                      |
+| Tab items                                   | y −6 in, x −14 out, layout on reorder                 | 500 / 34                                      |
+| Downloads flyout, Space editor, Settings    | opacity, y 10, scale 0.98                             | 460 / 32                                      |
+| Aurora palette change                       | shader mix prev→cur                                   | 650 ms ease-in-out cubic                      |
 
 ### Aurora backdrop runtime
 

@@ -5,6 +5,7 @@ import type { HistoryStore } from '../services/db/history'
 import type { ArchiveStore } from '../services/db/archive'
 import type { DownloadsService } from '../services/downloads'
 import type { PermissionService } from '../services/permissions'
+import type { UpdaterService } from '../services/updater'
 import { handleInvoke } from './router'
 
 interface HandlerContext {
@@ -13,6 +14,7 @@ interface HandlerContext {
   archive: ArchiveStore
   downloads: DownloadsService
   permissions: PermissionService
+  updater: UpdaterService
   getSettings: () => AuroraSettings
   setSettings: (patch: Partial<AuroraSettings>) => AuroraSettings
   win: BrowserWindow
@@ -78,6 +80,11 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
 
   handleInvoke('settings:get', () => ctx.getSettings())
   handleInvoke('settings:set', (req) => ctx.setSettings(req))
+
+  handleInvoke('updates:get', () => ctx.updater.get())
+  handleInvoke('updates:check', () => ctx.updater.check())
+  handleInvoke('updates:install', () => ctx.updater.install())
+  handleInvoke('updates:openReleases', () => ctx.updater.openReleases())
 
   handleInvoke('ui:setPageBounds', (req) => manager.setPageBounds(req))
   handleInvoke('ui:overlay', (req) => manager.setOverlayShown(req.shown))

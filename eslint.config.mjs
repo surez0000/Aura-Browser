@@ -12,6 +12,22 @@ export default ts.config(
     rules: reactHooks.configs.recommended.rules,
   },
   {
+    // Build-time helpers run by Electron/Node directly (CommonJS).
+    files: ['scripts/**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        require: 'readonly',
+        module: 'writable',
+        __dirname: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        process: 'readonly',
+      },
+    },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+  {
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },

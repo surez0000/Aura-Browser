@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Lock, Search, Star, TriangleAlert } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
 import { displayLabel, normalizeInput } from '@/lib/url'
+import { useSettings } from '@/state/settings'
 import { useTabs, selectActiveTab, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
@@ -45,7 +46,7 @@ export function UrlPill(): React.JSX.Element {
   }, [editing])
 
   const submit = (): void => {
-    const url = normalizeInput(value)
+    const url = normalizeInput(value, useSettings.getState().settings.searchEngine)
     if (url) {
       if (active) void invoke('tabs:navigate', { tabId: active.id, url })
       else void invoke('tabs:create', { url, activate: true })

@@ -4,14 +4,31 @@ An Arc-inspired desktop browser with an original **Aurora Glass** look — a rea
 Chromium engine (Electron + `WebContentsView` per tab) under a frameless chrome
 built with React, TypeScript, and design tokens.
 
-> Phases (a)–(c) are complete: shell, tab engine, sidebar, command palette
-> (tabs/history/favorites/actions), Spaces with per-space favorites + pinned +
-> Today, incognito Space, Today auto-archive, find-in-page, downloads panel,
-> in-chrome permission prompts, session restore, a 3-OS test rig, and the
-> Aurora Glass theme — per-Space WebGL aurora palettes, light/dark/system,
-> WCAG AA proven in CI, spring motion with a reduced-motion audit.
-> See [docs/PHASES.md](docs/PHASES.md) for the roadmap and
-> [docs/DESIGN-SPEC.md](docs/DESIGN-SPEC.md) for the design system.
+> Phases (a)–(c) are complete and the first installable build (0.1.0) is
+> packaged: shell, tab engine, sidebar, command palette, Spaces, incognito,
+> Today auto-archive, find-in-page, downloads, in-chrome permission prompts,
+> session restore, the Aurora Glass theme (per-Space WebGL palettes,
+> light/dark/system, WCAG AA proven in CI), a Settings panel (search engine,
+> sidebar always-visible / show-on-hover, appearance, auto-archive), and an
+> in-app updater. See [docs/PHASES.md](docs/PHASES.md) for the roadmap,
+> [docs/DESIGN-SPEC.md](docs/DESIGN-SPEC.md) for the design system, and
+> [docs/RELEASING.md](docs/RELEASING.md) for versioning and releases.
+
+## Install
+
+Installers are attached to each GitHub Release once `build.publish` in
+`package.json` points at the repository (see [docs/RELEASING.md](docs/RELEASING.md)):
+a DMG for macOS, a one-click installer for Windows, and an AppImage or .deb for
+Linux. Installed copies check for a newer release on launch and every six
+hours; when one has downloaded, the sidebar offers **Restart to update**.
+
+macOS builds are unsigned until a Developer ID is added, so the first launch is
+right-click → **Open**, and macOS updates are a manual download — the Settings
+panel says so and links to the release page. To build an installer yourself:
+
+```bash
+npm run dist
+```
 
 ## Quick start
 
@@ -28,6 +45,9 @@ npm run dev        # hot-reloading chrome UI + Electron
 | `npm run lint`      | ESLint (typescript-eslint + react-hooks)           |
 | `npm run test:unit` | Vitest: stores, IPC contract, keymap, URL, WCAG AA |
 | `npm run test:e2e`  | Build, then Playwright drives the real app         |
+| `npm run dist`      | Installers for this OS into `dist/` (unsigned)     |
+| `npm run release`   | Same, and publish to GitHub Releases (CI uses it)  |
+| `npm run icon`      | Re-render `build/icon.png` from `build/icon.svg`   |
 
 ## Architecture
 
@@ -64,7 +84,9 @@ Key decisions (full rationale in [docs/adr/](docs/adr/)):
 - Every IPC channel is allowlisted in [src/shared/ipc-contract.ts](src/shared/ipc-contract.ts)
   and zod-validated in the main process; only the chrome window may invoke.
 - Site permissions are deny-by-default with a per-request prompt.
-- No telemetry. Default search is DuckDuckGo. Nothing leaves the machine.
+- No telemetry. Default search is DuckDuckGo (changeable in Settings). Nothing
+  leaves the machine except the update check, which fetches a version manifest
+  from the release host and carries no identifiers.
 
 ## Layout of the repo
 
@@ -75,16 +97,19 @@ src/renderer   the chrome UI (React + Tailwind v4 over design tokens)
 src/shared     types + the IPC contract, imported by all three
 tests/unit     Vitest
 tests/e2e      Playwright, driving the built app with local fixtures
-docs           phase plan, design spec, ADRs
+docs           phase plan, design spec, ADRs, releasing guide
+build          app icon (SVG source + rendered PNG) for electron-builder
+scripts        build helpers (icon renderer)
 ```
 
 ## Keyboard shortcuts
 
-⌘T palette · ⌘L edit address · ⌘S toggle sidebar · ⌘F find in page ·
+⌘T palette · ⌘L edit address · ⌘S sidebar fixed ↔ show-on-hover · ⌘F find in page ·
 ⌘G / ⇧⌘G find next/previous · ⌘J downloads · ⌘D toggle favorite ·
 ⇧⌘N incognito · ⌘W close tab · ⇧⌘T reopen closed · ⌘R / ⇧⌘R reload ·
 ⌘[ / ⌘] back/forward · ⌃Tab / ⌃⇧Tab next/previous tab · ⌘1–9 pick tab ·
-⌃1–9 switch space · ⌘+/−/0 zoom · ⌥⌘I DevTools. (Ctrl on Windows/Linux.)
+⌃1–9 switch space · ⌘+/−/0 zoom · ⌘, settings · ⌥⌘I DevTools. (Ctrl on
+Windows/Linux.)
 
 ## Constraints honored
 

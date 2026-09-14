@@ -1,20 +1,24 @@
-const SEARCH_URL = 'https://duckduckgo.com/?q='
+import { buildSearchUrl, DEFAULT_SEARCH_ENGINE, type SearchEngineId } from '@shared/search'
 
 const SCHEME_RE = /^[a-zA-Z][a-zA-Z0-9+.-]*:/
 const DOMAIN_RE = /^[^\s/]+\.[^\s]{2,}(\/\S*)?$/
 const LOCALHOST_RE = /^localhost(:\d+)?(\/\S*)?$/
 const IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/\S*)?$/
 
-export function searchUrl(query: string): string {
-  return `${SEARCH_URL}${encodeURIComponent(query)}`
+export function searchUrl(query: string, engine: SearchEngineId = DEFAULT_SEARCH_ENGINE): string {
+  return buildSearchUrl(query, engine)
 }
 
 /**
  * Turn palette/pill input into a navigable URL.
- * Anything not obviously a URL becomes a DuckDuckGo search (privacy default).
- * Only http(s)/about:blank ever come back — other schemes are searched, not run.
+ * Anything not obviously a URL becomes a web search with the chosen provider
+ * (DuckDuckGo by default). Only http(s)/about:blank ever come back — other
+ * schemes are searched, not run.
  */
-export function normalizeInput(raw: string): string | null {
+export function normalizeInput(
+  raw: string,
+  engine: SearchEngineId = DEFAULT_SEARCH_ENGINE,
+): string | null {
   const input = raw.trim()
   if (!input) return null
 
@@ -26,13 +30,13 @@ export function normalizeInput(raw: string): string | null {
   if (SCHEME_RE.test(input)) {
     if (/^https?:\/\//i.test(input)) return input
     if (input === 'about:blank') return input
-    return searchUrl(input)
+    return searchUrl(input, engine)
   }
 
   if (DOMAIN_RE.test(input)) {
     return `https://${input}`
   }
-  return searchUrl(input)
+  return searchUrl(input, engine)
 }
 
 /** Compact label for the URL pill. */

@@ -12,12 +12,13 @@ import { launchAurora, modifierKey } from './helpers'
 
 type Page = import('playwright').Page
 
-const SIDEBAR_WIDTH = `document.querySelector('[data-testid="sidebar"]').getBoundingClientRect().width`
+/** The panel slides off-screen (transform), so its right edge tells the story. */
+const SIDEBAR_RIGHT = `document.querySelector('[data-testid="sidebar"]').getBoundingClientRect().right`
 
-function widthAfterFrames(chrome: Page, frames: number): Promise<number> {
+function rightEdgeAfterFrames(chrome: Page, frames: number): Promise<number> {
   const nested = Array.from({ length: frames }).reduce<string>(
     (inner) => `requestAnimationFrame(() => ${inner})`,
-    `r(${SIDEBAR_WIDTH})`,
+    `r(${SIDEBAR_RIGHT})`,
   )
   return chrome.evaluate(`new Promise((r) => ${nested})`)
 }
@@ -30,12 +31,12 @@ test('reduced motion: the sidebar collapse completes within a frame', async () =
     expect(await chrome.evaluate(`matchMedia('(prefers-reduced-motion: reduce)').matches`)).toBe(
       true,
     )
-    expect(await chrome.evaluate(SIDEBAR_WIDTH)).toBeGreaterThan(200)
+    expect(await chrome.evaluate(SIDEBAR_RIGHT)).toBeGreaterThan(200)
 
     await chrome.keyboard.press(`${modifierKey()}+s`)
-    expect(await widthAfterFrames(chrome, 3)).toBeLessThan(6)
+    expect(await rightEdgeAfterFrames(chrome, 3)).toBeLessThanOrEqual(0)
     await chrome.keyboard.press(`${modifierKey()}+s`)
-    expect(await widthAfterFrames(chrome, 3)).toBeGreaterThan(200)
+    expect(await rightEdgeAfterFrames(chrome, 3)).toBeGreaterThan(200)
   } finally {
     await app.close()
   }
@@ -46,14 +47,16 @@ test('frame-time probe: sidebar spring and Space switch run without long frames'
   try {
     // Control: with motion on, the spring is still mid-flight one frame in.
     await chrome.keyboard.press(`${modifierKey()}+s`)
-    expect(await widthAfterFrames(chrome, 1)).toBeGreaterThan(6)
-    await expect.poll(() => chrome.evaluate(SIDEBAR_WIDTH), { timeout: 5_000 }).toBeLessThan(6)
+    expect(await rightEdgeAfterFrames(chrome, 1)).toBeGreaterThan(0)
+    await expect
+      .poll(() => chrome.evaluate(SIDEBAR_RIGHT), { timeout: 5_000 })
+      .toBeLessThanOrEqual(0)
 
     // Sample requestAnimationFrame timestamps across the interactions.
     await chrome.evaluate(
       `window.__frames = []; (function loop(t) { window.__frames.push(t); window.__frameRaf = requestAnimationFrame(loop) })(performance.now())`,
     )
-    await chrome.keyboard.press(`${modifierKey()}+s`) // expand
+    await chrome.keyboard.press(`${modifierKey()}+s`) // back to fixed: slide in
     await chrome.waitForTimeout(500)
     await chrome.getByTestId('space-add').click()
     await chrome.getByTestId('space-name-input').fill('Probe')

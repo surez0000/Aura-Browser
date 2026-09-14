@@ -105,12 +105,35 @@ e2e tests green.
 
 **Exit:** the named extensions work; split/Peek stable under e2e.
 
-## (e) Packaging, onboarding, auto-update
+## (e) Packaging, onboarding, auto-update — ◐ in progress
 
-- electron-builder targets: signed/notarized DMG, NSIS, AppImage + deb;
-  electron-updater.
-- First-run onboarding: import bookmarks from Chrome/Edge (`Bookmarks` JSON)
+Pulled forward ahead of (d) on 2026-09-14 at the owner's request, together
+with two settings they asked for first.
+
+- ✅ Settings panel (⌘, / the gear): appearance, sidebar mode, search engine,
+  auto-archive window, update status. Palette actions mirror every setting.
+- ✅ Search engine setting — DuckDuckGo (default), Google, Bing, Brave Search,
+  Startpage, Ecosia; the palette fallback and the address pill follow it.
+- ✅ Sidebar modes — _Always visible_ / _Show on hover_ (⌘S toggles, persisted).
+  Hover mode collapses the layout spacer, floats the panel in from the left
+  edge over a page snapshot through the ref-counted overlay (ADR-0003), and
+  adds a slim top strip for the traffic lights / window controls.
+- ✅ electron-builder targets: DMG + zip (macOS), one-click NSIS (Windows),
+  AppImage + deb (Linux); app icon rendered from `build/icon.svg`;
+  `npm run dist` locally; `.github/workflows/release.yml` builds on `v*` tags
+  and publishes to GitHub Releases.
+- ✅ electron-updater: checks 15 s after launch and every 6 h; background
+  download; one-click **Restart to update**. Honest states for dev builds, an
+  unconfigured publish target, and unsigned macOS builds (links to the release
+  page instead of failing silently).
+- ✅ Versioning: semver in `package.json`, `npm version` + `v*` tags,
+  `CHANGELOG.md` — see `docs/RELEASING.md`.
+- ☐ Set `build.publish.owner` / `repo` to the real GitHub repository (the
+  `CHANGE_ME` placeholder disables update checks on purpose).
+- ☐ macOS Developer ID signing + notarization — required for in-place macOS
+  updates. Windows code signing optional (SmartScreen warning otherwise).
+- ☐ First-run onboarding: import bookmarks from Chrome/Edge (`Bookmarks` JSON)
   and Firefox (`places.sqlite`); default-browser registration.
-- Telemetry stays at zero.
+- Telemetry stays at zero (the update check carries no identifiers).
 
 **Exit:** clean install → auto-update on all three OSes.

@@ -60,7 +60,7 @@ export function SpaceEditor(): React.JSX.Element | null {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 8, scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 460, damping: 32 }}
-          className="glass absolute right-3 bottom-12 left-3 z-30 rounded-xl p-3 shadow-2xl"
+          className="popover absolute right-3 bottom-12 left-3 z-30 rounded-xl p-3 shadow-2xl"
           data-testid="space-editor"
         >
           <input

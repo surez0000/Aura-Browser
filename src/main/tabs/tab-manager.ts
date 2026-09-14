@@ -568,6 +568,8 @@ export class TabManager {
           snapshotDataUrl = null
         }
       }
+      // Released while capturing (fast open/close): main already reattached.
+      if (!this.overlayShown) return { snapshotDataUrl: null }
       this.detach()
       return { snapshotDataUrl }
     }

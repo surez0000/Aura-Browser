@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { AppWindow, Archive, Clock3, Globe, Search, Star, Zap } from 'lucide-react'
 import type { ArchivedTabRow, HistorySearchRow } from '@shared/models'
+import { searchEngine, type SearchEngineId } from '@shared/search'
+import type { SidebarMode } from '@shared/models'
 import { invoke } from '@/lib/ipc'
+import { holdOverlay, releaseOverlay } from '@/lib/overlay'
+import { selectSearchEngine, useSettings } from '@/state/settings'
+import { setSidebarMode, toggleSidebarMode } from '@/state/sync'
 import { buildActions, composePalette, type PaletteItem, type PaletteItemType } from '@/lib/palette'
 import { useTabs, selectActiveTab } from '@/state/tabs'
 import { useUi } from '@/state/ui'
@@ -33,6 +38,7 @@ export function Palette(): React.JSX.Element {
   const tabs = useTabs((s) => s.tabs)
   const spaces = useTabs((s) => s.spaces)
   const activeSpaceId = useTabs((s) => s.activeSpaceId)
+  const engine = useSettings(selectSearchEngine)
 
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [value, setValue] = useState('')
@@ -60,12 +66,8 @@ export function Palette(): React.JSX.Element {
 
   useEffect(() => {
     if (!open) return
-    const ui = useUi.getState()
-    void invoke('ui:overlay', { shown: true }).then((r) => ui.setPageSnapshot(r.snapshotDataUrl))
-    return () => {
-      ui.setPageSnapshot(null)
-      void invoke('ui:overlay', { shown: false })
-    }
+    void holdOverlay('palette')
+    return () => releaseOverlay('palette')
   }, [open])
 
   useEffect(() => {
@@ -99,6 +101,7 @@ export function Palette(): React.JSX.Element {
     history,
     archived,
     actions: buildActions({ spaces, activeSpaceId, activeTab: active }),
+    searchEngine: engine,
   })
   const selectedIndex = Math.min(selected, Math.max(0, items.length - 1))
 
@@ -131,6 +134,16 @@ export function Palette(): React.JSX.Element {
       })
       return
     }
+    if (actionId.startsWith('search:set:')) {
+      void useSettings
+        .getState()
+        .update({ searchEngine: actionId.slice('search:set:'.length) as SearchEngineId })
+      return
+    }
+    if (actionId.startsWith('sidebar:set:')) {
+      setSidebarMode(actionId.slice('sidebar:set:'.length) as SidebarMode)
+      return
+    }
     if (actionId.startsWith('theme:set:')) {
       void invoke('settings:set', {
         theme: actionId.slice('theme:set:'.length) as 'system' | 'light' | 'dark',
@@ -141,11 +154,17 @@ export function Palette(): React.JSX.Element {
       case 'space:new':
         ui.openSpaceEditor(null)
         break
+      case 'settings:open':
+        ui.toggleSettings()
+        break
+      case 'updates:check':
+        void invoke('updates:check', {})
+        break
       case 'incognito':
         void invoke('spaces:openIncognito', {}).then(() => ui.openPalette('new'))
         break
       case 'sidebar:toggle':
-        ui.toggleSidebar()
+        toggleSidebarMode()
         break
       case 'find:open':
         ui.openFind()
@@ -305,7 +324,7 @@ export function Palette(): React.JSX.Element {
               <span>↑↓ Navigate</span>
               <span>↵ Open</span>
               <span>esc Close</span>
-              <span className="ml-auto">Searches DuckDuckGo</span>
+              <span className="ml-auto">Searches {searchEngine(engine).name}</span>
             </div>
           </motion.div>
         </motion.div>

@@ -1,6 +1,9 @@
+import { useEffect, useRef } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { Archive, Plus } from 'lucide-react'
+import { Archive, Plus, RefreshCw } from 'lucide-react'
 import { isMac, modKeyLabel, invoke } from '@/lib/ipc'
+import { holdOverlay, releaseOverlay } from '@/lib/overlay'
+import { selectSidebarMode, useSettings } from '@/state/settings'
 import { useTabs, tabsOf } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 import { NavCluster } from './NavCluster'
@@ -11,9 +14,16 @@ import { TabSection } from './TabSection'
 import { SpaceSwitcher } from './SpaceSwitcher'
 import { SpaceEditor } from './SpaceEditor'
 import { DownloadsButton, DownloadsFlyout } from './DownloadsFlyout'
+import { SettingsButton, SettingsFlyout } from './SettingsFlyout'
 import { WindowControls } from './WindowControls'
 
 export const SIDEBAR_WIDTH = 264
+/** Gap around the floating panel in show-on-hover mode. */
+const FLOAT_INSET = 8
+/** Pointer must rest on the left edge this long before the panel reveals. */
+const REVEAL_DWELL_MS = 120
+/** Grace period after the pointer leaves before the panel hides. */
+const HIDE_DELAY_MS = 260
 
 function SectionLabel({
   children,
@@ -33,33 +43,141 @@ function SectionLabel({
   )
 }
 
+/**
+ * The sidebar has two modes (a persisted setting, toggled by ⌘S):
+ *  - fixed: part of the layout — a spacer reserves its width and the panel
+ *    sits over the aurora;
+ *  - hover: the spacer collapses, the page takes the full width, and the panel
+ *    floats in over the page when the pointer touches the left edge. Because
+ *    chrome HTML renders under the page's native view (ADR-0003), a revealed
+ *    panel holds the page overlay: the view is swapped for a snapshot for as
+ *    long as the panel is up.
+ */
 export function Sidebar(): React.JSX.Element {
-  const collapsed = useUi((s) => s.sidebarCollapsed)
-  // `width` is neither a transform nor a layout animation, so MotionConfig's
-  // reducedMotion="user" would still spring it — gate it explicitly.
-  const reduceMotion = useReducedMotion()
+  const mode = useSettings(selectSidebarMode)
+  const revealed = useUi((s) => s.sidebarRevealed)
+  const setRevealed = useUi((s) => s.setSidebarRevealed)
+  const popoverOpen = useUi((s) => s.downloadsOpen || s.settingsOpen || s.spaceEditor.open)
+  const updateReady = useUi((s) => s.updateState?.status === 'ready')
+  const updateVersion = useUi((s) => s.updateState?.availableVersion)
   const openPalette = useUi((s) => s.openPalette)
   const activeSpaceId = useTabs((s) => s.activeSpaceId)
   const hasPinned = useTabs((s) => tabsOf(s.tabs, s.activeSpaceId, 'pinned').length > 0)
+  const reduceMotion = useReducedMotion()
+
+  const asideRef = useRef<HTMLElement | null>(null)
+  const hovering = useRef(false)
+  const hideTimer = useRef(0)
+  const revealTimer = useRef(0)
+
+  const floating = mode === 'hover'
+  const visible = !floating || revealed
+  const state = !floating ? 'fixed' : revealed ? 'revealed' : 'hidden'
+
+  // A floating panel covers the page: hold the overlay while it is up.
+  useEffect(() => {
+    if (!(floating && revealed)) return
+    void holdOverlay('sidebar')
+    return () => releaseOverlay('sidebar')
+  }, [floating, revealed])
+
+  const scheduleHide = (): void => {
+    window.clearTimeout(hideTimer.current)
+    hideTimer.current = window.setTimeout(() => {
+      if (hovering.current) return
+      const ui = useUi.getState()
+      if (ui.downloadsOpen || ui.settingsOpen || ui.spaceEditor.open) return
+      // Keep the panel while someone is typing in it (URL pill, Space name);
+      // a focused button after a click is not a reason to stay.
+      const focused = document.activeElement
+      const typing =
+        focused instanceof HTMLInputElement ||
+        focused instanceof HTMLTextAreaElement ||
+        (focused instanceof HTMLElement && focused.isContentEditable)
+      if (typing && asideRef.current?.contains(focused)) return
+      if (focused instanceof HTMLElement && asideRef.current?.contains(focused)) focused.blur()
+      ui.setSidebarRevealed(false)
+    }, HIDE_DELAY_MS)
+  }
+
+  // A popover closing while the pointer is elsewhere lets the panel go.
+  useEffect(() => {
+    if (floating && revealed && !popoverOpen && !hovering.current) scheduleHide()
+  }, [floating, revealed, popoverOpen])
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(hideTimer.current)
+      window.clearTimeout(revealTimer.current)
+    },
+    [],
+  )
+
+  const onHotZoneEnter = (): void => {
+    window.clearTimeout(revealTimer.current)
+    revealTimer.current = window.setTimeout(() => {
+      // Snapshot first, so the panel never slides in *under* the live view.
+      void holdOverlay('sidebar').then(() => setRevealed(true))
+    }, REVEAL_DWELL_MS)
+  }
+  const onHotZoneLeave = (): void => window.clearTimeout(revealTimer.current)
+
+  const spring = reduceMotion
+    ? { duration: 0 }
+    : { type: 'spring' as const, stiffness: 380, damping: 36 }
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: collapsed ? 0 : SIDEBAR_WIDTH, opacity: collapsed ? 0 : 1 }}
-      transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 36 }}
-      className="relative h-full shrink-0 overflow-hidden"
-      data-testid="sidebar"
-      aria-hidden={collapsed}
-    >
-      {/* Fixed inner width so content doesn't reflow while the spring runs. */}
-      <div
-        className="absolute inset-y-0 left-0 flex h-full flex-col gap-2 px-3 pb-3"
+    <>
+      {/* Layout spacer: reserves the panel's width in fixed mode only. */}
+      <motion.div
+        aria-hidden
+        initial={false}
+        animate={{ width: floating ? 0 : SIDEBAR_WIDTH }}
+        transition={spring}
+        className="h-full shrink-0"
+        data-testid="sidebar-spacer"
+      />
+
+      {floating && !revealed && (
+        <div
+          className="absolute inset-y-0 left-0 z-30 w-1.5"
+          onMouseEnter={onHotZoneEnter}
+          onMouseLeave={onHotZoneLeave}
+          data-testid="sidebar-hotzone"
+        />
+      )}
+
+      <motion.aside
+        ref={asideRef}
+        initial={false}
+        animate={{
+          x: visible ? 0 : -(SIDEBAR_WIDTH + FLOAT_INSET * 2),
+          opacity: visible ? 1 : 0,
+        }}
+        transition={spring}
+        onMouseEnter={() => {
+          hovering.current = true
+          window.clearTimeout(hideTimer.current)
+        }}
+        onMouseLeave={() => {
+          hovering.current = false
+          if (floating) scheduleHide()
+        }}
+        className={
+          floating
+            ? 'floating-panel absolute top-2 bottom-2 left-2 z-40 flex flex-col gap-2 rounded-2xl px-3 pb-3 shadow-2xl'
+            : 'absolute inset-y-0 left-0 z-40 flex flex-col gap-2 px-3 pb-3'
+        }
         style={{ width: SIDEBAR_WIDTH }}
+        aria-hidden={!visible}
+        inert={!visible}
+        data-state={state}
+        data-testid="sidebar"
       >
         <div className="drag flex h-10 shrink-0 items-center">
           {isMac() ? <div className="w-16" /> : null}
           <div className="flex-1" />
-          {!isMac() && <WindowControls />}
+          {!isMac() && !floating && <WindowControls />}
         </div>
 
         <NavCluster />
@@ -103,6 +221,19 @@ export function Sidebar(): React.JSX.Element {
           </div>
         </motion.div>
 
+        {updateReady && (
+          <button
+            type="button"
+            onClick={() => void invoke('updates:install', {})}
+            className="no-drag flex shrink-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] font-medium"
+            style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
+            data-testid="update-ready"
+          >
+            <RefreshCw size={13} />
+            <span>Restart to update{updateVersion ? ` to ${updateVersion}` : ''}</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => openPalette('new')}
@@ -120,12 +251,13 @@ export function Sidebar(): React.JSX.Element {
         <div className="flex h-8 shrink-0 items-center gap-2">
           <DownloadsButton />
           <SpaceSwitcher />
-          <div className="w-7 shrink-0" />
+          <SettingsButton />
         </div>
 
         <DownloadsFlyout />
+        <SettingsFlyout />
         <SpaceEditor />
-      </div>
-    </motion.aside>
+      </motion.aside>
+    </>
   )
 }

@@ -16,7 +16,11 @@
     "test:unit": "vitest run",
     "test": "npm run test:unit",
     "test:e2e": "npm run build && playwright test",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "npm run build && electron-builder --publish never",
+    "dist:dir": "npm run build && electron-builder --dir",
+    "release": "npm run build && electron-builder --publish always",
+    "icon": "electron scripts/make-icon.cjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -47,6 +51,68 @@
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
+    "electron-updater": "^6.8.9",
     "zod": "^4.6.2"
+  },
+  "build": {
+    "appId": "dev.aurora.browser",
+    "productName": "Aurora",
+    "copyright": "Copyright © 2026 Aurora contributors",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "CHANGE_ME",
+      "repo": "aurora",
+      "releaseType": "release"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg"
+        },
+        {
+          "target": "zip"
+        }
+      ],
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "notarize": false
+    },
+    "dmg": {
+      "sign": false
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Network",
+      "maintainer": "Aurora contributors"
+    }
   }
 }

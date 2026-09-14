@@ -9,6 +9,7 @@ import { HistoryStore } from './services/db/history'
 import { ArchiveStore } from './services/db/archive'
 import { DownloadsService } from './services/downloads'
 import { PermissionService } from './services/permissions'
+import { UpdaterService } from './services/updater'
 import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
 import { TabManager } from './tabs/tab-manager'
 import { INCOGNITO_PARTITION } from './tabs/tab'
@@ -28,6 +29,7 @@ if (process.env.AURORA_FORCE_REDUCED_MOTION === '1') {
   app.commandLine.appendSwitch('force-prefers-reduced-motion')
 }
 app.setName('Aurora')
+app.setAboutPanelOptions({ applicationName: 'Aurora', applicationVersion: app.getVersion() })
 
 let win: BrowserWindow | null = null
 let manager: TabManager | null = null
@@ -90,6 +92,7 @@ function bootstrap(): void {
   const permissions = new PermissionService(kv, (request) =>
     pushToChrome('permissions:request', request),
   )
+  const updater = new UpdaterService((state) => pushToChrome('updates:state', state))
   const incognitoSession = session.fromPartition(INCOGNITO_PARTITION)
   for (const [ses, persist] of [
     [session.defaultSession, true],
@@ -105,11 +108,13 @@ function bootstrap(): void {
     archive,
     downloads,
     permissions,
+    updater,
     getSettings: () => settings,
     setSettings: (patch) => {
       settings = { ...settings, ...patch }
       kv.set('settings', settings)
       if (patch.theme !== undefined) nativeTheme.themeSource = settings.theme
+      pushToChrome('settings:changed', settings)
       return settings
     },
     win: w,
@@ -118,6 +123,7 @@ function bootstrap(): void {
     manager: m,
     getWindow: () => win,
     sendCommand: (id) => pushToChrome('ui:command', { id }),
+    checkForUpdates: () => void updater.check(),
   })
 
   hardenChromeNavigation(w)
@@ -129,6 +135,7 @@ function bootstrap(): void {
   w.webContents.once('did-finish-load', () => {
     restoreSession(kv, m)
     m.autoArchive(settings.todayArchiveHours)
+    updater.start()
   })
 
   setInterval(() => m.autoArchive(settings.todayArchiveHours), AUTO_ARCHIVE_SWEEP_MS)

@@ -1,4 +1,4 @@
-import { Menu, type BrowserWindow, type MenuItemConstructorOptions } from 'electron'
+import { app, Menu, type BrowserWindow, type MenuItemConstructorOptions } from 'electron'
 import type { RendererCommandId } from '@shared/ipc-contract'
 import { KEYMAP, type KeyCommand } from '@shared/keymap'
 import type { TabManager } from './tabs/tab-manager'
@@ -8,6 +8,7 @@ interface MenuContext {
   manager: TabManager
   getWindow: () => BrowserWindow | null
   sendCommand: (id: RendererCommandId) => void
+  checkForUpdates: () => void
 }
 
 function mustKey(id: string): KeyCommand {
@@ -64,8 +65,35 @@ export function installMenu(ctx: MenuContext): void {
     })
   }
 
+  const checkForUpdates: MenuItemConstructorOptions = {
+    label: 'Check for Updates…',
+    click: () => ctx.checkForUpdates(),
+  }
+  const appMenu: MenuItemConstructorOptions[] = [
+    {
+      label: app.name,
+      submenu: [
+        { role: 'about' },
+        checkForUpdates,
+        { type: 'separator' },
+        rendererItem('settings:toggle'),
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    },
+  ]
+  const helpMenu: MenuItemConstructorOptions[] = [
+    { label: 'Help', submenu: [checkForUpdates, { role: 'about' }] },
+  ]
+
   const template: MenuItemConstructorOptions[] = [
-    ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
+    ...(process.platform === 'darwin' ? appMenu : []),
     {
       label: 'File',
       submenu: [
@@ -101,6 +129,7 @@ export function installMenu(ctx: MenuContext): void {
         { type: 'separator' },
         rendererItem('sidebar:toggle'),
         rendererItem('downloads:toggle'),
+        ...(process.platform === 'darwin' ? [] : [rendererItem('settings:toggle')]),
         { type: 'separator' },
         mainItem('tab:devtools', () => m.getTab(undefined)?.openDevTools()),
         ...(isDev
@@ -145,6 +174,7 @@ export function installMenu(ctx: MenuContext): void {
         ...tabPickItems,
       ],
     },
+    ...(process.platform === 'darwin' ? [] : helpMenu),
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))

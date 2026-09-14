@@ -1,4 +1,5 @@
 import { z, type ZodType } from 'zod'
+import { SEARCH_ENGINE_IDS } from '@shared/search'
 import type { InvokeChannel } from '@shared/ipc-contract'
 
 const id = z.string().min(1).max(64)
@@ -94,8 +95,15 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
         .max(24 * 30)
         .optional(),
       theme: z.enum(['system', 'light', 'dark']).optional(),
+      searchEngine: z.enum(SEARCH_ENGINE_IDS).optional(),
+      sidebarMode: z.enum(['fixed', 'hover']).optional(),
     })
     .strict(),
+
+  'updates:get': empty,
+  'updates:check': empty,
+  'updates:install': empty,
+  'updates:openReleases': empty,
 
   'ui:setPageBounds': z
     .object({

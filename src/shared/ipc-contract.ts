@@ -8,6 +8,7 @@ import type {
   PermissionRequestInfo,
   TabKind,
   TabsSnapshot,
+  UpdateState,
 } from './models'
 
 /**
@@ -26,6 +27,7 @@ export type RendererCommandId =
   | 'find:prev'
   | 'downloads:toggle'
   | 'space:new'
+  | 'settings:toggle'
 
 /** invoke(channel, req) -> Promise<res> */
 export interface InvokeMap {
@@ -84,6 +86,13 @@ export interface InvokeMap {
   'settings:get': { req: Record<string, never>; res: AuroraSettings }
   'settings:set': { req: Partial<AuroraSettings>; res: AuroraSettings }
 
+  /** Auto-update (electron-updater); no-ops with status 'unsupported' in dev builds. */
+  'updates:get': { req: Record<string, never>; res: UpdateState }
+  'updates:check': { req: Record<string, never>; res: UpdateState }
+  /** Quit and install a downloaded update (status 'ready'). */
+  'updates:install': { req: Record<string, never>; res: void }
+  'updates:openReleases': { req: Record<string, never>; res: void }
+
   /** Where the page's WebContentsView should sit, in window coordinates (DIP). */
   'ui:setPageBounds': { req: { x: number; y: number; width: number; height: number }; res: void }
   /**
@@ -102,6 +111,8 @@ export interface PushMap {
   'find:result': FindResult
   'permissions:request': PermissionRequestInfo
   'downloads:changed': DownloadInfo[]
+  'settings:changed': AuroraSettings
+  'updates:state': UpdateState
 }
 
 export const INVOKE_CHANNELS = [
@@ -139,6 +150,10 @@ export const INVOKE_CHANNELS = [
   'downloads:action',
   'settings:get',
   'settings:set',
+  'updates:get',
+  'updates:check',
+  'updates:install',
+  'updates:openReleases',
   'ui:setPageBounds',
   'ui:overlay',
   'window:control',
@@ -151,6 +166,8 @@ export const PUSH_CHANNELS = [
   'find:result',
   'permissions:request',
   'downloads:changed',
+  'settings:changed',
+  'updates:state',
 ] as const satisfies ReadonlyArray<keyof PushMap>
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

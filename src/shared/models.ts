@@ -1,3 +1,6 @@
+import type { SearchEngineId } from './search'
+import type { ThemeMode } from './theme'
+
 /** Security indication shown on the URL pill. */
 export type SecurityState = 'secure' | 'insecure' | 'neutral'
 
@@ -120,13 +123,50 @@ export interface FindResult {
   matches: number
 }
 
-import type { ThemeMode } from './theme'
+export type SidebarMode = 'fixed' | 'hover'
 
 export interface AuroraSettings {
   /** Today tabs idle longer than this are auto-archived; 0 disables. */
   todayArchiveHours: number
   /** Appearance: follow the OS or force light/dark. */
   theme: ThemeMode
+  /** Provider used when palette / address input is not a URL. */
+  searchEngine: SearchEngineId
+  /**
+   * 'fixed' keeps the sidebar in the layout; 'hover' hides it until the
+   * pointer touches the left edge, then floats it over the page.
+   */
+  sidebarMode: SidebarMode
 }
 
-export const DEFAULT_SETTINGS: AuroraSettings = { todayArchiveHours: 12, theme: 'system' }
+export const DEFAULT_SETTINGS: AuroraSettings = {
+  todayArchiveHours: 12,
+  theme: 'system',
+  searchEngine: 'duckduckgo',
+  sidebarMode: 'fixed',
+}
+
+export type UpdateStatus =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'downloading'
+  | 'ready'
+  | 'up-to-date'
+  | 'error'
+  | 'unsupported'
+
+/** Auto-update state, owned by the main process and mirrored in the chrome. */
+export interface UpdateState {
+  status: UpdateStatus
+  currentVersion: string
+  availableVersion: string | null
+  /** Download progress 0–100 while 'downloading'. */
+  percent: number | null
+  /** Human-readable detail for 'error' / 'unsupported'. */
+  message: string | null
+  /** The release page, when a publish target is configured. */
+  releasesUrl: string | null
+  /** Milliseconds since epoch of the last completed check. */
+  checkedAt: number | null
+}

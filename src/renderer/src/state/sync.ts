@@ -1,9 +1,26 @@
 import { useEffect } from 'react'
 import type { RendererCommandId } from '@shared/ipc-contract'
 import { matchCombo } from '@shared/keymap'
+import type { SidebarMode } from '@shared/models'
 import { invoke, on, isMac } from '@/lib/ipc'
+import { useSettings } from './settings'
 import { useTabs } from './tabs'
 import { useUi } from './ui'
+
+/**
+ * ⌘S / "Toggle Sidebar": flips the persisted sidebar mode. Hover mode starts
+ * hidden (the shortcut means "get it out of the way"); the settings panel
+ * passes `revealed: true` because the pointer is inside the panel.
+ */
+export function setSidebarMode(mode: SidebarMode, opts: { revealed?: boolean } = {}): void {
+  useUi.getState().setSidebarRevealed(mode === 'hover' && (opts.revealed ?? false))
+  void useSettings.getState().update({ sidebarMode: mode })
+}
+
+export function toggleSidebarMode(): void {
+  const current = useSettings.getState().settings.sidebarMode
+  setSidebarMode(current === 'fixed' ? 'hover' : 'fixed')
+}
 
 export function runRendererCommand(id: RendererCommandId): void {
   const ui = useUi.getState()
@@ -15,7 +32,7 @@ export function runRendererCommand(id: RendererCommandId): void {
       ui.requestUrlEdit()
       break
     case 'sidebar:toggle':
-      ui.toggleSidebar()
+      toggleSidebarMode()
       break
     case 'find:open':
       ui.openFind()
@@ -36,6 +53,9 @@ export function runRendererCommand(id: RendererCommandId): void {
     case 'space:new':
       ui.openSpaceEditor(null)
       break
+    case 'settings:toggle':
+      ui.toggleSettings()
+      break
   }
 }
 
@@ -48,16 +68,39 @@ export function useIpcSync(): void {
   useEffect(() => {
     const { applySnapshot } = useTabs.getState()
     const ui = useUi.getState()
+    const settings = useSettings.getState()
 
     void invoke('state:get', {}).then(applySnapshot)
     void invoke('downloads:list', {}).then(ui.setDownloads)
+    void invoke('settings:get', {}).then(settings.apply)
+    void invoke('updates:get', {}).then(ui.setUpdateState)
 
     const offs = [
-      on('tabs:state', applySnapshot),
+      on('tabs:state', (snapshot) => {
+        const before = useTabs.getState()
+        applySnapshot(snapshot)
+        // Hover sidebar: picking another tab means "show me that page" — let
+        // the panel slide away so the live view returns. Closing a tab keeps
+        // the panel (its neighbour activates) but drops the stale snapshot.
+        const u = useUi.getState()
+        if (
+          snapshot.activeTabId !== before.activeTabId &&
+          u.sidebarRevealed &&
+          useSettings.getState().settings.sidebarMode === 'hover'
+        ) {
+          const previousStillOpen = before.activeTabId
+            ? snapshot.tabs.some((t) => t.id === before.activeTabId)
+            : true
+          if (previousStillOpen) u.setSidebarRevealed(false)
+          else u.setPageSnapshot(null)
+        }
+      }),
       on('ui:command', ({ id }) => runRendererCommand(id)),
       on('find:result', (result) => useUi.getState().setFindResult(result)),
       on('permissions:request', (request) => useUi.getState().pushPermission(request)),
       on('downloads:changed', (list) => useUi.getState().setDownloads(list)),
+      on('settings:changed', (next) => useSettings.getState().apply(next)),
+      on('updates:state', (state) => useUi.getState().setUpdateState(state)),
     ]
 
     const onKeyDown = (e: KeyboardEvent): void => {

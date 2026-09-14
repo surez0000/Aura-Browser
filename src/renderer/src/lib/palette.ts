@@ -1,5 +1,11 @@
 import type { ArchivedTabRow, HistorySearchRow, SpaceInfo, TabInfo } from '@shared/models'
 import { fuzzyBest, fuzzyScore } from './fuzzy'
+import {
+  DEFAULT_SEARCH_ENGINE,
+  SEARCH_ENGINES,
+  searchEngine,
+  type SearchEngineId,
+} from '@shared/search'
 import { displayLabel, normalizeInput, searchUrl } from './url'
 
 export type PaletteItemType =
@@ -32,6 +38,8 @@ export interface PaletteContext {
   history: HistorySearchRow[]
   archived: ArchivedTabRow[]
   actions: ActionDef[]
+  /** Provider for the web-search fallback (settings). */
+  searchEngine?: SearchEngineId
   limit?: number
 }
 
@@ -52,6 +60,23 @@ export function buildActions(ctx: {
       hint: '⇧⌘N',
     },
     { id: 'sidebar:toggle', title: 'Toggle Sidebar', hint: '⌘S' },
+    {
+      id: 'sidebar:set:fixed',
+      title: 'Sidebar: Always Visible',
+      keywords: 'settings pin fixed tabs bar show',
+    },
+    {
+      id: 'sidebar:set:hover',
+      title: 'Sidebar: Show on Hover',
+      keywords: 'settings hide auto collapse tabs bar edge',
+    },
+    { id: 'settings:open', title: 'Settings…', keywords: 'preferences options', hint: '⌘,' },
+    { id: 'updates:check', title: 'Check for Updates…', keywords: 'version upgrade release new' },
+    ...Object.values(SEARCH_ENGINES).map((e) => ({
+      id: `search:set:${e.id}`,
+      title: `Search Engine: ${e.name}`,
+      keywords: 'settings default search provider',
+    })),
     { id: 'find:open', title: 'Find in Page', keywords: 'search text', hint: '⌘F' },
     { id: 'downloads:toggle', title: 'Show Downloads', hint: '⌘J' },
     { id: 'tab:reopen', title: 'Reopen Closed Tab', keywords: 'restore undo', hint: '⇧⌘T' },
@@ -103,8 +128,6 @@ export function buildActions(ctx: {
   return actions
 }
 
-const SEARCH_PREFIX = searchUrl('')
-
 /** Pure ranking over every source; execution is mapped by the Palette UI. */
 export function composePalette(ctx: PaletteContext): PaletteItem[] {
   const query = ctx.query.trim()
@@ -139,8 +162,9 @@ export function composePalette(ctx: PaletteContext): PaletteItem[] {
   }
 
   const items: PaletteItem[] = []
-  const direct = normalizeInput(query)
-  const directIsSearch = !!direct && direct.startsWith(SEARCH_PREFIX)
+  const engine = ctx.searchEngine ?? DEFAULT_SEARCH_ENGINE
+  const direct = normalizeInput(query, engine)
+  const directIsSearch = !!direct && direct === searchUrl(query, engine)
 
   if (direct && !directIsSearch) {
     const explicit = /^https?:\/\//i.test(query) || query === 'about:blank'
@@ -235,9 +259,9 @@ export function composePalette(ctx: PaletteContext): PaletteItem[] {
   items.push({
     key: 'search',
     type: 'search',
-    title: `Search DuckDuckGo for “${query}”`,
+    title: `Search ${searchEngine(engine).name} for “${query}”`,
     hint: ctx.mode === 'edit' ? 'Go' : 'New tab',
-    payload: { url: searchUrl(query) },
+    payload: { url: searchUrl(query, engine) },
     score: 0.45,
   })
 
