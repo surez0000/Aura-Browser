@@ -7,6 +7,8 @@ a release is cut.
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-09-15
+
 ### Added
 
 - Update progress is prominent but never in the way: a card in the sidebar
