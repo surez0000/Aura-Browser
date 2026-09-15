@@ -7,6 +7,8 @@ a release is cut.
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-09-15
+
 ### Changed
 
 - **Spaces are isolated like Chrome profiles.** Each Space has its own cookies,
