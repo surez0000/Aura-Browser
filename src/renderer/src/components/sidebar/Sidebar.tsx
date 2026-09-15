@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { motion } from 'motion/react'
 import { Archive, Plus } from 'lucide-react'
 import { isMac, modKeyLabel, invoke } from '@/lib/ipc'
 import { holdOverlay, releaseOverlay } from '@/lib/overlay'
+import { usePrefersReducedMotion } from '@/lib/use-reduced-motion'
 import { selectSidebarMode, useSettings } from '@/state/settings'
 import { useTabs, tabsOf } from '@/state/tabs'
 import { useUi } from '@/state/ui'
@@ -64,7 +65,7 @@ export function Sidebar(): React.JSX.Element {
   const openPalette = useUi((s) => s.openPalette)
   const activeSpaceId = useTabs((s) => s.activeSpaceId)
   const hasPinned = useTabs((s) => tabsOf(s.tabs, s.activeSpaceId, 'pinned').length > 0)
-  const reduceMotion = useReducedMotion()
+  const reduceMotion = usePrefersReducedMotion()
 
   const asideRef = useRef<HTMLElement | null>(null)
   const hovering = useRef(false)

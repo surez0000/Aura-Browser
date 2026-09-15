@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { usePrefersReducedMotion } from '@/lib/use-reduced-motion'
 import { cssFallbackGradient, paletteVec3, type AuroraPalette } from '@/theme/aurora'
 
 /**
@@ -127,19 +128,6 @@ function blobsArray(palette: AuroraPalette): Float32Array {
 
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-}
-
-function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(
-    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  )
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const listener = (): void => setReduced(media.matches)
-    media.addEventListener('change', listener)
-    return () => media.removeEventListener('change', listener)
-  }, [])
-  return reduced
 }
 
 export function AuroraBackdrop({

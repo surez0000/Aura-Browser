@@ -66,6 +66,8 @@ export class TabManager {
   private readonly closedStack: Array<{ url: string; spaceId: string; kind: TabKind }> = []
   private emitScheduled = false
   private readonly preparedPartitions = new Set<string>()
+  private readonly sessions = new Map<string, Session>()
+  private readonly cookieFlushTimers = new Map<string, NodeJS.Timeout>()
   private lastFindTabId: string | null = null
 
   private readonly host: TabHost = {
@@ -141,7 +143,34 @@ export class TabManager {
     if (this.preparedPartitions.has(partition)) return
     this.preparedPartitions.add(partition)
     const ses = partition ? session.fromPartition(partition) : session.defaultSession
+    this.sessions.set(partition, ses)
     this.deps.attachSession(ses, { persist })
+    if (persist) {
+      // Chromium batches cookie writes for up to ~30 s and relies on a graceful
+      // shutdown to commit them; a login made just before quitting (or a crash)
+      // could vanish. Commit shortly after every change instead.
+      ses.cookies.on('changed', () => {
+        clearTimeout(this.cookieFlushTimers.get(partition))
+        this.cookieFlushTimers.set(
+          partition,
+          setTimeout(() => void ses.cookies.flushStore().catch(() => undefined), 1_000),
+        )
+      })
+    }
+  }
+
+  /** Commit cookies and DOM storage of every Space to disk (called on quit). */
+  async flushSessions(): Promise<void> {
+    await Promise.all(
+      [...this.sessions.values()].map(async (ses) => {
+        try {
+          ses.flushStorageData()
+          await ses.cookies.flushStore()
+        } catch {
+          // best effort
+        }
+      }),
+    )
   }
 
   renameSpace(spaceId: string, name: string): void {
