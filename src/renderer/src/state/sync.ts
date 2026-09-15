@@ -13,8 +13,34 @@ import { useUi } from './ui'
  * passes `revealed: true` because the pointer is inside the panel.
  */
 export function setSidebarMode(mode: SidebarMode, opts: { revealed?: boolean } = {}): void {
-  useUi.getState().setSidebarRevealed(mode === 'hover' && (opts.revealed ?? false))
+  const ui = useUi.getState()
+  const keepUp = mode === 'hover' && (opts.revealed ?? false)
+  ui.setSidebarRevealed(keepUp)
+  ui.setSidebarHoldLayout(keepUp)
   void useSettings.getState().update({ sidebarMode: mode })
+}
+
+function typingInSidebar(): boolean {
+  const el = document.activeElement
+  const typing =
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLTextAreaElement ||
+    (el instanceof HTMLElement && el.isContentEditable)
+  return typing && !!el.closest('[data-testid="sidebar"]')
+}
+
+/**
+ * Hover mode: a panel revealed by the keyboard (⌘L, ⌘J, ⌘,) has no pointer
+ * inside it to leave, so it would stay up forever. Call this when such an
+ * interaction ends (URL submitted or cancelled, popover closed): if nothing
+ * else keeps the panel — pointer, popover, typing — let it go.
+ */
+export function releaseSidebarIfIdle(): void {
+  const ui = useUi.getState()
+  if (useSettings.getState().settings.sidebarMode !== 'hover' || !ui.sidebarRevealed) return
+  if (ui.sidebarPointerInside || ui.downloadsOpen || ui.settingsOpen || ui.spaceEditor.open) return
+  if (typingInSidebar()) return
+  ui.setSidebarRevealed(false)
 }
 
 export function toggleSidebarMode(): void {
@@ -83,16 +109,27 @@ export function useIpcSync(): void {
         // the panel slide away so the live view returns. Closing a tab keeps
         // the panel (its neighbour activates) but drops the stale snapshot.
         const u = useUi.getState()
-        if (
-          snapshot.activeTabId !== before.activeTabId &&
-          u.sidebarRevealed &&
-          useSettings.getState().settings.sidebarMode === 'hover'
-        ) {
+        const hoverUp = u.sidebarRevealed && useSettings.getState().settings.sidebarMode === 'hover'
+        if (hoverUp && snapshot.activeTabId !== before.activeTabId) {
           const previousStillOpen = before.activeTabId
             ? snapshot.tabs.some((t) => t.id === before.activeTabId)
             : true
           if (previousStillOpen) u.setSidebarRevealed(false)
           else u.setPageSnapshot(null)
+        } else if (hoverUp && snapshot.activeTabId) {
+          // Same tab started navigating under the panel: the snapshot is now
+          // a stale page. Drop it; and if nothing holds the panel, let it go so
+          // the live page shows.
+          const prevTab = before.tabs.find((t) => t.id === snapshot.activeTabId)
+          const nextTab = snapshot.tabs.find((t) => t.id === snapshot.activeTabId)
+          const navigated =
+            !!prevTab &&
+            !!nextTab &&
+            (prevTab.url !== nextTab.url || (!prevTab.isLoading && nextTab.isLoading))
+          if (navigated) {
+            if (u.pageSnapshot) u.setPageSnapshot(null)
+            releaseSidebarIfIdle()
+          }
         }
       }),
       on('ui:command', ({ id }) => runRendererCommand(id)),

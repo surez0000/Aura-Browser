@@ -21,7 +21,7 @@ export const SIDEBAR_WIDTH = 264
 /** Gap around the floating panel in show-on-hover mode. */
 const FLOAT_INSET = 8
 /** Pointer must rest on the left edge this long before the panel reveals. */
-const REVEAL_DWELL_MS = 120
+const REVEAL_DWELL_MS = 90
 /** Grace period after the pointer leaves before the panel hides. */
 const HIDE_DELAY_MS = 260
 
@@ -57,6 +57,8 @@ export function Sidebar(): React.JSX.Element {
   const mode = useSettings(selectSidebarMode)
   const revealed = useUi((s) => s.sidebarRevealed)
   const setRevealed = useUi((s) => s.setSidebarRevealed)
+  const setPointerInside = useUi((s) => s.setSidebarPointerInside)
+  const holdLayout = useUi((s) => s.sidebarHoldLayout)
   const popoverOpen = useUi((s) => s.downloadsOpen || s.settingsOpen || s.spaceEditor.open)
   const updateReady = useUi((s) => s.updateState?.status === 'ready')
   const updateVersion = useUi((s) => s.updateState?.availableVersion)
@@ -73,13 +75,17 @@ export function Sidebar(): React.JSX.Element {
   const floating = mode === 'hover'
   const visible = !floating || revealed
   const state = !floating ? 'fixed' : revealed ? 'revealed' : 'hidden'
+  // Right after fixed → hover the panel keeps its slot until it hides once
+  // (see sidebarHoldLayout); only a panel over the page looks and acts floating.
+  const reservesSpace = !floating || holdLayout
+  const overlapsPage = floating && !holdLayout
 
-  // A floating panel covers the page: hold the overlay while it is up.
+  // A panel over the page holds the overlay (snapshot swap) while it is up.
   useEffect(() => {
-    if (!(floating && revealed)) return
+    if (!(overlapsPage && revealed)) return
     void holdOverlay('sidebar')
     return () => releaseOverlay('sidebar')
-  }, [floating, revealed])
+  }, [overlapsPage, revealed])
 
   const scheduleHide = (): void => {
     window.clearTimeout(hideTimer.current)
@@ -132,7 +138,7 @@ export function Sidebar(): React.JSX.Element {
       <motion.div
         aria-hidden
         initial={false}
-        animate={{ width: floating ? 0 : SIDEBAR_WIDTH }}
+        animate={{ width: reservesSpace ? SIDEBAR_WIDTH : 0 }}
         transition={spring}
         className="h-full shrink-0"
         data-testid="sidebar-spacer"
@@ -157,14 +163,24 @@ export function Sidebar(): React.JSX.Element {
         transition={spring}
         onMouseEnter={() => {
           hovering.current = true
+          setPointerInside(true)
           window.clearTimeout(hideTimer.current)
         }}
         onMouseLeave={() => {
           hovering.current = false
+          setPointerInside(false)
           if (floating) scheduleHide()
         }}
+        onBlur={(e) => {
+          // Keyboard-driven use (⌘L) ends with focus leaving the panel while the
+          // pointer was never inside — that is the moment to let it go.
+          if (floating && revealed && !hovering.current) {
+            const next = e.relatedTarget
+            if (!(next instanceof Node) || !asideRef.current?.contains(next)) scheduleHide()
+          }
+        }}
         className={
-          floating
+          overlapsPage
             ? 'floating-panel absolute top-2 bottom-2 left-2 z-40 flex flex-col gap-2 rounded-2xl px-3 pb-3 shadow-2xl'
             : 'absolute inset-y-0 left-0 z-40 flex flex-col gap-2 px-3 pb-3'
         }
@@ -177,7 +193,7 @@ export function Sidebar(): React.JSX.Element {
         <div className="drag flex h-10 shrink-0 items-center">
           {isMac() ? <div className="w-16" /> : null}
           <div className="flex-1" />
-          {!isMac() && !floating && <WindowControls />}
+          {!isMac() && !overlapsPage && <WindowControls />}
         </div>
 
         <NavCluster />

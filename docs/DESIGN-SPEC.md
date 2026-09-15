@@ -100,6 +100,7 @@ measuring. Adding a token or changing a band without keeping AA fails CI.
 | Palette                | `components/palette/Palette.tsx`                                                                   | scrim + glass card over a page snapshot; theme actions                                                               |
 | SettingsButton/Flyout  | `components/sidebar/SettingsFlyout.tsx`                                                            | appearance, sidebar mode, search engine, auto-archive, update status (segmented controls + selects)                  |
 | TopStrip               | `App.tsx`                                                                                          | hover mode only: drag strip clearing the traffic lights / hosting window controls                                    |
+| LoadingBar             | `components/LoadingBar.tsx`                                                                        | page-load progress in the gap above the card: 40 % on start, 85 % at DOM ready, 100 % + fade on finish               |
 | Theme modules          | `theme/tokens.ts` · `theme/aurora.ts` · `theme/contrast.ts` · `theme/apply.ts` · `shared/theme.ts` | tokens, palette derivation, WCAG math, runtime injection, window ground                                              |
 
 ## Motion
@@ -115,9 +116,10 @@ cross-fade. `MotionConfig reducedMotion="user"` is global.
 | Find bar, permission banner                 | opacity, y −8 in / −6 out                             | 500 / 34                                      |
 | Tab items                                   | y −6 in, x −14 out, layout on reorder                 | 500 / 34                                      |
 | Downloads flyout, Space editor, Settings    | opacity, y 10, scale 0.98                             | 460 / 32                                      |
-| Aura Browser palette change                 | shader mix prev→cur                                   | 650 ms ease-in-out cubic                      |
+| Loading bar                                 | scaleX by stage (0.4 → 0.85 → 1), fade out            | tween ease-out 1.6 s / 0.8 s / 0.2 s          |
+| Aurora palette change                       | shader mix prev→cur                                   | 650 ms ease-in-out cubic                      |
 
-### Aura Browser backdrop runtime
+### Aurora backdrop runtime
 
 - WebGL 1 fragment shader, `powerPreference: 'low-power'`, backing store
   capped at 960 px wide, redraw capped near 30 fps (the drift is slow; a

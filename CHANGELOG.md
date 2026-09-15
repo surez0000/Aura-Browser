@@ -7,6 +7,22 @@ a release is cut.
 
 ## [Unreleased]
 
+### Added
+
+- Page-load progress bar above the page card and a spinner in the address
+  pill, so a navigation is visible even with the sidebar hidden.
+
+### Fixed
+
+- Show-on-hover sidebar: a panel revealed with ⌘L (no pointer inside) stayed up
+  with a stale snapshot of the previous page after submitting an address; it
+  now hides once the interaction ends and the live page returns.
+- Show-on-hover sidebar: switching from Always visible while the panel is in
+  use kept the panel over a snapshot that stretched as the layout animated.
+  The panel now keeps its slot until it first hides, then the page grows once.
+- Favorites: very long titles or `data:` favicons made the add request fail
+  silently; values are now trimmed to the IPC schema and failures are logged.
+
 ## [0.1.0] — 2026-09-14
 
 The first installable build: phases (a)–(c) of the roadmap plus settings and

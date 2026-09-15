@@ -65,7 +65,7 @@ export const SHARED_TOKENS: Record<string, string> = {
 }
 
 /**
- * Aura Browser mesh constraints per theme. Relative-luminance bands — not HSL
+ * Aurora mesh constraints per theme. Relative-luminance bands — not HSL
  * lightness — so perceptually bright hues (greens, yellows) are clamped too.
  * The AA sweep proves: any pixel the mesh can produce, composited under every
  * glass surface, keeps all three inks above their WCAG thresholds.

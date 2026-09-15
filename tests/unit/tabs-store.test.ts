@@ -16,6 +16,7 @@ function tab(id: string, spaceId = 's1', kind: TabKind = 'today'): TabInfo {
     title: `Tab ${id}`,
     faviconUrl: null,
     isLoading: false,
+    domReady: false,
     canGoBack: false,
     canGoForward: false,
     crashed: false,

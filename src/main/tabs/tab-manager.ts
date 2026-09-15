@@ -555,26 +555,37 @@ export class TabManager {
     }
   }
 
-  async setOverlayShown(shown: boolean): Promise<{ snapshotDataUrl: string | null }> {
-    this.overlayShown = shown
-    if (shown) {
-      const attached = this.attachedTab()
-      let snapshotDataUrl: string | null = null
-      if (attached && !attached.crashed) {
-        try {
-          const image = await attached.wc.capturePage()
-          snapshotDataUrl = image.isEmpty() ? null : image.toDataURL()
-        } catch {
-          snapshotDataUrl = null
-        }
-      }
-      // Released while capturing (fast open/close): main already reattached.
-      if (!this.overlayShown) return { snapshotDataUrl: null }
-      this.detach()
-      return { snapshotDataUrl }
+  async setOverlayShown(
+    shown: boolean,
+    phase?: 'capture' | 'detach',
+  ): Promise<{ snapshotDataUrl: string | null }> {
+    if (!shown) {
+      this.overlayShown = false
+      this.attachActiveIfPossible()
+      return { snapshotDataUrl: null }
     }
-    this.attachActiveIfPossible()
-    return { snapshotDataUrl: null }
+    if (phase === 'detach') {
+      // Second step of a two-phase swap; ignored if released in between.
+      if (this.overlayShown) this.detach()
+      return { snapshotDataUrl: null }
+    }
+    this.overlayShown = true
+    const attached = this.attachedTab()
+    let snapshotDataUrl: string | null = null
+    if (attached && !attached.crashed) {
+      try {
+        const image = await attached.wc.capturePage()
+        snapshotDataUrl = image.isEmpty() ? null : image.toDataURL()
+      } catch {
+        snapshotDataUrl = null
+      }
+    }
+    // Released while capturing (fast open/close): main already reattached.
+    if (!this.overlayShown) return { snapshotDataUrl: null }
+    // 'capture' leaves the view attached until the chrome has painted the
+    // snapshot, so the page never blinks to its ground color.
+    if (phase !== 'capture') this.detach()
+    return { snapshotDataUrl }
   }
 
   focusActive(): void {

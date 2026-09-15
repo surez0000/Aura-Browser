@@ -113,7 +113,7 @@
       <text x="482" y="312">③ Active tab — ink-1 on strong glass (AA-enforced pair); ✕ on hover; drag to reorder or onto a Space dot.</text>
       <text x="482" y="532">④ Today auto-archives after a configurable idle window; the archive stays searchable in the palette.</text>
       <text x="482" y="774">⑤ Space rail — accent-tinted dots (one hue per Space); click to switch, drop a tab to move it, + to create.</text>
-      <text x="482" y="608">⑥ Aura Browser mesh (behind the glass): 4 hue-derived fields, luminance-band-clamped,</text>
+      <text x="482" y="608">⑥ Aurora mesh (behind the glass): 4 hue-derived fields, luminance-band-clamped,</text>
       <text x="482" y="626">     cross-fades on Space switch, static under prefers-reduced-motion, paused when hidden.</text>
     </g>
   </g>

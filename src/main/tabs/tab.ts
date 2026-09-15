@@ -122,6 +122,7 @@ export class Tab {
   title = ''
   faviconUrl: string | null = null
   isLoading = false
+  domReady = false
   crashed = false
   security: SecurityState = 'neutral'
 
@@ -169,6 +170,11 @@ export class Tab {
 
     wc.on('did-start-loading', () => {
       this.isLoading = true
+      this.domReady = false
+      this.host.changed(this)
+    })
+    wc.on('dom-ready', () => {
+      this.domReady = true
       this.host.changed(this)
     })
     wc.on('did-stop-loading', () => {
@@ -358,6 +364,7 @@ export class Tab {
       title: this.title,
       faviconUrl: this.faviconUrl,
       isLoading: this.isLoading,
+      domReady: this.domReady,
       canGoBack: !this.crashed && this.wc.navigationHistory.canGoBack(),
       canGoForward: !this.crashed && this.wc.navigationHistory.canGoForward(),
       crashed: this.crashed,

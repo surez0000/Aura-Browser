@@ -113,7 +113,9 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
       height: z.number().finite().nonnegative(),
     })
     .strict(),
-  'ui:overlay': z.object({ shown: z.boolean() }).strict(),
+  'ui:overlay': z
+    .object({ shown: z.boolean(), phase: z.enum(['capture', 'detach']).optional() })
+    .strict(),
   'window:control': z.object({ action: z.enum(['minimize', 'maximize', 'close']) }).strict(),
   'state:get': empty,
 }

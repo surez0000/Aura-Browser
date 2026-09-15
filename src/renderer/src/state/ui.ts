@@ -14,6 +14,17 @@ export interface UiState {
    */
   sidebarRevealed: boolean
   setSidebarRevealed(revealed: boolean): void
+  /** Pointer is over the sidebar panel (hover mode uses it to decide when to hide). */
+  sidebarPointerInside: boolean
+  setSidebarPointerInside(inside: boolean): void
+  /**
+   * Switching fixed → hover while the panel is in use keeps the panel in the
+   * layout (no page overlap, no snapshot) until it hides for the first time;
+   * the page then grows once, live. Prevents the snapshot stretching under a
+   * layout spring.
+   */
+  sidebarHoldLayout: boolean
+  setSidebarHoldLayout(hold: boolean): void
   paletteOpen: boolean
   paletteMode: PaletteMode
   /** Monotonic counter: each bump asks the URL pill to enter edit mode. */
@@ -65,7 +76,12 @@ export const useUi = create<UiState>()((set) => ({
   themeName: 'dark',
   setThemeName: (themeName) => set({ themeName }),
   sidebarRevealed: false,
-  setSidebarRevealed: (sidebarRevealed) => set({ sidebarRevealed }),
+  setSidebarRevealed: (sidebarRevealed) =>
+    set(sidebarRevealed ? { sidebarRevealed } : { sidebarRevealed, sidebarHoldLayout: false }),
+  sidebarPointerInside: false,
+  setSidebarPointerInside: (sidebarPointerInside) => set({ sidebarPointerInside }),
+  sidebarHoldLayout: false,
+  setSidebarHoldLayout: (sidebarHoldLayout) => set({ sidebarHoldLayout }),
   paletteOpen: false,
   paletteMode: 'new',
   urlEditRequest: 0,

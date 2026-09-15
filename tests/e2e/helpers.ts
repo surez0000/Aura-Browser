@@ -74,6 +74,14 @@ export async function startFixtureServer(): Promise<FixtureServer> {
   const dir = join(root, 'tests', 'e2e', 'fixtures')
   const server = createServer((req, res) => {
     const name = basename((req.url ?? '/a.html').split('?')[0] ?? '') || 'a.html'
+    // Slow page: lets tests observe loading state for ~1.5 s.
+    if (name === 'slow.html') {
+      setTimeout(() => {
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+        res.end('<!doctype html><title>Slow Fixture</title><h1>slow</h1>')
+      }, 1500)
+      return
+    }
     if (name === 'file.bin') {
       res.writeHead(200, {
         'content-type': 'application/octet-stream',

@@ -87,7 +87,7 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
   handleInvoke('updates:openReleases', () => ctx.updater.openReleases())
 
   handleInvoke('ui:setPageBounds', (req) => manager.setPageBounds(req))
-  handleInvoke('ui:overlay', (req) => manager.setOverlayShown(req.shown))
+  handleInvoke('ui:overlay', (req) => manager.setOverlayShown(req.shown, req.phase))
 
   handleInvoke('window:control', (req) => {
     switch (req.action) {

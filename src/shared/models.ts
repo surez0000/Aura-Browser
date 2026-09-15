@@ -36,6 +36,8 @@ export interface TabInfo {
   title: string
   faviconUrl: string | null
   isLoading: boolean
+  /** Main document parsed (dom-ready) — the load bar jumps ahead here. */
+  domReady: boolean
   canGoBack: boolean
   canGoForward: boolean
   crashed: boolean

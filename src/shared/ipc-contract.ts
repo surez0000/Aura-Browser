@@ -96,10 +96,16 @@ export interface InvokeMap {
   /** Where the page's WebContentsView should sit, in window coordinates (DIP). */
   'ui:setPageBounds': { req: { x: number; y: number; width: number; height: number }; res: void }
   /**
-   * Chrome overlays (palette, dialogs) render *under* native views, so while an
-   * overlay is open the active view is detached and replaced by a snapshot.
+   * Chrome overlays (palette, hover sidebar) render *under* native views, so
+   * while an overlay is open the active view is detached and replaced by a
+   * snapshot. Two phases keep the swap invisible: 'capture' returns the
+   * snapshot while the view is still attached; once the chrome has painted it,
+   * 'detach' removes the view. Omitting `phase` does both at once.
    */
-  'ui:overlay': { req: { shown: boolean }; res: { snapshotDataUrl: string | null } }
+  'ui:overlay': {
+    req: { shown: boolean; phase?: 'capture' | 'detach' }
+    res: { snapshotDataUrl: string | null }
+  }
   'window:control': { req: { action: 'minimize' | 'maximize' | 'close' }; res: void }
   'state:get': { req: Record<string, never>; res: TabsSnapshot }
 }

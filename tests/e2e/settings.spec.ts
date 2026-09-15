@@ -58,10 +58,11 @@ test('show-on-hover sidebar hides, reveals from the left edge over a snapshot, a
     await settingsButton.click()
     await chrome.getByTestId('setting-sidebar-hover').click()
 
-    // The panel stays while the settings popover is open under the pointer…
+    // The panel stays while the settings popover is open under the pointer. It
+    // keeps its layout slot until it first hides, so the page is still live
+    // (no snapshot) — nothing jumps under the pointer.
     await expect(sidebar).toHaveAttribute('data-state', 'revealed')
-    // …and the page underneath is a snapshot now (the native view is detached).
-    await expect(chrome.getByTestId('page-card').locator('img')).toBeVisible()
+    await expect(chrome.getByTestId('page-card').locator('img')).toHaveCount(0)
 
     // Close the popover and move away: the panel hides, the view returns.
     await settingsButton.click()

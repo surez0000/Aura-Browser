@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Lock, Search, Star, TriangleAlert } from 'lucide-react'
+import { Loader2, Lock, Search, Star, TriangleAlert } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
 import { displayLabel, normalizeInput } from '@/lib/url'
 import { useSettings } from '@/state/settings'
+import { releaseSidebarIfIdle } from '@/state/sync'
 import { useTabs, selectActiveTab, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
@@ -45,13 +46,19 @@ export function UrlPill(): React.JSX.Element {
     }
   }, [editing])
 
+  const stopEditing = (): void => {
+    setEditing(false)
+    // The input unmounts without a blur event; hand the hover sidebar its cue.
+    setTimeout(releaseSidebarIfIdle, 0)
+  }
+
   const submit = (): void => {
     const url = normalizeInput(value, useSettings.getState().settings.searchEngine)
     if (url) {
       if (active) void invoke('tabs:navigate', { tabId: active.id, url })
       else void invoke('tabs:create', { url, activate: true })
     }
-    setEditing(false)
+    stopEditing()
   }
 
   const toggleFavorite = (): void => {
@@ -59,11 +66,19 @@ export function UrlPill(): React.JSX.Element {
     if (isFavorite) {
       void invoke('favorites:remove', { url: currentUrl })
     } else {
-      void invoke('favorites:add', {
+      // Stay inside the IPC schema: long titles and data: favicons must not
+      // make the whole request fail silently.
+      const faviconUrl =
+        active.faviconUrl &&
+        active.faviconUrl.length <= 2048 &&
+        !active.faviconUrl.startsWith('data:')
+          ? active.faviconUrl
+          : null
+      invoke('favorites:add', {
         url: currentUrl,
-        title: active.title || displayLabel(currentUrl),
-        faviconUrl: active.faviconUrl,
-      })
+        title: (active.title || displayLabel(currentUrl)).slice(0, 512),
+        faviconUrl,
+      }).catch((error: unknown) => console.error('favorites:add failed', error))
     }
   }
 
@@ -77,9 +92,9 @@ export function UrlPill(): React.JSX.Element {
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') submit()
-            else if (e.key === 'Escape') setEditing(false)
+            else if (e.key === 'Escape') stopEditing()
           }}
-          onBlur={() => setEditing(false)}
+          onBlur={stopEditing}
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
@@ -102,7 +117,16 @@ export function UrlPill(): React.JSX.Element {
       title={currentUrl || 'Search or enter URL'}
       data-testid="url-pill"
     >
-      <SecurityIcon state={active?.security ?? 'neutral'} />
+      {active?.isLoading ? (
+        <Loader2
+          size={13}
+          className="animate-spin"
+          style={{ color: 'var(--ink-3)' }}
+          data-testid="url-loading"
+        />
+      ) : (
+        <SecurityIcon state={active?.security ?? 'neutral'} />
+      )}
       <span className="min-w-0 flex-1 truncate text-[13px]" style={{ color: 'var(--ink-2)' }}>
         {displayLabel(currentUrl || null)}
       </span>

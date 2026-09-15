@@ -5,6 +5,7 @@ import { PageCard } from '@/components/PageCard'
 import { Palette } from '@/components/palette/Palette'
 import { FindBar } from '@/components/FindBar'
 import { PermissionBanner } from '@/components/PermissionBanner'
+import { LoadingBar } from '@/components/LoadingBar'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
 import { isMac } from '@/lib/ipc'
 import { auroraPalette, hueOf } from '@/theme/aurora'
@@ -56,8 +57,10 @@ export default function App(): React.JSX.Element {
       <Sidebar />
       {floating && <TopStrip />}
       <main
-        className={`flex h-full min-w-0 flex-1 flex-col gap-2 p-2 ${floating ? 'pt-9' : 'pl-0'}`}
+        className={`relative flex h-full min-w-0 flex-1 flex-col gap-2 p-2 ${floating ? 'pt-9' : 'pl-0'}`}
       >
+        {/* Sits in the gap above the card: 8 px in fixed mode, under the strip in hover mode. */}
+        <LoadingBar top={floating ? 31 : 3} />
         <FindBar />
         <PermissionBanner />
         <div className="min-h-0 flex-1">
