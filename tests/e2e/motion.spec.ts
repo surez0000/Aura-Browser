@@ -45,9 +45,21 @@ test('reduced motion: the sidebar collapse completes within a frame', async () =
 test('frame-time probe: sidebar spring and Space switch run without long frames', async () => {
   const { app, chrome } = await launchAurora()
   try {
+    // This test is about motion being ON. CI runners (Windows Server especially)
+    // often disable OS animations, which Chromium reports as reduced motion and
+    // would rightly collapse the spring — so pin the preference here.
+    await chrome.emulateMedia({ reducedMotion: 'no-preference' })
+    const reduced: boolean = await chrome.evaluate(
+      `matchMedia('(prefers-reduced-motion: reduce)').matches`,
+    )
+    expect(reduced, 'reduced motion must be off for the probe').toBe(false)
+
     // Control: with motion on, the spring is still mid-flight one frame in.
     await chrome.keyboard.press(`${modifierKey()}+s`)
-    expect(await rightEdgeAfterFrames(chrome, 1)).toBeGreaterThan(0)
+    expect(
+      await rightEdgeAfterFrames(chrome, 1),
+      'sidebar should still be sliding one frame after the toggle',
+    ).toBeGreaterThan(0)
     await expect
       .poll(() => chrome.evaluate(SIDEBAR_RIGHT), { timeout: 5_000 })
       .toBeLessThanOrEqual(0)
