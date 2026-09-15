@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { Archive, Plus, RefreshCw } from 'lucide-react'
+import { Archive, Plus } from 'lucide-react'
 import { isMac, modKeyLabel, invoke } from '@/lib/ipc'
 import { holdOverlay, releaseOverlay } from '@/lib/overlay'
 import { selectSidebarMode, useSettings } from '@/state/settings'
@@ -15,6 +15,7 @@ import { SpaceSwitcher } from './SpaceSwitcher'
 import { SpaceEditor } from './SpaceEditor'
 import { DownloadsButton, DownloadsFlyout } from './DownloadsFlyout'
 import { SettingsButton, SettingsFlyout } from './SettingsFlyout'
+import { UpdateCard } from '@/components/UpdateNotice'
 import { WindowControls } from './WindowControls'
 
 export const SIDEBAR_WIDTH = 264
@@ -60,8 +61,6 @@ export function Sidebar(): React.JSX.Element {
   const setPointerInside = useUi((s) => s.setSidebarPointerInside)
   const holdLayout = useUi((s) => s.sidebarHoldLayout)
   const popoverOpen = useUi((s) => s.downloadsOpen || s.settingsOpen || s.spaceEditor.open)
-  const updateReady = useUi((s) => s.updateState?.status === 'ready')
-  const updateVersion = useUi((s) => s.updateState?.availableVersion)
   const openPalette = useUi((s) => s.openPalette)
   const activeSpaceId = useTabs((s) => s.activeSpaceId)
   const hasPinned = useTabs((s) => tabsOf(s.tabs, s.activeSpaceId, 'pinned').length > 0)
@@ -237,18 +236,7 @@ export function Sidebar(): React.JSX.Element {
           </div>
         </motion.div>
 
-        {updateReady && (
-          <button
-            type="button"
-            onClick={() => void invoke('updates:install', {})}
-            className="no-drag flex shrink-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] font-medium"
-            style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
-            data-testid="update-ready"
-          >
-            <RefreshCw size={13} />
-            <span>Restart to update{updateVersion ? ` to ${updateVersion}` : ''}</span>
-          </button>
-        )}
+        <UpdateCard />
 
         <button
           type="button"

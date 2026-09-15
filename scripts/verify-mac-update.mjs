@@ -95,8 +95,15 @@ try {
   await chrome.getByTestId('settings-flyout').waitFor()
   log('status:', await chrome.getByTestId('updates-status').textContent())
   await chrome.getByTestId('updates-check').click()
+  // The prominent card in the sidebar must appear on its own while downloading…
+  await chrome.getByTestId('update-card').waitFor({ timeout: 60_000 })
+  log('card:', await chrome.getByTestId('update-card').getAttribute('data-kind'))
   await chrome.getByTestId('updates-install').waitFor({ timeout: 180_000 })
   log('status:', await chrome.getByTestId('updates-status').textContent())
+  // …and offer the one-click install once ready.
+  const cardKind = await chrome.getByTestId('update-card').getAttribute('data-kind')
+  if (cardKind !== 'ready') throw new Error(`update card should be ready, was ${cardKind}`)
+  log('card:', cardKind, '| Restart buttons:', await chrome.getByTestId('update-ready').count())
 
   const exited = new Promise((r) => app.process().once('exit', r))
   await chrome.getByTestId('updates-install').click()

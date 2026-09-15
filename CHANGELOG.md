@@ -7,6 +7,14 @@ a release is cut.
 
 ## [Unreleased]
 
+### Added
+
+- Update progress is prominent but never in the way: a card in the sidebar
+  and a pill in the top strip when the sidebar is hidden show "Starting
+  download", the percentage, and a one-click **Restart to update**; the Dock
+  (macOS) or taskbar (Windows) icon shows the same progress. "Later" hides the
+  notice for that version until the next launch.
+
 ## [0.1.1] — 2026-09-15
 
 ### Changed

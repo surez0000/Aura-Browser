@@ -41,6 +41,8 @@ export interface UiState {
 
   settingsOpen: boolean
   updateState: UpdateState | null
+  /** Version whose prominent notice was hidden with "Later" (until next launch). */
+  updateNoticeDismissed: string | null
 
   permissionQueue: PermissionRequestInfo[]
 
@@ -64,6 +66,7 @@ export interface UiState {
   toggleSettings(): void
   closeSettings(): void
   setUpdateState(state: UpdateState): void
+  dismissUpdateNotice(version: string): void
 
   pushPermission(request: PermissionRequestInfo): void
   shiftPermission(): void
@@ -96,6 +99,7 @@ export const useUi = create<UiState>()((set) => ({
 
   settingsOpen: false,
   updateState: null,
+  updateNoticeDismissed: null,
 
   permissionQueue: [],
 
@@ -121,6 +125,7 @@ export const useUi = create<UiState>()((set) => ({
     set((s) => ({ settingsOpen: !s.settingsOpen, downloadsOpen: false, sidebarRevealed: true })),
   closeSettings: () => set({ settingsOpen: false }),
   setUpdateState: (updateState) => set({ updateState }),
+  dismissUpdateNotice: (updateNoticeDismissed) => set({ updateNoticeDismissed }),
 
   pushPermission: (request) => set((s) => ({ permissionQueue: [...s.permissionQueue, request] })),
   shiftPermission: () => set((s) => ({ permissionQueue: s.permissionQueue.slice(1) })),

@@ -6,6 +6,7 @@ import { Palette } from '@/components/palette/Palette'
 import { FindBar } from '@/components/FindBar'
 import { PermissionBanner } from '@/components/PermissionBanner'
 import { LoadingBar } from '@/components/LoadingBar'
+import { UpdatePill } from '@/components/UpdateNotice'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
 import { isMac } from '@/lib/ipc'
 import { auroraPalette, hueOf } from '@/theme/aurora'
@@ -20,11 +21,20 @@ import { useUi } from '@/state/ui'
  * controls or clears the macOS traffic lights, so a slim drag strip does.
  */
 function TopStrip(): React.JSX.Element {
+  const revealed = useUi((s) => s.sidebarRevealed)
   return (
     <div
       className="drag absolute inset-x-0 top-0 z-10 flex h-9 items-center justify-end px-2"
       data-testid="top-strip"
     >
+      {/* Update progress stays visible with the sidebar hidden (the panel shows its own card). */}
+      {!revealed && (
+        <div className="pointer-events-none absolute inset-x-0 flex justify-center">
+          <div className="pointer-events-auto">
+            <UpdatePill />
+          </div>
+        </div>
+      )}
       {!isMac() && <WindowControls />}
     </div>
   )

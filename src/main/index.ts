@@ -83,7 +83,13 @@ function bootstrap(): void {
   const permissions = new PermissionService(kv, (request) =>
     pushToChrome('permissions:request', request),
   )
-  const updater = new UpdaterService((state) => pushToChrome('updates:state', state))
+  const updater = new UpdaterService((state) => {
+    pushToChrome('updates:state', state)
+    // The Dock (macOS) / taskbar (Windows) icon shows the same download progress.
+    if (win && !win.isDestroyed()) {
+      win.setProgressBar(state.status === 'downloading' ? (state.percent ?? 0) / 100 : -1)
+    }
+  })
 
   const w = createChromeWindow()
   win = w

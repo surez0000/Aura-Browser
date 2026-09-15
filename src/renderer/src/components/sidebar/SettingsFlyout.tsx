@@ -235,7 +235,10 @@ function UpdatesSection({ state }: { state: UpdateState | null }): React.JSX.Ele
       action = null
       break
     case 'downloading':
-      text = `Downloading ${available}… ${state.percent ?? 0}%`
+      text =
+        (state.percent ?? 0) === 0
+          ? `Starting download of ${available}…`
+          : `Downloading ${available}… ${state.percent ?? 0}%`
       action = null
       break
     case 'ready':
