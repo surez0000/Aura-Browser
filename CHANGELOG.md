@@ -7,6 +7,14 @@ a release is cut.
 
 ## [Unreleased]
 
+### Changed
+
+- **Spaces are isolated like Chrome profiles.** Each Space has its own cookies,
+  logins, site data, and cache; nothing crosses between them (ADR-0004). On
+  upgrade the first Space keeps your existing logins; other Spaces start
+  fresh. Moving a tab to another Space reopens it there. Deleting a Space
+  deletes its data.
+
 ### Added
 
 - Page-load progress bar above the page card and a spinner in the address

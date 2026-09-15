@@ -1,4 +1,4 @@
-import { app, nativeTheme, session, type BrowserWindow } from 'electron'
+import { app, nativeTheme, type BrowserWindow } from 'electron'
 import { existsSync, readdirSync, renameSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { DEFAULT_SETTINGS, type AuroraSettings } from '@shared/models'
@@ -13,7 +13,7 @@ import { PermissionService } from './services/permissions'
 import { UpdaterService } from './services/updater'
 import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
 import { TabManager } from './tabs/tab-manager'
-import { INCOGNITO_PARTITION } from './tabs/tab'
+import { DEFAULT_PARTITION } from './tabs/partition-names'
 import { createChromeWindow } from './windows/chrome-window'
 import { registerIpcHandlers } from './ipc/handlers'
 import { pushToChrome, setTrustedWebContents } from './ipc/router'
@@ -77,18 +77,6 @@ function bootstrap(): void {
     win?.setBackgroundColor(WINDOW_BG[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'])
   })
 
-  const w = createChromeWindow()
-  win = w
-  const m = new TabManager(w, {
-    history,
-    archive,
-    saveSession: (snapshot) => kv.set('session', snapshot),
-    pushFindResult: (result) => pushToChrome('find:result', result),
-  })
-  manager = m
-
-  setTrustedWebContents(w.webContents)
-
   const downloads = new DownloadsService(db, DownloadsService.defaultDirectory(), (list) =>
     pushToChrome('downloads:changed', list),
   )
@@ -96,14 +84,26 @@ function bootstrap(): void {
     pushToChrome('permissions:request', request),
   )
   const updater = new UpdaterService((state) => pushToChrome('updates:state', state))
-  const incognitoSession = session.fromPartition(INCOGNITO_PARTITION)
-  for (const [ses, persist] of [
-    [session.defaultSession, true],
-    [incognitoSession, false],
-  ] as const) {
-    downloads.attach(ses)
-    permissions.attach(ses, { persistDecisions: persist })
-  }
+
+  const w = createChromeWindow()
+  win = w
+  const m = new TabManager(w, {
+    history,
+    archive,
+    saveSession: (snapshot) => kv.set('session', snapshot),
+    pushFindResult: (result) => pushToChrome('find:result', result),
+    // Every Space is its own storage partition (ADR-0004); each session gets
+    // download tracking and deny-by-default permissions the first time it is used.
+    attachSession: (ses, { persist }) => {
+      downloads.attach(ses)
+      permissions.attach(ses, { persistDecisions: persist })
+    },
+  })
+  manager = m
+  // The chrome renderer itself lives on the default session — harden it too.
+  m.prepareSession(DEFAULT_PARTITION, true)
+
+  setTrustedWebContents(w.webContents)
 
   registerIpcHandlers({
     manager: m,

@@ -129,3 +129,45 @@ test('incognito space is ephemeral', async () => {
     await server.close()
   }
 })
+
+test('Spaces have separate cookie jars — a login in one never leaks into another', async () => {
+  const server = await startFixtureServer()
+  const first = await launchAurora()
+  const { chrome } = first
+  const titled = (page: import('playwright').Page, text: string) =>
+    page.getByTestId('tab-title').filter({ hasText: text })
+  try {
+    // Personal: set a cookie, then read it back on the same site.
+    await createTabViaPalette(chrome, `${server.url}/cookie-set.html`)
+    await expect(titled(chrome, 'Cookie Set')).toBeVisible()
+    await createTabViaPalette(chrome, `${server.url}/cookie-read.html`)
+    await expect(titled(chrome, 'Cookie: yes')).toBeVisible()
+
+    // Work: same site, its own empty jar.
+    await chrome.getByTestId('space-add').click()
+    await chrome.getByTestId('space-name-input').fill('Work')
+    await chrome.getByTestId('space-save').click()
+    await expect(chrome.getByTestId('space-name')).toHaveText('Work')
+    await createTabViaPalette(chrome, `${server.url}/cookie-read.html`)
+    await expect(titled(chrome, 'Cookie: none')).toBeVisible()
+    await expect(titled(chrome, 'Cookie: yes')).toHaveCount(0)
+  } finally {
+    await closeAndWaitForExit(first.app)
+  }
+
+  // Partitions are persistent: each Space still has its own jar after a restart.
+  const second = await launchAurora(first.userDataDir)
+  try {
+    await expect(second.chrome.getByTestId('space-name')).toHaveText('Work')
+    await createTabViaPalette(second.chrome, `${server.url}/cookie-read.html`)
+    await expect(titled(second.chrome, 'Cookie: none')).toHaveCount(2)
+
+    await second.chrome.getByTestId('space-dot').nth(0).click()
+    await expect(second.chrome.getByTestId('space-name')).toHaveText('Personal')
+    await createTabViaPalette(second.chrome, `${server.url}/cookie-read.html`)
+    await expect(titled(second.chrome, 'Cookie: yes')).toHaveCount(2)
+  } finally {
+    await second.app.close()
+    await server.close()
+  }
+})

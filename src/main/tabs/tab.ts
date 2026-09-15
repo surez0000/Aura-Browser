@@ -2,7 +2,9 @@ import { WebContentsView, clipboard, type MenuItemConstructorOptions } from 'ele
 import { randomUUID } from 'node:crypto'
 import type { FindResult, SecurityState, TabInfo, TabKind } from '@shared/models'
 
-export const INCOGNITO_PARTITION = 'aurora-incognito' // no "persist:" prefix -> in-memory
+import { INCOGNITO_PARTITION } from './partition-names'
+
+export { INCOGNITO_PARTITION }
 
 /** What a Tab needs from its owner (the TabManager). */
 export interface TabHost {
@@ -102,6 +104,8 @@ export interface TabOptions {
   spaceId: string
   kind?: TabKind
   incognito?: boolean
+  /** Storage partition of the owning Space ('' = Electron default session). */
+  partition?: string
   url?: string
   lazy?: boolean
   title?: string
@@ -112,6 +116,7 @@ export class Tab {
   readonly id: string = randomUUID()
   readonly view: WebContentsView
   readonly incognito: boolean
+  readonly partition: string
 
   spaceId: string
   kind: TabKind
@@ -133,12 +138,13 @@ export class Tab {
     this.spaceId = opts.spaceId
     this.kind = opts.kind ?? 'today'
     this.incognito = opts.incognito ?? false
+    this.partition = opts.partition ?? (this.incognito ? INCOGNITO_PARTITION : '')
     this.view = new WebContentsView({
       webPreferences: {
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
-        ...(this.incognito ? { partition: INCOGNITO_PARTITION } : {}),
+        ...(this.partition ? { partition: this.partition } : {}),
       },
     })
     this.view.setBackgroundColor('#ffffff')

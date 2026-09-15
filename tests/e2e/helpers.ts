@@ -74,6 +74,23 @@ export async function startFixtureServer(): Promise<FixtureServer> {
   const dir = join(root, 'tests', 'e2e', 'fixtures')
   const server = createServer((req, res) => {
     const name = basename((req.url ?? '/a.html').split('?')[0] ?? '') || 'a.html'
+    // Cookie pair: one page sets a cookie, the other reports it in its title.
+    if (name === 'cookie-set.html') {
+      res.writeHead(200, {
+        'content-type': 'text/html; charset=utf-8',
+        // Max-Age makes it a persistent cookie: session cookies are dropped on quit.
+        'set-cookie': 'aura=yes; Path=/; Max-Age=86400',
+      })
+      res.end('<!doctype html><title>Cookie Set</title><p>set</p>')
+      return
+    }
+    if (name === 'cookie-read.html') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      res.end(
+        `<!doctype html><title>Cookie Read</title><script>document.title = document.cookie.includes('aura=yes') ? 'Cookie: yes' : 'Cookie: none'</script>`,
+      )
+      return
+    }
     // Slow page: lets tests observe loading state for ~1.5 s.
     if (name === 'slow.html') {
       setTimeout(() => {

@@ -84,6 +84,9 @@ Key decisions (full rationale in [docs/adr/](docs/adr/)):
   preload at all.
 - Every IPC channel is allowlisted in [src/shared/ipc-contract.ts](src/shared/ipc-contract.ts)
   and zod-validated in the main process; only the chrome window may invoke.
+- Every Space is its own storage partition — cookies, logins, site data, and
+  cache never cross Spaces, like Chrome profiles (ADR-0004). Incognito is
+  in-memory. Deleting a Space deletes its data.
 - Site permissions are deny-by-default with a per-request prompt.
 - No telemetry. Default search is DuckDuckGo (changeable in Settings). Nothing
   leaves the machine except the update check, which fetches a version manifest

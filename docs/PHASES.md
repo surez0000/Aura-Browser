@@ -39,6 +39,9 @@ session; shortcuts work; suites green.
   copy URL, close).
 - Incognito Space: separate in-memory session partition; no history writes, no
   session persistence, no stored permission decisions; gone after restart.
+- 2026-09-15: every Space became its own **persistent** storage partition —
+  Chrome-profile-style isolation of cookies/logins (ADR-0004); tabs moved
+  across Spaces are recreated in the target partition.
 - Today auto-archive: configurable hours (settings kv + palette actions,
   default 12 h, sweep every 5 min), manual "Archive Today", archived tabs are
   searchable/reopenable from the palette (SQLite `archive` table).

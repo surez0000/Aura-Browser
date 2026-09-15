@@ -54,7 +54,7 @@ export interface TabsSnapshot {
   activeTabId: string | null
 }
 
-/** Persisted session (kv key "session"), current schema. */
+/** Persisted session (kv key "session"), phase (b) schema; upgraded on load. */
 export interface SessionSpaceV2 {
   id: string
   name: string
@@ -68,6 +68,21 @@ export interface SessionSnapshotV2 {
   version: 2
   activeSpaceId: string
   spaces: SessionSpaceV2[]
+}
+
+/**
+ * Current schema: every Space names its storage partition (ADR-0004). '' is
+ * Electron's default session (kept by the first Space of an upgraded profile);
+ * new Spaces get `persist:space:<id>`.
+ */
+export interface SessionSpaceV3 extends SessionSpaceV2 {
+  partition: string
+}
+
+export interface SessionSnapshotV3 {
+  version: 3
+  activeSpaceId: string
+  spaces: SessionSpaceV3[]
 }
 
 /** Phase (a) session shape, still readable (upgraded on load). */

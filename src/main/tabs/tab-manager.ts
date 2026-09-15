@@ -4,13 +4,16 @@ import {
   type BrowserWindow,
   type MenuItemConstructorOptions,
   type Rectangle,
+  session,
+  type Session,
 } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { Tab, isAllowedPageUrl, type TabHost } from './tab'
+import { INCOGNITO_PARTITION, isIsolatedSpacePartition, spacePartition } from './partition-names'
 import type {
   FavoriteEntry,
   FindResult,
-  SessionSnapshotV2,
+  SessionSnapshotV3,
   SpaceInfo,
   TabKind,
   TabsSnapshot,
@@ -21,7 +24,9 @@ import type { ArchiveStore } from '../services/db/archive'
 interface TabManagerDeps {
   history: HistoryStore
   archive: ArchiveStore
-  saveSession: (snapshot: SessionSnapshotV2) => void
+  saveSession: (snapshot: SessionSnapshotV3) => void
+  /** Wire per-session services (downloads, permissions) — once per partition. */
+  attachSession: (ses: Session, opts: { persist: boolean }) => void
   pushFindResult: (result: FindResult) => void
 }
 
@@ -30,6 +35,8 @@ interface SpaceRecord {
   name: string
   accentHue: number
   incognito: boolean
+  /** Storage partition (ADR-0004): '' default session, persist:space:<id>, or in-memory incognito. */
+  partition: string
   favorites: FavoriteEntry[]
   activeTabId: string | null
 }
@@ -58,6 +65,7 @@ export class TabManager {
   private overlayShown = false
   private readonly closedStack: Array<{ url: string; spaceId: string; kind: TabKind }> = []
   private emitScheduled = false
+  private readonly preparedPartitions = new Set<string>()
   private lastFindTabId: string | null = null
 
   private readonly host: TabHost = {
@@ -104,19 +112,36 @@ export class TabManager {
     incognito?: boolean
     activate?: boolean
     id?: string
+    /** Restored Spaces bring their partition; new ones get their own. */
+    partition?: string
   }): SpaceRecord {
+    const id = opts.id ?? randomUUID()
+    const incognito = opts.incognito ?? false
     const space: SpaceRecord = {
-      id: opts.id ?? randomUUID(),
+      id,
       name: opts.name?.trim() || `Space ${this.spaces.filter((s) => !s.incognito).length + 1}`,
       accentHue: opts.accentHue ?? (this.spaces.length * 47 + DEFAULT_SPACE_HUE) % 360,
-      incognito: opts.incognito ?? false,
+      incognito,
+      partition: opts.partition ?? (incognito ? INCOGNITO_PARTITION : spacePartition(id)),
       favorites: [],
       activeTabId: null,
     }
     this.spaces.push(space)
+    this.prepareSession(space.partition, !incognito)
     if (opts.activate !== false) this.activateSpace(space.id)
     else this.scheduleEmit()
     return space
+  }
+
+  /**
+   * Attach per-session services to a partition the first time it is used.
+   * Also called at boot for the default session (the chrome's own).
+   */
+  prepareSession(partition: string, persist: boolean): void {
+    if (this.preparedPartitions.has(partition)) return
+    this.preparedPartitions.add(partition)
+    const ses = partition ? session.fromPartition(partition) : session.defaultSession
+    this.deps.attachSession(ses, { persist })
   }
 
   renameSpace(spaceId: string, name: string): void {
@@ -146,6 +171,12 @@ export class TabManager {
       this.archiveTab(tab, space)
     }
     this.spaces.splice(index, 1)
+    if (isIsolatedSpacePartition(space.partition)) {
+      // A Space's logins, cookies, and site data leave with it (Chrome profile semantics).
+      const ses = session.fromPartition(space.partition)
+      void ses.clearStorageData()
+      void ses.clearCache()
+    }
     if (this.activeSpaceId === spaceId) {
       const next = this.spaces[Math.max(0, index - 1)]
       if (next) this.activateSpace(next.id)
@@ -232,6 +263,7 @@ export class TabManager {
       spaceId: space.id,
       kind: opts.kind ?? 'today',
       incognito: space.incognito,
+      partition: space.partition,
       url,
       lazy: opts.lazy,
       title: opts.title,
@@ -321,11 +353,39 @@ export class TabManager {
     if (source && source.activeTabId === tab.id) {
       const siblings = this.tabsOfSpace(source.id).filter((t) => t.id !== tab.id)
       source.activeTabId = siblings[0]?.id ?? null
-      if (this.attachedTabId === tab.id) this.detach()
     }
-    this.tabs = this.tabs.filter((t) => t.id !== tab.id)
-    tab.spaceId = spaceId
-    this.tabs.push(tab)
+    if (this.attachedTabId === tab.id) this.detach()
+
+    let moved: Tab
+    if (tab.partition === target.partition) {
+      this.tabs = this.tabs.filter((t) => t.id !== tab.id)
+      tab.spaceId = spaceId
+      this.tabs.push(tab)
+      moved = tab
+    } else {
+      // Spaces are separate storage partitions and a WebContents cannot change
+      // partition, so the tab is recreated in the target and loads there on its
+      // first activation — as Chrome's "open in profile" does.
+      moved = new Tab(this.host, {
+        spaceId: target.id,
+        kind: tab.kind,
+        incognito: target.incognito,
+        partition: target.partition,
+        url: tab.url || tab.pendingUrl || undefined,
+        lazy: true,
+        title: tab.title,
+        faviconUrl: tab.faviconUrl,
+      })
+      this.tabs = this.tabs.filter((t) => t.id !== tab.id)
+      this.tabs.push(moved)
+      if (this.lastFindTabId === tab.id) this.lastFindTabId = null
+      tab.destroy()
+    }
+
+    if (this.activeSpaceId === target.id && !target.activeTabId) {
+      this.setActiveTab(moved.id)
+      return
+    }
     if (source && this.activeSpaceId === source.id && source.activeTabId) {
       this.setActiveTab(source.activeTabId)
       return
@@ -641,7 +701,7 @@ export class TabManager {
     }
   }
 
-  sessionSnapshot(): SessionSnapshotV2 {
+  sessionSnapshot(): SessionSnapshotV3 {
     const spaces = this.spaces
       .filter((s) => !s.incognito)
       .map((space) => {
@@ -660,6 +720,7 @@ export class TabManager {
         )
         return {
           id: space.id,
+          partition: space.partition,
           name: space.name,
           accentHue: space.accentHue,
           favorites: [...space.favorites],
@@ -670,15 +731,16 @@ export class TabManager {
     const activeSpaceId = this.spaces.find((s) => s.id === this.activeSpaceId && !s.incognito)
       ? this.activeSpaceId
       : (spaces[0]?.id ?? '')
-    return { version: 2, activeSpaceId, spaces }
+    return { version: 3, activeSpaceId, spaces }
   }
 
-  restore(snapshot: SessionSnapshotV2): void {
+  restore(snapshot: SessionSnapshotV3): void {
     for (const s of snapshot.spaces) {
       const space = this.createSpace({
         id: s.id,
         name: s.name,
         accentHue: s.accentHue,
+        partition: s.partition,
         activate: false,
       })
       space.favorites = (s.favorites ?? []).slice(0, MAX_FAVORITES)
