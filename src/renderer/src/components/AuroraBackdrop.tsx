@@ -205,6 +205,14 @@ export function AuroraBackdrop({
       } else if (!shouldRun && frameState.running) {
         frameState.running = false
         cancelAnimationFrame(frameState.raf)
+        // Leave the canvas showing the palette we are actually on. The loop
+        // pauses as soon as the window loses focus, and activating a Space
+        // hands focus straight to its page — so the crossfade was being
+        // frozen a few frames in, keeping the previous Space's colours up
+        // until something forced a repaint. Clicking the Space dot was that
+        // something, which is why it looked like the second click applied it.
+        fade.current.start = 0
+        draw(performance.now())
       }
       setAnimating(shouldRun)
     }

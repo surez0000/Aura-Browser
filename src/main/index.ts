@@ -16,7 +16,11 @@ import { UpdaterService } from './services/updater'
 import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
 import { TabManager } from './tabs/tab-manager'
 import { DEFAULT_PARTITION } from './tabs/partition-names'
-import { TRAFFIC_LIGHTS, createChromeWindow } from './windows/chrome-window'
+import {
+  TRAFFIC_LIGHTS,
+  createChromeWindow,
+  type WindowPlacement,
+} from './windows/chrome-window'
 import { MiniWindowService } from './windows/mini-window'
 import { registerIpcHandlers } from './ipc/handlers'
 import { addTrustedWebContents, pushTo, pushToChrome, setTrustedWebContents } from './ipc/router'
@@ -146,7 +150,10 @@ function bootstrap(): void {
     }
   })
 
-  const w = createChromeWindow()
+  const w = createChromeWindow({
+    placement: kv.get<WindowPlacement>('window'),
+    onPlacementChanged: (placement) => kv.set('window', placement),
+  })
   win = w
   const m = new TabManager(w, {
     history,

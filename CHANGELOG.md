@@ -5,6 +5,47 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [Unreleased]
+
+### Added
+
+- **Backdrop texture** (Settings ▸ Appearance). A fine still grain in the
+  spirit of Arc, or a slowly drifting particle field. Off by default, and
+  both pause when the window is not in front or reduced motion is asked for.
+- **Editing a Space** now opens on the Space's own gradient. A Space made
+  before gradients existed stores only one stop and its backdrop spreads the
+  second from it; the editor was seeding an unrelated preset, so it showed
+  colours the Space had never had and saving would have applied them.
+- The full sidebar has a **collapse button**, the counterpart to the rail's
+  expand. Getting back to the rail previously meant the shortcut or Settings.
+
+### Changed
+
+- **Settings is a full dialog**, like History: one scrolling page under
+  Appearance, Sidebar, Search, Tabs and Updates headings. It closes on
+  Escape, on the scrim, or on its own close button. The gear alone used to
+  dismiss it.
+- The window **reopens at the size, position and maximized state it was left**
+  in. It always opened at a fixed size, however it had been resized. The strip
+  above the page is now the title bar, so the window can be dragged from the
+  top and double-clicking it zooms.
+
+### Fixed
+
+- **Frosted surfaces were rendering flat everywhere.** Chromium 152 dropped
+  `-webkit-backdrop-filter`, and the CSS build emitted only that form, so no
+  glass in the app was ever blurred. The standard property is restored, and a
+  test now fails if it goes missing again.
+- **A Space switch left the previous Space's colours on screen** until
+  something forced a repaint, which is why clicking the Space dot a second
+  time appeared to apply it. The backdrop pauses when the window loses focus,
+  and activating a Space hands focus to its page, so the crossfade was being
+  frozen part-way. It now settles on the palette it is actually on. The same
+  fault held the old colours after a system light/dark switch.
+- The Space gradient preview showed the pale accent colours rather than the
+  backdrop's own, so in dark mode it promised a light Space and applied a dark
+  one. The hue sliders follow the theme for the same reason.
+
 ## [1.0.1] — 2026-09-18
 
 ### Added

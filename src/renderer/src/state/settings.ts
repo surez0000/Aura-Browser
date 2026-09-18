@@ -48,3 +48,6 @@ export const selectSearchEngine = (s: SettingsState): AuroraSettings['searchEngi
   s.settings.searchEngine
 export const selectSidebarMode = (s: SettingsState): AuroraSettings['sidebarMode'] =>
   s.settings.sidebarMode
+
+export const selectBackdropTexture = (s: SettingsState): AuroraSettings['backdropTexture'] =>
+  s.settings.backdropTexture

@@ -70,18 +70,22 @@ function PeekFrame(): React.JSX.Element {
   return (
     <motion.div
       className="absolute inset-0 z-40 flex items-center justify-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }}
       data-testid="peek"
     >
-      <div className="absolute inset-0" style={{ background: 'var(--scrim)' }} onClick={close} />
+      <motion.div
+        className="absolute inset-0"
+        style={{ background: 'var(--scrim)' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        onClick={close}
+      />
       <motion.div
         className="dialog relative flex h-[82%] w-[min(1000px,86%)] flex-col overflow-hidden rounded-2xl shadow-2xl"
-        initial={{ opacity: 0, y: 10, scale: 0.985 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 8, scale: 0.985 }}
+        initial={{ y: 10, scale: 0.985 }}
+        animate={{ y: 0, scale: 1 }}
+        exit={{ y: 8, scale: 0.985 }}
         transition={{ type: 'spring', stiffness: 460, damping: 34 }}
       >
         <div className="flex h-10 shrink-0 items-center gap-2 px-3">

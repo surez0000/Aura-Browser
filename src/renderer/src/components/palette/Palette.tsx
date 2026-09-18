@@ -231,22 +231,22 @@ export function Palette(): React.JSX.Element {
       {open && (
         <motion.div
           className="absolute inset-0 z-50 flex items-start justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
           data-testid="palette"
         >
-          <div
+          <motion.div
             className="absolute inset-0"
             style={{ background: 'var(--scrim)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             onClick={close}
           />
           <motion.div
             className="dialog relative mt-[14vh] w-[min(640px,88vw)] rounded-2xl p-2 shadow-2xl"
-            initial={{ opacity: 0, y: -14, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            initial={{ y: -14, scale: 0.98 }}
+            animate={{ y: 0, scale: 1 }}
+            exit={{ y: -10, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 480, damping: 34 }}
           >
             <div className="flex items-center gap-3 px-3 py-2.5">

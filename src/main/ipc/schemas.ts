@@ -1,5 +1,6 @@
 import { z, type ZodType } from 'zod'
 import { SEARCH_ENGINE_IDS } from '@shared/search'
+import { BACKDROP_TEXTURES } from '@shared/models'
 import type { InvokeChannel } from '@shared/ipc-contract'
 
 const id = z.string().min(1).max(64)
@@ -131,6 +132,7 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
       // 'hover' is retired but still accepted from older builds; normalised in main.
       sidebarMode: z.enum(['fixed', 'compact', 'hover']).optional(),
       webStoreInstalls: z.boolean().optional(),
+      backdropTexture: z.enum(BACKDROP_TEXTURES).optional(),
     })
     .strict(),
 

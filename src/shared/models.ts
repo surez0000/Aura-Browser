@@ -238,11 +238,22 @@ export interface AuroraSettings {
    */
   webStoreInstalls: boolean
   /**
-   * 'fixed' keeps the sidebar in the layout; 'hover' hides it until the
-   * pointer touches the left edge, then floats it over the page.
+   * 'fixed' keeps the sidebar in the layout; 'compact' shrinks it to a rail of
+   * tab favicons. ('hover' is retired and normalised to 'compact'.)
    */
   sidebarMode: SidebarMode
+  /**
+   * Texture drawn over the Space gradient. 'grain' is a fine static noise, in
+   * the spirit of Arc; 'particles' is a slow drifting dot field. Off by
+   * default, so the gradient is clean unless it is asked for.
+   */
+  backdropTexture: BackdropTexture
 }
+
+/** @see AuroraSettings.backdropTexture */
+export type BackdropTexture = 'none' | 'grain' | 'particles'
+
+export const BACKDROP_TEXTURES = ['none', 'grain', 'particles'] as const satisfies ReadonlyArray<BackdropTexture>
 
 export const DEFAULT_SETTINGS: AuroraSettings = {
   todayArchiveHours: 12,
@@ -250,6 +261,7 @@ export const DEFAULT_SETTINGS: AuroraSettings = {
   searchEngine: 'duckduckgo',
   webStoreInstalls: false,
   sidebarMode: 'fixed',
+  backdropTexture: 'none',
 }
 
 export type UpdateStatus =

@@ -2,8 +2,11 @@
   "name": "aura-browser",
   "productName": "Aura Browser",
   "version": "1.0.1",
-  "description": "Aura Browser — an Arc-inspired desktop browser with the Aurora Glass theme, built on Electron.",
+  "description": "Aura Browser \u2014 an Arc-inspired desktop browser with the Aurora Glass theme, built on Electron.",
   "main": "./out/main/index.js",
+  "browserslist": [
+    "electron >= 44"
+  ],
   "author": "Aurora contributors",
   "license": "MIT",
   "private": true,
@@ -58,7 +61,7 @@
   "build": {
     "appId": "io.github.surez0000.aura-browser",
     "productName": "Aura Browser",
-    "copyright": "Copyright © 2026 Aurora contributors",
+    "copyright": "Copyright \u00a9 2026 Aurora contributors",
     "artifactName": "AuraBrowser-${version}-${os}-${arch}.${ext}",
     "directories": {
       "buildResources": "build",

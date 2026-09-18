@@ -9,10 +9,12 @@ import { PeekCard } from '@/components/PeekCard'
 import { ScreenSharePicker } from '@/components/ScreenSharePicker'
 import { HistoryPanel } from '@/components/HistoryPanel'
 import { ExtensionsPanel } from '@/components/ExtensionsPanel'
+import { SettingsPanel } from '@/components/sidebar/SettingsFlyout'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
+import { BackdropTexture } from '@/components/BackdropTexture'
 import { auroraPalette, hue2Of, hueOf } from '@/theme/aurora'
 import { toCss } from '@/theme/contrast'
-import { selectSidebarMode, useSettings } from '@/state/settings'
+import { selectBackdropTexture, selectSidebarMode, useSettings } from '@/state/settings'
 import { useIpcSync } from '@/state/sync'
 import { useTabs, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
@@ -21,6 +23,7 @@ export default function App(): React.JSX.Element {
   useIpcSync()
   const theme = useUi((s) => s.themeName)
   const sidebarMode = useSettings(selectSidebarMode)
+  const texture = useSettings(selectBackdropTexture)
   const space = useTabs(selectActiveSpace)
 
   const hue = hueOf(space)
@@ -47,10 +50,20 @@ export default function App(): React.JSX.Element {
       data-sidebar-mode={sidebarMode}
     >
       <AuroraBackdrop palette={palette} paletteKey={`${hue}:${hue2}:${muted}:${theme}`} hue={hue} />
+      {/* Sits over the gradient, under every piece of chrome. */}
+      <BackdropTexture texture={texture} theme={theme} />
       <Sidebar />
       <main
-        className={`relative flex h-full min-w-0 flex-1 flex-col gap-2 p-2 ${compact ? '' : 'pl-0'}`}
+        className={`relative flex h-full min-w-0 flex-1 flex-col gap-2 p-2 pt-3 ${compact ? '' : 'pl-0'}`}
       >
+        {/*
+         * The strip above the page card is the window's title bar: the only
+         * chrome pixels across the top, since the page itself is a native view
+         * that never sees a click. Marking it draggable is what lets the
+         * window be moved from the top and, on macOS and Windows alike, gives
+         * the double-click-to-zoom gesture something to land on.
+         */}
+        <div className="drag absolute inset-x-0 top-0 h-3" aria-hidden />
         {/* Sits in the gap above the page card. */}
         <LoadingBar top={3} />
         <FindBar />
@@ -64,6 +77,7 @@ export default function App(): React.JSX.Element {
       <ScreenSharePicker />
       <HistoryPanel />
       <ExtensionsPanel />
+      <SettingsPanel />
     </div>
   )
 }

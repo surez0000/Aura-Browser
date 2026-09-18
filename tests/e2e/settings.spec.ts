@@ -13,7 +13,8 @@ test('settings panel changes the search engine; the palette follows and it persi
     await expect(chrome.getByTestId('updates-status')).toContainText('installed builds')
 
     await chrome.getByTestId('setting-search-engine').selectOption('google')
-    await chrome.getByTestId('settings-button').click()
+    // The dialog closes from its own close button, the scrim, or Escape.
+    await chrome.getByTestId('settings-close').click()
     await expect(chrome.getByTestId('settings-flyout')).toHaveCount(0)
 
     await chrome.getByTestId('new-tab-button').click()

@@ -76,12 +76,13 @@ test('the compact rail activates tabs and keeps the page live', async () => {
     // Switching tabs from the rail never swaps the page for a snapshot.
     await expect(chrome.getByTestId('page-card').locator('img')).toHaveCount(0)
 
-    // A popover has no room beside a 60 px rail, so it opens over the page —
-    // only on an explicit click, and the live view returns when it closes.
+    // Settings opens over the page, so the live view is swapped for a snapshot
+    // while it is up and comes back when it closes. Escape dismisses it: the
+    // gear cannot, now that the dialog's scrim covers the whole window.
     await chrome.getByTestId('settings-button').click()
     await expect(chrome.getByTestId('settings-flyout')).toBeVisible()
     await expect(chrome.getByTestId('page-card').locator('img')).toBeVisible()
-    await chrome.getByTestId('settings-button').click()
+    await chrome.keyboard.press('Escape')
     await expect(chrome.getByTestId('settings-flyout')).toHaveCount(0)
     await expect(chrome.getByTestId('page-card').locator('img')).toHaveCount(0)
   } finally {

@@ -29,18 +29,21 @@ export function ScreenSharePicker(): React.JSX.Element {
       {request && (
         <motion.div
           className="absolute inset-0 z-50 flex items-start justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
           data-testid="screen-share-picker"
         >
-          <div className="absolute inset-0" style={{ background: 'var(--scrim)' }} />
+          <motion.div
+            className="absolute inset-0"
+            style={{ background: 'var(--scrim)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          />
           <motion.div
             className="dialog relative mt-[10vh] flex max-h-[76vh] w-[min(720px,90vw)] flex-col rounded-2xl p-4 shadow-2xl"
-            initial={{ opacity: 0, y: -14, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            initial={{ y: -14, scale: 0.98 }}
+            animate={{ y: 0, scale: 1 }}
+            exit={{ y: -10, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 480, damping: 34 }}
           >
             {request.systemPermission === 'denied' ? (

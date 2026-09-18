@@ -1,10 +1,11 @@
+import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ExternalLink, RefreshCw, Settings } from 'lucide-react'
+import { ExternalLink, RefreshCw, Settings, X } from 'lucide-react'
 import type { AuroraSettings, UpdateState } from '@shared/models'
 import { SEARCH_ENGINE_IDS, SEARCH_ENGINES } from '@shared/search'
-import { popoverAnchorClass } from '@/lib/popover-anchor'
+import { holdOverlay, releaseOverlay } from '@/lib/overlay'
 import { invoke, modKeyLabel } from '@/lib/ipc'
-import { selectSidebarMode, useSettings } from '@/state/settings'
+import { useSettings } from '@/state/settings'
 import { setSidebarMode } from '@/state/sync'
 import { useUi } from '@/state/ui'
 
@@ -34,20 +35,49 @@ export function SettingsButton(): React.JSX.Element {
   )
 }
 
-function Row({
-  label,
+function Section({
+  title,
   children,
 }: {
-  label: React.ReactNode
+  title: string
   children: React.ReactNode
 }): React.JSX.Element {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-1.5">
-      <span className="text-[12px]" style={{ color: 'var(--ink-2)' }}>
-        {label}
+    <section className="px-2 py-2">
+      <h3
+        className="px-2 pb-1 text-[11px] font-medium tracking-wide uppercase"
+        style={{ color: 'var(--ink-3)' }}
+      >
+        {title}
+      </h3>
+      {children}
+    </section>
+  )
+}
+
+function Row({
+  label,
+  hint,
+  children,
+}: {
+  label: React.ReactNode
+  hint?: string
+  children?: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-2">
+      <span className="flex min-w-0 flex-col">
+        <span className="text-[13px]" style={{ color: 'var(--ink-1)' }}>
+          {label}
+        </span>
+        {hint && (
+          <span className="text-[11px] leading-snug" style={{ color: 'var(--ink-3)' }}>
+            {hint}
+          </span>
+        )}
       </span>
       {/* Wide controls drop under the label instead of overflowing the panel. */}
-      <div className="ml-auto flex min-w-0 max-w-full justify-end">{children}</div>
+      <div className="ml-auto flex max-w-full min-w-0 justify-end">{children}</div>
     </div>
   )
 }
@@ -125,16 +155,38 @@ const ARCHIVE_OPTIONS = [
   { value: '72', label: '3 days' },
 ] as const
 
-/**
- * Settings popover anchored in the sidebar (⌘, or the gear): appearance,
- * sidebar mode, search engine, auto-archive, and the update status.
- */
-export function SettingsFlyout(): React.JSX.Element {
-  const compact = useSettings(selectSidebarMode) === 'compact'
+/** Settings (⌘, or the gear). Mounted fresh on every open, like History. */
+export function SettingsPanel(): React.JSX.Element {
   const open = useUi((s) => s.settingsOpen)
+  return <AnimatePresence>{open && <SettingsDialog />}</AnimatePresence>
+}
+
+/**
+ * One scrolling page of settings over a snapshot of the page (ADR-0003).
+ * It used to be a small popover in the sidebar that only the gear could
+ * dismiss; it now closes on Escape, on the scrim, and on its own close button,
+ * the same as every other dialog.
+ */
+function SettingsDialog(): React.JSX.Element {
+  const close = useUi((s) => s.closeSettings)
   const settings = useSettings((s) => s.settings)
   const update = useSettings((s) => s.update)
   const updateState = useUi((s) => s.updateState)
+
+  useEffect(() => {
+    void holdOverlay('settings')
+    return () => releaseOverlay('settings')
+  }, [])
+
+  // The panel holds no text field to carry a key handler, so Escape is caught
+  // at the window instead.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') close()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [close])
 
   const archiveValue = (
     ARCHIVE_OPTIONS.some((o) => Number(o.value) === settings.todayArchiveHours)
@@ -143,74 +195,121 @@ export function SettingsFlyout(): React.JSX.Element {
   ) as (typeof ARCHIVE_OPTIONS)[number]['value']
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0, y: 10, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 8, scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 460, damping: 32 }}
-          className={`popover ${popoverAnchorClass(compact)} rounded-xl p-2 shadow-2xl`}
-          data-testid="settings-flyout"
+    <motion.div
+      className="absolute inset-0 z-50 flex items-start justify-center"
+      data-testid="settings-flyout"
+    >
+      <motion.div
+        className="absolute inset-0"
+        style={{ background: 'var(--scrim)' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        onClick={close}
+      />
+      <motion.div
+        className="dialog relative mt-[8vh] flex max-h-[80vh] w-[min(640px,92vw)] flex-col rounded-2xl shadow-2xl"
+        initial={{ y: -14, scale: 0.98 }}
+        animate={{ y: 0, scale: 1 }}
+        exit={{ y: -10, scale: 0.98 }}
+        transition={{ type: 'spring', stiffness: 480, damping: 34 }}
+      >
+        <div
+          className="flex shrink-0 items-center gap-3 border-b px-4 py-3"
+          style={{ borderColor: 'var(--border-glass)' }}
         >
-          <div
-            className="px-2 pt-1 pb-2 text-[11px] font-medium tracking-wide uppercase"
-            style={{ color: 'var(--ink-3)' }}
-          >
+          <h2 className="flex-1 text-[14px] font-medium" style={{ color: 'var(--ink-1)' }}>
             Settings
-          </div>
+          </h2>
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Close settings"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-(--surface-hover)"
+            style={{ color: 'var(--ink-2)' }}
+            data-testid="settings-close"
+          >
+            <X size={15} />
+          </button>
+        </div>
 
-          <Row label="Appearance">
-            <Segmented<AuroraSettings['theme']>
-              value={settings.theme}
-              options={[
-                { value: 'system', label: 'System' },
-                { value: 'light', label: 'Light' },
-                { value: 'dark', label: 'Dark' },
-              ]}
-              onChange={(theme) => void update({ theme })}
-              testId="setting-theme"
-            />
-          </Row>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          <Section title="Appearance">
+            <Row label="Theme">
+              <Segmented<AuroraSettings['theme']>
+                value={settings.theme}
+                options={[
+                  { value: 'system', label: 'System' },
+                  { value: 'light', label: 'Light' },
+                  { value: 'dark', label: 'Dark' },
+                ]}
+                onChange={(theme) => void update({ theme })}
+                testId="setting-theme"
+              />
+            </Row>
+            <Row
+              label="Backdrop texture"
+              hint="Grain is a fine still noise. Particles drift slowly and cost a little GPU."
+            >
+              <Segmented<AuroraSettings['backdropTexture']>
+                value={settings.backdropTexture}
+                options={[
+                  { value: 'none', label: 'None' },
+                  { value: 'grain', label: 'Grain' },
+                  { value: 'particles', label: 'Particles' },
+                ]}
+                onChange={(backdropTexture) => void update({ backdropTexture })}
+                testId="setting-texture"
+              />
+            </Row>
+          </Section>
 
-          <Row label="Sidebar">
-            <Segmented<AuroraSettings['sidebarMode']>
-              value={settings.sidebarMode}
-              options={[
-                { value: 'fixed', label: 'Full' },
-                { value: 'compact', label: 'Compact' },
-              ]}
-              onChange={(mode) => setSidebarMode(mode)}
-              testId="setting-sidebar"
-            />
-          </Row>
+          <Section title="Sidebar">
+            <Row label="Width">
+              <Segmented<AuroraSettings['sidebarMode']>
+                value={settings.sidebarMode}
+                options={[
+                  { value: 'fixed', label: 'Full' },
+                  { value: 'compact', label: 'Compact' },
+                ]}
+                onChange={(mode) => setSidebarMode(mode)}
+                testId="setting-sidebar"
+              />
+            </Row>
+          </Section>
 
-          <Row label="Search engine">
-            <Select<AuroraSettings['searchEngine']>
-              value={settings.searchEngine}
-              options={SEARCH_ENGINE_IDS.map((id) => ({
-                value: id,
-                label: SEARCH_ENGINES[id].name,
-              }))}
-              onChange={(searchEngine) => void update({ searchEngine })}
-              testId="setting-search-engine"
-            />
-          </Row>
+          <Section title="Search">
+            <Row label="Search engine">
+              <Select<AuroraSettings['searchEngine']>
+                value={settings.searchEngine}
+                options={SEARCH_ENGINE_IDS.map((id) => ({
+                  value: id,
+                  label: SEARCH_ENGINES[id].name,
+                }))}
+                onChange={(searchEngine) => void update({ searchEngine })}
+                testId="setting-search-engine"
+              />
+            </Row>
+          </Section>
 
-          <Row label="Auto-archive">
-            <Select
-              value={archiveValue}
-              options={ARCHIVE_OPTIONS}
-              onChange={(v) => void update({ todayArchiveHours: Number(v) })}
-              testId="setting-archive"
-            />
-          </Row>
+          <Section title="Tabs">
+            <Row label="Auto-archive Today tabs" hint="Idle tabs move to the archive after this.">
+              <Select
+                value={archiveValue}
+                options={ARCHIVE_OPTIONS}
+                onChange={(v) => void update({ todayArchiveHours: Number(v) })}
+                testId="setting-archive"
+              />
+            </Row>
+          </Section>
 
-          <div className="mx-2 my-1 border-t" style={{ borderColor: 'var(--border-glass)' }} />
-          <UpdatesSection state={updateState} />
-        </motion.div>
-      )}
-    </AnimatePresence>
+          <Section title="Updates">
+            <UpdatesSection state={updateState} />
+          </Section>
+        </div>
+      </motion.div>
+    </motion.div>
   )
 }
 

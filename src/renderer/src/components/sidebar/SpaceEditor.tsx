@@ -4,7 +4,9 @@ import { Trash2 } from 'lucide-react'
 import { popoverAnchorClass } from '@/lib/popover-anchor'
 import { selectSidebarMode, useSettings } from '@/state/settings'
 import { invoke } from '@/lib/ipc'
-import { gradientSwatchCss } from '@/theme/aurora'
+import { auroraPalette, gradientSwatchCss, hue2Of, spaceGradientCss } from '@/theme/aurora'
+import { toCss } from '@/theme/contrast'
+import type { ThemeName } from '@shared/theme'
 import { useTabs } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
@@ -25,10 +27,17 @@ const GRADIENTS: ReadonlyArray<readonly [number, number]> = [
 ]
 const HUES = GRADIENTS.map(([h]) => h)
 
-/** Rainbow track for the hue sliders, so the handle sits on its own colour. */
-const HUE_TRACK = `linear-gradient(to right, ${[0, 60, 120, 180, 240, 300, 360]
-  .map((h) => `hsl(${h} 75% 55%)`)
-  .join(', ')})`
+/**
+ * Rainbow track for the hue sliders, so the handle sits on its own colour.
+ * Built from the same accents the chips use, in the current theme — a raw HSL
+ * ramp read as a light-mode strip however dark the rest of the window was.
+ */
+function hueTrack(theme: ThemeName): string {
+  const stops = [0, 40, 80, 120, 160, 200, 240, 280, 320, 360]
+  return `linear-gradient(to right, ${stops
+    .map((h) => toCss(auroraPalette(h, theme).accent))
+    .join(', ')})`
+}
 
 /** One gradient stop, on a rainbow track. */
 function HueSlider({
@@ -36,11 +45,13 @@ function HueSlider({
   value,
   onChange,
   testId,
+  theme,
 }: {
   label: string
   value: number
   onChange: (value: number) => void
   testId: string
+  theme: ThemeName
 }): React.JSX.Element {
   return (
     <label className="mt-2 flex items-center gap-2">
@@ -55,7 +66,7 @@ function HueSlider({
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={`${label} colour`}
         className="h-1.5 w-full cursor-pointer appearance-none rounded-full"
-        style={{ background: HUE_TRACK }}
+        style={{ background: hueTrack(theme) }}
         data-testid={testId}
       />
     </label>
@@ -84,9 +95,18 @@ export function SpaceEditor(): React.JSX.Element | null {
   if (seedKey !== lastSeed) {
     setLastSeed(seedKey)
     setName(space?.name ?? '')
-    const fallback = GRADIENTS[(spaces.length + 1) % GRADIENTS.length] ?? GRADIENTS[0]!
-    setHue(space?.accentHue ?? fallback[0])
-    setHue2(space?.accentHue2 ?? fallback[1])
+    if (space) {
+      setHue(space.accentHue)
+      // A Space made before gradients existed stores no second stop, and its
+      // backdrop uses the default spread from the first. Seed that, not an
+      // unrelated preset — the editor was opening on colours the Space had
+      // never had, and saving would have applied them.
+      setHue2(hue2Of(space))
+    } else {
+      const fallback = GRADIENTS[(spaces.length + 1) % GRADIENTS.length] ?? GRADIENTS[0]!
+      setHue(fallback[0])
+      setHue2(fallback[1])
+    }
   }
 
   useEffect(() => {
@@ -141,10 +161,22 @@ export function SpaceEditor(): React.JSX.Element | null {
           />
           {!space?.incognito && (
             <div className="mt-2">
-              {/* What the Space will actually look like. */}
+              {/*
+               * The real backdrop colours, not the accent. Accents are lifted
+               * to stay legible on the ground they sit on, so in dark mode
+               * they are pale — which made this bar promise a light Space and
+               * then apply a dark one. The chips below stay on the accent:
+               * they are identity marks, and true backdrop colours would make
+               * them near-identical in dark mode.
+               */}
               <div
                 className="h-7 w-full rounded-lg"
-                style={{ background: gradientSwatchCss(hue, hue2 ?? hue + 52, theme) }}
+                style={{
+                  background: spaceGradientCss(
+                    { accentHue: hue, accentHue2: hue2, incognito: false },
+                    theme,
+                  ),
+                }}
                 data-testid="space-gradient-preview"
                 aria-hidden
               />
@@ -170,12 +202,19 @@ export function SpaceEditor(): React.JSX.Element | null {
                   />
                 ))}
               </div>
-              <HueSlider label="Start" value={hue} onChange={setHue} testId="space-hue-start" />
+              <HueSlider
+                label="Start"
+                value={hue}
+                onChange={setHue}
+                testId="space-hue-start"
+                theme={theme}
+              />
               <HueSlider
                 label="End"
                 value={hue2 ?? hue + 52}
                 onChange={(v) => setHue2(v)}
                 testId="space-hue-end"
+                theme={theme}
               />
             </div>
           )}

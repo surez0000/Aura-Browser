@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { motion } from 'motion/react'
-import { Archive, ArrowLeft, PanelLeft, Plus, RotateCw } from 'lucide-react'
+import { Archive, ArrowLeft, PanelLeft, PanelLeftClose, Plus, RotateCw } from 'lucide-react'
 import { isMac, modKeyLabel, invoke } from '@/lib/ipc'
 import { holdOverlay, releaseOverlay } from '@/lib/overlay'
 import { usePrefersReducedMotion } from '@/lib/use-reduced-motion'
@@ -16,7 +16,7 @@ import { TabSection } from './TabSection'
 import { SpaceSwitcher } from './SpaceSwitcher'
 import { SpaceEditor } from './SpaceEditor'
 import { DownloadsButton, DownloadsFlyout } from './DownloadsFlyout'
-import { SettingsButton, SettingsFlyout } from './SettingsFlyout'
+import { SettingsButton } from './SettingsFlyout'
 import { UpdateCard, UpdateRailButton } from '@/components/UpdateNotice'
 import { WindowControls } from './WindowControls'
 
@@ -127,6 +127,14 @@ export function Sidebar(): React.JSX.Element {
             <div className="drag flex h-10 shrink-0 items-center">
               {isMac() ? <div className="w-16" /> : null}
               <div className="flex-1" />
+              {/* The rail offers "Expand sidebar"; this is the way back. */}
+              <RailButton
+                label="Collapse sidebar"
+                onClick={toggleSidebarMode}
+                testId="sidebar-collapse"
+              >
+                <PanelLeftClose size={16} />
+              </RailButton>
               {!isMac() && <WindowControls />}
             </div>
 
@@ -198,7 +206,6 @@ export function Sidebar(): React.JSX.Element {
 
       {/* Popovers sit outside the clipped column so they can open beside the rail. */}
       <DownloadsFlyout />
-      <SettingsFlyout />
       <SpaceEditor />
     </motion.aside>
   )

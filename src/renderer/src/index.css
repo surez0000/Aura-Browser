@@ -66,14 +66,18 @@ img {
   background: var(--card-bg);
 }
 
-/* Dialogs float over page content, which can be any colour. `backdrop-filter`
-   cannot be relied on here: these open inside an AnimatePresence wrapper whose
-   animated opacity makes Chromium start a new backdrop root, so there is
-   nothing behind them left to blur and the page reads straight through. They
-   use a solid ground instead — glass stays for surfaces over our own chrome. */
+/* Dialogs float over page content, which can be any colour, so they need a
+   mostly opaque ground for their inks to keep the contrast they were checked
+   at. The blur on top of that is real: every dialog holds the overlay first,
+   which swaps the live page for a snapshot painted in this renderer, and
+   none of them animate opacity any more — an animated opacity makes Chromium
+   start a new backdrop root, which left earlier builds with nothing to blur
+   and the page reading straight through. */
 .dialog {
-  background: var(--card-bg);
+  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
   border: 1px solid var(--border-glass);
+  backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(140%);
 }
 
 .card {
