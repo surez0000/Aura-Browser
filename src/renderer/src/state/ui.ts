@@ -18,8 +18,8 @@ export interface UiState {
   paletteMode: PaletteMode
   /** Monotonic counter: each bump asks the URL pill to enter edit mode. */
   urlEditRequest: number
-  /** Snapshot of the page shown while an overlay hides the native view. */
-  pageSnapshot: string | null
+  /** Per-pane snapshots shown while an overlay hides the native views. */
+  paneSnapshots: Record<string, string>
 
   findOpen: boolean
   findQuery: string
@@ -44,7 +44,7 @@ export interface UiState {
   openPalette(mode: PaletteMode): void
   closePalette(): void
   requestUrlEdit(): void
-  setPageSnapshot(dataUrl: string | null): void
+  setPaneSnapshots(snapshots: Record<string, string>): void
 
   openFind(): void
   closeFind(): void
@@ -76,7 +76,7 @@ export const useUi = create<UiState>()((set) => ({
   paletteOpen: false,
   paletteMode: 'new',
   urlEditRequest: 0,
-  pageSnapshot: null,
+  paneSnapshots: {},
 
   findOpen: false,
   findQuery: '',
@@ -98,7 +98,7 @@ export const useUi = create<UiState>()((set) => ({
   openPalette: (mode) => set({ paletteOpen: true, paletteMode: mode }),
   closePalette: () => set({ paletteOpen: false }),
   requestUrlEdit: () => set((s) => ({ urlEditRequest: s.urlEditRequest + 1 })),
-  setPageSnapshot: (pageSnapshot) => set({ pageSnapshot }),
+  setPaneSnapshots: (paneSnapshots) => set({ paneSnapshots }),
 
   openFind: () => set({ findOpen: true }),
   closeFind: () => set({ findOpen: false, findQuery: '', findResult: null }),

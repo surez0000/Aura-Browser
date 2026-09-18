@@ -127,6 +127,8 @@ export function installMenu(ctx: MenuContext): void {
         mainItem('zoom:out', () => m.zoom(undefined, 'out')),
         mainItem('zoom:reset', () => m.zoom(undefined, 'reset')),
         { type: 'separator' },
+        rendererItem('split:toggle'),
+        { type: 'separator' },
         rendererItem('sidebar:toggle'),
         rendererItem('downloads:toggle'),
         ...(process.platform === 'darwin' ? [] : [rendererItem('settings:toggle')]),

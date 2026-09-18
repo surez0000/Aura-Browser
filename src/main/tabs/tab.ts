@@ -13,6 +13,8 @@ export interface TabHost {
   recordVisit(tab: Tab, url: string): void
   updateTitle(tab: Tab, url: string, title: string): void
   popupMenu(template: MenuItemConstructorOptions[]): void
+  /** The page took keyboard focus (a click landed in it). */
+  focused(tab: Tab): void
 }
 
 /**
@@ -174,6 +176,9 @@ export class Tab {
       return { action: 'deny' }
     })
 
+    // Clicking inside a pane focuses it: the chrome cannot see clicks on a
+    // native view, but the view itself reports focus.
+    wc.on('focus', () => this.host.focused(this))
     wc.on('did-start-loading', () => {
       this.isLoading = true
       this.domReady = false

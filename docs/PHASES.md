@@ -97,8 +97,12 @@ e2e tests green.
 
 ## (d) Split view, Peek, mini window, extensions
 
-- Split view 2–4 panes: the (a) layout protocol generalizes to N rects; drag
-  dividers; keyboard management.
+- ✅ Split view 2–4 panes (2026-09-18): the (a) layout protocol generalized to
+  N rects exactly as ADR-0003 predicted — the renderer measures each pane, the
+  main process positions one `WebContentsView` per pane. ⌘\\ splits and
+  collapses; dividers drag; a pane header carries the title and close because
+  chrome cannot paint over a native view; panes and ratios persist in the
+  session; clicking a page focuses its pane (`webContents` 'focus').
 - Peek: link preview in a floating card, promote-to-tab.
 - Mini window (Little-Arc-style) for links opened while Aura Browser is the default
   browser.

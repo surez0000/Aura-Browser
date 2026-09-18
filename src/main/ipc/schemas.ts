@@ -131,13 +131,30 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
   'updates:install': empty,
   'updates:openReleases': empty,
 
-  'ui:setPageBounds': z
+  'ui:setPaneBounds': z
     .object({
-      x: z.number().finite(),
-      y: z.number().finite(),
-      width: z.number().finite().nonnegative(),
-      height: z.number().finite().nonnegative(),
+      panes: z
+        .array(
+          z
+            .object({
+              tabId: id,
+              x: z.number().finite(),
+              y: z.number().finite(),
+              width: z.number().finite().nonnegative(),
+              height: z.number().finite().nonnegative(),
+            })
+            .strict(),
+        )
+        .max(8),
     })
+    .strict(),
+
+  'tabs:split': z.object({ tabId: id.optional() }).strict(),
+  'tabs:toggleSplit': empty,
+  'tabs:closePane': z.object({ tabId: id }).strict(),
+  'tabs:focusPane': z.object({ tabId: id }).strict(),
+  'tabs:setPaneRatios': z
+    .object({ ratios: z.array(z.number().finite().positive()).min(1).max(8) })
     .strict(),
   'ui:overlay': z
     .object({ shown: z.boolean(), phase: z.enum(['capture', 'detach']).optional() })

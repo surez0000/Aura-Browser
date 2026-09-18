@@ -56,9 +56,19 @@ export interface TabsSnapshot {
   activeSpaceId: string
   /** All tabs across spaces; order within a (space, kind) group is list order. */
   tabs: TabInfo[]
-  /** Active tab of the active space. */
+  /** Focused pane's tab in the active space. */
   activeTabId: string | null
+  /**
+   * Tabs on screen in the active space, left to right. One entry is the
+   * ordinary single-page view; two to four are a split (phase d).
+   */
+  panes: string[]
+  /** Width of each pane as a fraction of the page area; sums to 1. */
+  paneRatios: number[]
 }
+
+/** Largest split the layout offers. */
+export const MAX_PANES = 4
 
 /** Persisted session (kv key "session"), phase (b) schema; upgraded on load. */
 export interface SessionSpaceV2 {
@@ -83,6 +93,9 @@ export interface SessionSnapshotV2 {
  */
 export interface SessionSpaceV3 extends SessionSpaceV2 {
   partition: string
+  /** Indices into `tabs` that were on screen as a split; absent = single pane. */
+  paneIndices?: number[]
+  paneRatios?: number[]
   /** Second gradient stop; absent on Spaces saved before gradients. */
   accentHue2?: number | null
 }

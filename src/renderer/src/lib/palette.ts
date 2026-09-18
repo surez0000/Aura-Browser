@@ -72,6 +72,12 @@ export function buildActions(ctx: {
     },
     { id: 'settings:open', title: 'Settings…', keywords: 'preferences options', hint: '⌘,' },
     {
+      id: 'split:toggle',
+      title: 'Split View',
+      keywords: 'panes side by side compare',
+      hint: '⌘\\',
+    },
+    {
       id: 'history:open',
       title: 'Show Full History',
       keywords: 'browsing visited clear delete',

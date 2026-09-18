@@ -1,6 +1,6 @@
 import { useMemo, type CSSProperties } from 'react'
 import { Sidebar } from '@/components/sidebar/Sidebar'
-import { PageCard } from '@/components/PageCard'
+import { PaneArea } from '@/components/PaneArea'
 import { Palette } from '@/components/palette/Palette'
 import { FindBar } from '@/components/FindBar'
 import { PermissionBanner } from '@/components/PermissionBanner'
@@ -54,7 +54,7 @@ export default function App(): React.JSX.Element {
         <FindBar />
         <PermissionBanner />
         <div className="min-h-0 flex-1">
-          <PageCard />
+          <PaneArea />
         </div>
       </main>
       <Palette />

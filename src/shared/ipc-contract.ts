@@ -31,6 +31,7 @@ export type RendererCommandId =
   | 'space:new'
   | 'settings:toggle'
   | 'history:open'
+  | 'split:toggle'
 
 /** invoke(channel, req) -> Promise<res> */
 export interface InvokeMap {
@@ -116,8 +117,25 @@ export interface InvokeMap {
   'updates:install': { req: Record<string, never>; res: void }
   'updates:openReleases': { req: Record<string, never>; res: void }
 
-  /** Where the page's WebContentsView should sit, in window coordinates (DIP). */
-  'ui:setPageBounds': { req: { x: number; y: number; width: number; height: number }; res: void }
+  /**
+   * Where each on-screen pane should sit, in window coordinates (DIP). One
+   * entry is the ordinary view; several are a split. The renderer measures,
+   * the main process positions (ADR-0003).
+   */
+  'ui:setPaneBounds': {
+    req: { panes: Array<{ tabId: string; x: number; y: number; width: number; height: number }> }
+    res: void
+  }
+
+  /** Show `tabId` beside the focused pane; omit it for a fresh tab. */
+  'tabs:split': { req: { tabId?: string }; res: void }
+  /** ⌘\\: split when there is one pane, collapse to the focused one otherwise. */
+  'tabs:toggleSplit': { req: Record<string, never>; res: void }
+  /** Remove one pane from the split (the tab itself stays open). */
+  'tabs:closePane': { req: { tabId: string }; res: void }
+  /** Move keyboard focus and chrome state to a pane. */
+  'tabs:focusPane': { req: { tabId: string }; res: void }
+  'tabs:setPaneRatios': { req: { ratios: number[] }; res: void }
   /**
    * Chrome overlays (palette, hover sidebar) render *under* native views, so
    * while an overlay is open the active view is detached and replaced by a
@@ -127,7 +145,7 @@ export interface InvokeMap {
    */
   'ui:overlay': {
     req: { shown: boolean; phase?: 'capture' | 'detach' }
-    res: { snapshotDataUrl: string | null }
+    res: { snapshots: Array<{ tabId: string; dataUrl: string }> }
   }
   'window:control': { req: { action: 'minimize' | 'maximize' | 'close' }; res: void }
   'state:get': { req: Record<string, never>; res: TabsSnapshot }
@@ -191,7 +209,12 @@ export const INVOKE_CHANNELS = [
   'updates:check',
   'updates:install',
   'updates:openReleases',
-  'ui:setPageBounds',
+  'ui:setPaneBounds',
+  'tabs:split',
+  'tabs:toggleSplit',
+  'tabs:closePane',
+  'tabs:focusPane',
+  'tabs:setPaneRatios',
   'ui:overlay',
   'window:control',
   'state:get',

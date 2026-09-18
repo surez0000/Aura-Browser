@@ -10,13 +10,14 @@ import {
 import { randomUUID } from 'node:crypto'
 import { Tab, isAllowedPageUrl, type TabHost } from './tab'
 import { INCOGNITO_PARTITION, isIsolatedSpacePartition, spacePartition } from './partition-names'
-import type {
-  FavoriteEntry,
-  FindResult,
-  SessionSnapshotV3,
-  SpaceInfo,
-  TabKind,
-  TabsSnapshot,
+import {
+  MAX_PANES,
+  type FavoriteEntry,
+  type FindResult,
+  type SessionSnapshotV3,
+  type SpaceInfo,
+  type TabKind,
+  type TabsSnapshot,
 } from '@shared/models'
 import type { HistoryStore } from '../services/db/history'
 import type { ArchiveStore } from '../services/db/archive'
@@ -25,6 +26,8 @@ interface TabManagerDeps {
   history: HistoryStore
   archive: ArchiveStore
   saveSession: (snapshot: SessionSnapshotV3) => void
+  /** Ask the chrome to put the caret in the address field (a blank pane opened). */
+  requestUrlEdit: () => void
   /** Wire per-session services (downloads, permissions) — once per partition. */
   attachSession: (ses: Session, opts: { persist: boolean }) => void
   pushFindResult: (result: FindResult) => void
@@ -40,7 +43,12 @@ interface SpaceRecord {
   /** Storage partition (ADR-0004): '' default session, persist:space:<id>, or in-memory incognito. */
   partition: string
   favorites: FavoriteEntry[]
+  /** Focused pane's tab. Always one of `panes` while the space has tabs. */
   activeTabId: string | null
+  /** Tabs on screen, left to right: one entry normally, 2–4 when split. */
+  panes: string[]
+  /** Pane widths as fractions of the page area; same length as `panes`. */
+  paneRatios: number[]
 }
 
 const PAGE_CORNER_RADIUS = 11
@@ -62,8 +70,8 @@ export class TabManager {
   private spaces: SpaceRecord[] = []
   private activeSpaceId = ''
   private tabs: Tab[] = []
-  private attachedTabId: string | null = null
-  private bounds: Rectangle | null = null
+  private attachedTabIds: string[] = []
+  private paneBounds = new Map<string, Rectangle>()
   private overlayShown = false
   private readonly closedStack: Array<{ url: string; spaceId: string; kind: TabKind }> = []
   private emitScheduled = false
@@ -84,6 +92,9 @@ export class TabManager {
       if (!tab.incognito) this.deps.history.updateTitle(url, title)
     },
     popupMenu: (template) => this.popupMenu(template),
+    focused: (tab) => {
+      if (this.activeSpace()?.panes.includes(tab.id)) this.focusPane(tab.id)
+    },
   }
 
   constructor(
@@ -131,6 +142,8 @@ export class TabManager {
       partition: opts.partition ?? (incognito ? INCOGNITO_PARTITION : spacePartition(id)),
       favorites: [],
       activeTabId: null,
+      panes: [],
+      paneRatios: [],
     }
     this.spaces.push(space)
     this.prepareSession(space.partition, !incognito)
@@ -224,7 +237,8 @@ export class TabManager {
     const space = this.getSpace(spaceId)
     if (!space) return
     if (this.activeSpaceId === spaceId) {
-      this.attachActiveIfPossible()
+      this.normalisePanes(space)
+      this.syncAttachments()
       this.scheduleEmit()
       return
     }
@@ -236,11 +250,13 @@ export class TabManager {
       tab = this.tabsOfSpace(spaceId)[0] ?? null
       space.activeTabId = tab?.id ?? null
     }
+    this.normalisePanes(space)
     if (tab) {
       tab.lastActiveAt = Date.now()
-      tab.ensureLoaded()
-      this.attachActiveIfPossible()
+      // Every pane of the space being entered loads, not just the focused one.
+      for (const id of space.panes) this.getTab(id)?.ensureLoaded()
     }
+    this.syncAttachments()
     this.scheduleEmit()
   }
 
@@ -327,8 +343,12 @@ export class TabManager {
     const siblings = this.tabsOfSpace(tab.spaceId)
     const siblingIndex = siblings.findIndex((t) => t.id === tab.id)
 
-    if (this.attachedTabId === tab.id) this.detach()
+    this.detachOne(tab)
     this.tabs = this.tabs.filter((t) => t.id !== tab.id)
+    if (space) {
+      space.panes = space.panes.filter((id) => id !== tab.id)
+      space.paneRatios = space.panes.map(() => 1 / Math.max(space.panes.length, 1))
+    }
     tab.destroy()
 
     if (space && space.activeTabId === tab.id) {
@@ -360,11 +380,25 @@ export class TabManager {
     const space = this.getSpace(tab.spaceId)
     if (!space) return
     if (space.activeTabId !== tab.id) this.stopActiveFind()
+    const alreadyOnScreen = space.panes.includes(tab.id)
+    const previousFocus = space.activeTabId
     space.activeTabId = tab.id
     tab.lastActiveAt = Date.now()
-    if (this.attachedTabId !== tab.id) this.detach()
+    // Already on screen: just move focus. Otherwise the tab takes the place of
+    // the focused pane, so choosing a tab from the sidebar never destroys a
+    // split you set up — collapse it with ⌘\\ instead.
+    if (!alreadyOnScreen) {
+      const at = space.panes.indexOf(previousFocus ?? '')
+      if (space.panes.length > 1 && at >= 0) space.panes[at] = tab.id
+      else {
+        space.panes = [tab.id]
+        space.paneRatios = [1]
+      }
+    }
+    this.normalisePanes(space)
     tab.ensureLoaded()
-    this.attachActiveIfPossible()
+    this.syncAttachments()
+    if (alreadyOnScreen && !this.overlayShown) tab.wc.focus()
     this.scheduleEmit()
   }
 
@@ -390,7 +424,11 @@ export class TabManager {
       const siblings = this.tabsOfSpace(source.id).filter((t) => t.id !== tab.id)
       source.activeTabId = siblings[0]?.id ?? null
     }
-    if (this.attachedTabId === tab.id) this.detach()
+    if (source) {
+      source.panes = source.panes.filter((id) => id !== tab.id)
+      source.paneRatios = source.panes.map(() => 1 / Math.max(source.panes.length, 1))
+    }
+    this.detachOne(tab)
 
     let moved: Tab
     if (tab.partition === target.partition) {
@@ -532,7 +570,9 @@ export class TabManager {
         spaceName: space.name,
       })
     }
-    if (this.attachedTabId === tab.id) this.detach()
+    this.detachOne(tab)
+    space.panes = space.panes.filter((id) => id !== tab.id)
+    space.paneRatios = space.panes.map(() => 1 / Math.max(space.panes.length, 1))
     if (space.activeTabId === tab.id) space.activeTabId = null
     this.tabs = this.tabs.filter((t) => t.id !== tab.id)
     tab.destroy()
@@ -608,7 +648,17 @@ export class TabManager {
     const moveTargets = this.spaces.filter(
       (s) => s.id !== tab.spaceId && s.incognito === tab.incognito,
     )
+    const space = this.getSpace(tab.spaceId)
+    const onScreen = space?.panes.includes(tab.id) ?? false
     const template: MenuItemConstructorOptions[] = [
+      {
+        label: onScreen ? 'Close Pane' : 'Open in Split View',
+        enabled:
+          tab.spaceId === this.activeSpaceId &&
+          (onScreen ? (space?.panes.length ?? 0) > 1 : (space?.panes.length ?? 0) < MAX_PANES),
+        click: () => (onScreen ? this.closePane(tab.id) : this.split(tab.id)),
+      },
+      { type: 'separator' },
       {
         label: tab.kind === 'pinned' ? 'Unpin Tab' : 'Pin Tab',
         click: () => this.setKind(tab.id, tab.kind === 'pinned' ? 'today' : 'pinned'),
@@ -636,86 +686,243 @@ export class TabManager {
 
   // ---- layout & overlay -------------------------------------------------------
 
-  setPageBounds(rect: Rectangle): void {
-    this.bounds = {
-      x: Math.round(rect.x),
-      y: Math.round(rect.y),
-      width: Math.max(0, Math.round(rect.width)),
-      height: Math.max(0, Math.round(rect.height)),
+  // ---- split view ----------------------------------------------------------
+
+  /**
+   * Keep a space's pane list honest: drop tabs that have closed or moved away,
+   * make sure the focused tab is on screen, fall back to a single pane, and
+   * keep the ratios the same length and summing to 1.
+   */
+  private normalisePanes(space: SpaceRecord): void {
+    const live = space.panes.filter((id) => this.getTab(id)?.spaceId === space.id)
+    const deduped = [...new Set(live)].slice(0, MAX_PANES)
+
+    if (space.activeTabId && !deduped.includes(space.activeTabId)) {
+      const focused = this.getTab(space.activeTabId)
+      if (focused) deduped.unshift(space.activeTabId)
     }
-    const attached = this.attachedTab()
-    if (attached) {
-      attached.view.setBounds(this.bounds)
+    if (deduped.length === 0) {
+      const fallback = space.activeTabId ?? this.tabsOfSpace(space.id)[0]?.id ?? null
+      space.panes = fallback ? [fallback] : []
     } else {
-      this.attachActiveIfPossible()
+      space.panes = deduped.slice(0, MAX_PANES)
     }
+    if (space.panes.length > 0 && !space.panes.includes(space.activeTabId ?? '')) {
+      space.activeTabId = space.panes[0] ?? null
+    }
+
+    const count = space.panes.length
+    const ratios = space.paneRatios.slice(0, count)
+    while (ratios.length < count) ratios.push(1 / Math.max(count, 1))
+    const total = ratios.reduce((sum, r) => sum + (r > 0 ? r : 0), 0)
+    space.paneRatios =
+      total > 0 ? ratios.map((r) => (r > 0 ? r : 0.05) / total) : ratios.map(() => 1 / count)
+  }
+
+  /** Show `tabId` beside the focused pane; without one, open a fresh tab. */
+  split(tabId?: string): void {
+    const space = this.activeSpace()
+    if (!space || space.panes.length >= MAX_PANES) return
+
+    let tab = tabId ? this.getTab(tabId) : null
+    if (tab && tab.spaceId !== space.id) return
+    const opened = !tab
+    if (!tab) {
+      tab = this.create({ activate: false, spaceId: space.id, kind: 'today' })
+    }
+    if (space.panes.includes(tab.id)) {
+      this.focusPane(tab.id)
+      return
+    }
+
+    const at = Math.max(0, space.panes.indexOf(space.activeTabId ?? '')) + 1
+    space.panes.splice(at, 0, tab.id)
+    // Even split: a fresh pane should not squeeze the others unpredictably.
+    space.paneRatios = space.panes.map(() => 1 / space.panes.length)
+    space.activeTabId = tab.id
+    tab.lastActiveAt = Date.now()
+    tab.ensureLoaded()
+    this.normalisePanes(space)
+    this.syncAttachments()
+    this.scheduleEmit()
+    // A pane we just created is blank: offer the address field for it.
+    if (opened) this.deps.requestUrlEdit()
+  }
+
+  /** Leave the split for this pane; the tab itself stays open in the sidebar. */
+  closePane(tabId: string): void {
+    const space = this.activeSpace()
+    if (!space || space.panes.length <= 1 || !space.panes.includes(tabId)) return
+    const index = space.panes.indexOf(tabId)
+    space.panes.splice(index, 1)
+    space.paneRatios = space.panes.map(() => 1 / space.panes.length)
+    if (space.activeTabId === tabId) {
+      space.activeTabId = space.panes[Math.max(0, index - 1)] ?? space.panes[0] ?? null
+    }
+    this.normalisePanes(space)
+    this.syncAttachments()
+    this.scheduleEmit()
+  }
+
+  /** Collapse a split back to the focused pane, or split if there is only one. */
+  toggleSplit(): void {
+    const space = this.activeSpace()
+    if (!space) return
+    if (space.panes.length > 1) {
+      const keep = space.activeTabId ?? space.panes[0]
+      if (!keep) return
+      space.panes = [keep]
+      space.paneRatios = [1]
+      this.normalisePanes(space)
+      this.syncAttachments()
+      this.scheduleEmit()
+      return
+    }
+    this.split()
+  }
+
+  focusPane(tabId: string): void {
+    const space = this.activeSpace()
+    if (!space || !space.panes.includes(tabId) || space.activeTabId === tabId) return
+    this.stopActiveFind()
+    space.activeTabId = tabId
+    const tab = this.getTab(tabId)
+    if (tab) {
+      tab.lastActiveAt = Date.now()
+      tab.ensureLoaded()
+      if (!this.overlayShown) tab.wc.focus()
+    }
+    this.scheduleEmit()
+  }
+
+  setPaneRatios(ratios: number[]): void {
+    const space = this.activeSpace()
+    if (!space || ratios.length !== space.panes.length) return
+    space.paneRatios = ratios
+    this.normalisePanes(space)
+    this.scheduleEmit()
+  }
+
+  /** The renderer measured each pane; position the matching views. */
+  setPaneBounds(panes: ReadonlyArray<{ tabId: string } & Rectangle>): void {
+    this.paneBounds = new Map(
+      panes.map((pane) => [
+        pane.tabId,
+        {
+          x: Math.round(pane.x),
+          y: Math.round(pane.y),
+          width: Math.max(0, Math.round(pane.width)),
+          height: Math.max(0, Math.round(pane.height)),
+        },
+      ]),
+    )
+    this.syncAttachments()
   }
 
   async setOverlayShown(
     shown: boolean,
     phase?: 'capture' | 'detach',
-  ): Promise<{ snapshotDataUrl: string | null }> {
+  ): Promise<{ snapshots: Array<{ tabId: string; dataUrl: string }> }> {
     if (!shown) {
       this.overlayShown = false
-      this.attachActiveIfPossible()
-      return { snapshotDataUrl: null }
+      this.syncAttachments()
+      return { snapshots: [] }
     }
     if (phase === 'detach') {
       // Second step of a two-phase swap; ignored if released in between.
       if (this.overlayShown) this.detach()
-      return { snapshotDataUrl: null }
+      return { snapshots: [] }
     }
     this.overlayShown = true
-    const attached = this.attachedTab()
-    let snapshotDataUrl: string | null = null
-    if (attached && !attached.crashed) {
-      try {
-        const image = await attached.wc.capturePage()
-        snapshotDataUrl = image.isEmpty() ? null : image.toDataURL()
-      } catch {
-        snapshotDataUrl = null
-      }
-    }
+    // Every visible pane is captured, so a split looks continuous under an
+    // overlay just as a single page does.
+    const captured = await Promise.all(
+      this.attachedTabIds.map(async (tabId) => {
+        const tab = this.getTab(tabId)
+        if (!tab || tab.crashed) return null
+        try {
+          const image = await tab.wc.capturePage()
+          return image.isEmpty() ? null : { tabId, dataUrl: image.toDataURL() }
+        } catch {
+          return null
+        }
+      }),
+    )
     // Released while capturing (fast open/close): main already reattached.
-    if (!this.overlayShown) return { snapshotDataUrl: null }
-    // 'capture' leaves the view attached until the chrome has painted the
-    // snapshot, so the page never blinks to its ground color.
+    if (!this.overlayShown) return { snapshots: [] }
+    // 'capture' leaves the views attached until the chrome has painted the
+    // snapshots, so the page never blinks to its ground color.
     if (phase !== 'capture') this.detach()
-    return { snapshotDataUrl }
+    return {
+      snapshots: captured.filter((s): s is { tabId: string; dataUrl: string } => s !== null),
+    }
   }
 
   focusActive(): void {
-    const attached = this.attachedTab()
-    if (attached) attached.wc.focus()
-  }
-
-  private attachedTab(): Tab | null {
-    return this.attachedTabId ? (this.getTab(this.attachedTabId) ?? null) : null
-  }
-
-  private attachActiveIfPossible(): void {
-    if (this.overlayShown || this.win.isDestroyed()) return
     const tab = this.active()
-    if (!tab || tab.crashed || !this.bounds || this.attachedTabId === tab.id) return
-    this.win.contentView.addChildView(tab.view)
-    tab.view.setBounds(this.bounds)
-    const view = tab.view as unknown as { setBorderRadius?: (radius: number) => void }
-    view.setBorderRadius?.(PAGE_CORNER_RADIUS)
-    this.attachedTabId = tab.id
-    tab.wc.focus()
+    if (tab && this.attachedTabIds.includes(tab.id)) tab.wc.focus()
+  }
+
+  /**
+   * Bring the window's child views in line with the active space's panes:
+   * attach what should be on screen at its measured rect, remove the rest.
+   */
+  private syncAttachments(): void {
+    if (this.win.isDestroyed()) return
+    const space = this.activeSpace()
+    const wanted =
+      this.overlayShown || !space
+        ? []
+        : space.panes.filter((id) => {
+            const tab = this.getTab(id)
+            return !!tab && !tab.crashed && this.paneBounds.has(id)
+          })
+
+    for (const id of this.attachedTabIds) {
+      if (wanted.includes(id)) continue
+      const tab = this.getTab(id)
+      if (tab) this.win.contentView.removeChildView(tab.view)
+    }
+
+    for (const id of wanted) {
+      const tab = this.getTab(id)
+      const bounds = this.paneBounds.get(id)
+      if (!tab || !bounds) continue
+      if (!this.attachedTabIds.includes(id)) {
+        this.win.contentView.addChildView(tab.view)
+        const view = tab.view as unknown as { setBorderRadius?: (radius: number) => void }
+        view.setBorderRadius?.(PAGE_CORNER_RADIUS)
+      }
+      tab.view.setBounds(bounds)
+    }
+
+    const gainedFocus = wanted.filter((id) => !this.attachedTabIds.includes(id))
+    this.attachedTabIds = wanted
+    const focused = space?.activeTabId
+    if (focused && gainedFocus.includes(focused)) this.getTab(focused)?.wc.focus()
+  }
+
+  /** Remove a single view from the window (a pane closing, crashing, moving). */
+  private detachOne(tab: Tab): void {
+    if (!this.attachedTabIds.includes(tab.id)) return
+    if (!this.win.isDestroyed()) this.win.contentView.removeChildView(tab.view)
+    this.attachedTabIds = this.attachedTabIds.filter((id) => id !== tab.id)
   }
 
   private detach(): void {
-    const tab = this.attachedTab()
-    if (tab && !this.win.isDestroyed()) {
-      this.win.contentView.removeChildView(tab.view)
+    if (!this.win.isDestroyed()) {
+      for (const id of this.attachedTabIds) {
+        const tab = this.getTab(id)
+        if (tab) this.win.contentView.removeChildView(tab.view)
+      }
     }
-    this.attachedTabId = null
+    this.attachedTabIds = []
   }
 
   private onTabChanged(tab: Tab): void {
-    if (tab.crashed && this.attachedTabId === tab.id) this.detach()
-    if (tab.id === this.activeSpace()?.activeTabId && !tab.crashed) this.attachActiveIfPossible()
+    // A crash removes just that pane's view; the rest of the split stays.
+    if (tab.crashed) this.detachOne(tab)
+    else if (this.activeSpace()?.panes.includes(tab.id)) this.syncAttachments()
     this.scheduleEmit()
   }
 
@@ -735,6 +942,8 @@ export class TabManager {
       activeSpaceId: this.activeSpaceId,
       tabs: this.tabs.map((t) => t.info()),
       activeTabId: this.activeSpace()?.activeTabId ?? null,
+      panes: [...(this.activeSpace()?.panes ?? [])],
+      paneRatios: [...(this.activeSpace()?.paneRatios ?? [])],
     }
   }
 
@@ -755,6 +964,11 @@ export class TabManager {
           0,
           tabs.findIndex((t) => t.id === space.activeTabId),
         )
+        // Panes are stored as indices into the persisted tab list, which is
+        // already filtered, so a pane whose URL cannot be restored drops out.
+        const paneIndices = space.panes
+          .map((paneId) => tabs.findIndex((t) => t.id === paneId))
+          .filter((index) => index >= 0)
         return {
           id: space.id,
           partition: space.partition,
@@ -763,6 +977,9 @@ export class TabManager {
           accentHue2: space.accentHue2,
           favorites: [...space.favorites],
           activeIndex,
+          ...(paneIndices.length > 1
+            ? { paneIndices, paneRatios: [...space.paneRatios].slice(0, paneIndices.length) }
+            : {}),
           tabs: tabs.map(({ url, title, faviconUrl, kind }) => ({ url, title, faviconUrl, kind })),
         }
       })
@@ -799,6 +1016,14 @@ export class TabManager {
       }
       const activeTab = created[Math.min(Math.max(0, s.activeIndex), created.length - 1)]
       space.activeTabId = activeTab?.id ?? null
+      const panes = (s.paneIndices ?? [])
+        .map((index) => created[index]?.id)
+        .filter((id): id is string => !!id)
+      if (panes.length > 1) {
+        space.panes = panes.slice(0, MAX_PANES)
+        space.paneRatios = (s.paneRatios ?? []).slice(0, space.panes.length)
+      }
+      this.normalisePanes(space)
     }
     this.ensureDefaultSpace()
     const target = this.getSpace(snapshot.activeSpaceId) ?? this.spaces[0]

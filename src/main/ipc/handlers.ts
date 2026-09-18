@@ -107,7 +107,12 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
   handleInvoke('updates:install', () => ctx.updater.install())
   handleInvoke('updates:openReleases', () => ctx.updater.openReleases())
 
-  handleInvoke('ui:setPageBounds', (req) => manager.setPageBounds(req))
+  handleInvoke('ui:setPaneBounds', (req) => manager.setPaneBounds(req.panes))
+  handleInvoke('tabs:split', (req) => manager.split(req.tabId))
+  handleInvoke('tabs:toggleSplit', () => manager.toggleSplit())
+  handleInvoke('tabs:closePane', (req) => manager.closePane(req.tabId))
+  handleInvoke('tabs:focusPane', (req) => manager.focusPane(req.tabId))
+  handleInvoke('tabs:setPaneRatios', (req) => manager.setPaneRatios(req.ratios))
   handleInvoke('ui:overlay', (req) => manager.setOverlayShown(req.shown, req.phase))
 
   handleInvoke('window:control', (req) => {

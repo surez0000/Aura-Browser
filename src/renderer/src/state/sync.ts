@@ -55,6 +55,9 @@ export function runRendererCommand(id: RendererCommandId): void {
     case 'history:open':
       ui.toggleHistory()
       break
+    case 'split:toggle':
+      void invoke('tabs:toggleSplit', {})
+      break
   }
 }
 

@@ -42,12 +42,14 @@ export async function holdOverlay(key: string): Promise<void> {
   holders.add(key)
   if (!first) return
   const gen = generation
-  const { snapshotDataUrl } = await invoke('ui:overlay', { shown: true, phase: 'capture' })
+  const { snapshots } = await invoke('ui:overlay', { shown: true, phase: 'capture' })
   if (gen !== generation || holders.size === 0) return
-  if (snapshotDataUrl) {
-    await decode(snapshotDataUrl)
+  if (snapshots.length > 0) {
+    await Promise.all(snapshots.map((s) => decode(s.dataUrl)))
     if (gen !== generation || holders.size === 0) return
-    useUi.getState().setPageSnapshot(snapshotDataUrl)
+    useUi
+      .getState()
+      .setPaneSnapshots(Object.fromEntries(snapshots.map((s) => [s.tabId, s.dataUrl])))
     await nextFrames(2)
     if (gen !== generation || holders.size === 0) return
   }
@@ -61,7 +63,7 @@ export function releaseOverlay(key: string): void {
   void invoke('ui:overlay', { shown: false }).then(() => {
     // The live view is above the snapshot again; give it a beat to paint.
     window.setTimeout(() => {
-      if (gen === generation && holders.size === 0) useUi.getState().setPageSnapshot(null)
+      if (gen === generation && holders.size === 0) useUi.getState().setPaneSnapshots({})
     }, 120)
   })
 }

@@ -114,6 +114,7 @@ function bootstrap(): void {
     history,
     archive,
     saveSession: (snapshot) => kv.set('session', snapshot),
+    requestUrlEdit: () => pushToChrome('ui:command', { id: 'url:focus' }),
     pushFindResult: (result) => pushToChrome('find:result', result),
     // Every Space is its own storage partition (ADR-0004); each session gets
     // download tracking and deny-by-default permissions the first time it is used.

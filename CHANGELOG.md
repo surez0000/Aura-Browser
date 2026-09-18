@@ -9,6 +9,15 @@ a release is cut.
 
 ### Added
 
+- **Split view** (⌘\\, the View menu, a palette action, or a tab's context
+  menu). Two to four pages side by side, each with a header showing its
+  favicon, title and a close button. Drag the divider to resize; the focused
+  pane is outlined in the Space's accent and clicking a page focuses its pane.
+  Choosing a tab from the sidebar while split replaces the focused pane rather
+  than collapsing the split. Splits and their widths survive a restart.
+
+### Added
+
 - **History manager** (⌘Y, or History → Show Full History, or the command
   palette). Everything visited, newest first and grouped by day, with search,
   per-visit delete, "forget every visit to this site", and clear by range

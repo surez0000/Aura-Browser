@@ -6,6 +6,9 @@ export interface TabsState {
   activeSpaceId: string
   tabs: TabInfo[]
   activeTabId: string | null
+  /** Tabs on screen in the active space, left to right. */
+  panes: string[]
+  paneRatios: number[]
   applySnapshot(snapshot: TabsSnapshot): void
   /** Optimistic order for one (space, kind) group while a drag is in flight. */
   applyGroupOrder(orderedIds: string[]): void
@@ -30,12 +33,16 @@ export const useTabs = create<TabsState>()((set) => ({
   activeSpaceId: '',
   tabs: [],
   activeTabId: null,
+  panes: [],
+  paneRatios: [],
   applySnapshot: (snapshot) =>
     set({
       spaces: snapshot.spaces,
       activeSpaceId: snapshot.activeSpaceId,
       tabs: snapshot.tabs,
       activeTabId: snapshot.activeTabId,
+      panes: snapshot.panes,
+      paneRatios: snapshot.paneRatios,
     }),
   applyGroupOrder: (orderedIds) => set((s) => ({ tabs: reorderGroup(s.tabs, orderedIds) })),
 }))
