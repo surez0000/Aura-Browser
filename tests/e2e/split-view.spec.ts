@@ -41,8 +41,15 @@ test('⌘\\ splits and collapses, panes resize, and a pane can be closed', async
       const boxes = await Promise.all((await cards.all()).map((c) => c.boundingBox()))
       return boxes.map((b) => Math.round(b?.width ?? 0))
     }
+    // Poll: a fixed wait is not enough on a loaded CI runner, where the pane
+    // ratios can still be arriving from the main process.
+    await expect
+      .poll(async () => {
+        const [left, right] = await widths()
+        return Math.abs((left ?? 0) - (right ?? 0))
+      })
+      .toBeLessThan(4)
     const [leftBefore, rightBefore] = await widths()
-    expect(Math.abs((leftBefore ?? 0) - (rightBefore ?? 0))).toBeLessThan(4)
 
     // Drag the divider: the left pane narrows, the right widens.
     const divider = chrome.getByTestId('pane-divider').first()

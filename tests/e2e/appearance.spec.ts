@@ -14,12 +14,17 @@ import {
  */
 
 test('the window reopens at the size and position it was left', async () => {
+  let left: { x: number; y: number; width: number; height: number }
   const first = await launchAurora()
   try {
     await expect(first.chrome.getByTestId('sidebar')).toBeVisible()
-    await first.app.evaluate(({ BrowserWindow }) => {
+    // Read back what the window actually became: a small display (CI runners
+    // have one) clamps the request, and the promise under test is that it
+    // reopens as it was *left*, not as it was asked for.
+    left = await first.app.evaluate(({ BrowserWindow }) => {
       const win = BrowserWindow.getAllWindows()[0]!
-      win.setBounds({ x: 120, y: 90, width: 1024, height: 700 })
+      win.setBounds({ x: 80, y: 60, width: 900, height: 640 })
+      return win.getNormalBounds()
     })
     // The save is debounced, so give it a moment to reach the store.
     await first.chrome.waitForTimeout(900)
@@ -30,11 +35,14 @@ test('the window reopens at the size and position it was left', async () => {
   const second = await launchAurora(first.userDataDir)
   try {
     const bounds = await second.app.evaluate(({ BrowserWindow }) =>
-      BrowserWindow.getAllWindows()[0]!.getBounds(),
+      BrowserWindow.getAllWindows()[0]!.getNormalBounds(),
     )
-    expect(bounds.width).toBe(1024)
-    expect(bounds.height).toBe(700)
-    expect(Math.abs(bounds.x - 120)).toBeLessThanOrEqual(2)
+    expect(bounds.width).toBe(left.width)
+    expect(bounds.height).toBe(left.height)
+    expect(Math.abs(bounds.x - left.x)).toBeLessThanOrEqual(2)
+    expect(Math.abs(bounds.y - left.y)).toBeLessThanOrEqual(2)
+    // And not simply the default it used to always open at.
+    expect(bounds.width).not.toBe(1360)
   } finally {
     await second.app.close()
   }
