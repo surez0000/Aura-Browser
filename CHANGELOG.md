@@ -7,6 +7,16 @@ a release is cut.
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-09-18
+
+First stable release. Everything below shipped across the 0.1.x line and is
+carried forward unchanged; 1.0 marks the browser as daily-drivable rather than
+adding new behaviour.
+
+### Changed
+
+- New brand icon.
+
 ## [0.1.4] — 2026-09-18
 
 ### Fixed
