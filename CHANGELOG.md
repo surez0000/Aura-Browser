@@ -7,6 +7,8 @@ a release is cut.
 
 ## [Unreleased]
 
+## [0.1.4] — 2026-09-18
+
 ### Fixed
 
 - The screen-share picker and the command palette were see-through over page
