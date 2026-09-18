@@ -16,12 +16,16 @@ const INSET = (SIZE - TILE) / 2
 const RADIUS = 186
 
 app.whenReady().then(async () => {
-  const logoPath = join(root, 'build', 'logo.png')
-  if (!existsSync(logoPath)) {
-    console.error('build/logo.png is missing — drop the square logo there first.')
+  // Any format Chromium can draw: the artwork is rendered through an <img>,
+  // so a webp or avif export works as well as a png and needs no conversion.
+  const LOGO_NAMES = ['logo.png', 'logo.webp', 'logo.avif', 'logo.jpg', 'logo.jpeg']
+  const logoPath = LOGO_NAMES.map((name) => join(root, 'build', name)).find((p) => existsSync(p))
+  if (!logoPath) {
+    console.error(`no logo found — drop a square one at build/${LOGO_NAMES.join(' or build/')}.`)
     app.exit(2)
     return
   }
+  console.log('logo:', logoPath)
   // Reference the file directly: a multi-megabyte data: URL makes loadURL crawl.
   const logo = 'file://' + encodeURI(logoPath)
   const html = `<!doctype html><html><body style="margin:0;background:transparent;width:${SIZE}px;height:${SIZE}px;overflow:hidden">

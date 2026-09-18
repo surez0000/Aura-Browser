@@ -268,7 +268,11 @@ export function Palette(): React.JSX.Element {
                     setSelected((i) => (items.length ? (i - 1 + items.length) % items.length : 0))
                   }
                 }}
-                placeholder="Search tabs, history, actions — or enter a URL…"
+                placeholder={
+                  mode === 'command'
+                    ? 'Run a command…'
+                    : 'Search tabs and history — or enter a URL…'
+                }
                 spellCheck={false}
                 autoCapitalize="off"
                 autoCorrect="off"

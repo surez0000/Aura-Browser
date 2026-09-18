@@ -5,6 +5,28 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [Unreleased]
+
+### Added
+
+- **Command palette** (⇧⌘P, or View ▸ Command Palette…). Every action the
+  browser can run, in one place, listed as soon as it opens.
+
+### Changed
+
+- New brand icon.
+- **The New Tab and address fields list pages only.** Commands used to be mixed
+  in with tabs, history and favorites, crowding out the things those fields
+  exist to find. They now live in the command palette.
+
+### Fixed
+
+- A cookie set moments before quitting could be lost. The quit path gave every
+  Space's cookie jar and storage 1.5 seconds to reach disk, which several
+  Spaces on a loaded machine do not always make, and a cookie set just before
+  quitting is usually a login. The bound is 5 seconds now, still bounded so a
+  stuck flush cannot keep the app alive.
+
 ## [1.0.2] — 2026-09-18
 
 ### Added

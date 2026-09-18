@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { launchAurora, modifierKey } from './helpers'
+import { launchAurora, runPaletteAction } from './helpers'
 
 // String-form evaluate: runs in the page, no DOM lib needed in the e2e tsconfig.
 async function bgBaseVar(chrome: import('playwright').Page): Promise<string> {
@@ -13,11 +13,7 @@ function themeAttr(chrome: import('playwright').Page): Promise<string | undefine
 }
 
 async function runThemeAction(chrome: import('playwright').Page, label: string): Promise<void> {
-  await chrome.keyboard.press(`${modifierKey()}+t`)
-  await chrome.getByTestId('palette-input').fill(label)
-  const row = chrome.getByTestId('palette-result').filter({ hasText: label }).first()
-  await expect(row).toBeVisible()
-  await row.click()
+  await runPaletteAction(chrome, label)
 }
 
 test('theme switches light/dark via palette actions (tokens re-injected)', async () => {

@@ -24,6 +24,7 @@ import type {
 /** Commands the main process asks the chrome renderer to run (menu/shortcuts). */
 export type RendererCommandId =
   | 'tab:new'
+  | 'palette:command'
   | 'url:focus'
   | 'sidebar:toggle'
   | 'find:open'

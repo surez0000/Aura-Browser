@@ -88,6 +88,13 @@ export const KEYMAP: readonly KeyCommand[] = [
     rendererCommand: 'split:toggle',
   },
   {
+    id: 'palette:command',
+    label: 'Command Palette…',
+    accelerator: 'CommandOrControl+Shift+P',
+    scope: 'renderer',
+    rendererCommand: 'palette:command',
+  },
+  {
     id: 'history:open',
     label: 'Show Full History',
     accelerator: 'CommandOrControl+Y',
@@ -176,6 +183,7 @@ export const RENDERER_COMBOS: readonly ComboEntry[] = [
   { key: ',', command: 'settings:toggle' },
   { key: 'y', command: 'history:open' },
   { key: '\\', command: 'split:toggle' },
+  { key: 'p', shift: true, command: 'palette:command' },
 ] as const
 
 export function matchCombo(key: string, shift: boolean): RendererCommandId | null {

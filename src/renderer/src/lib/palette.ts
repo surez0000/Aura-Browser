@@ -31,7 +31,7 @@ export interface ActionDef {
 
 export interface PaletteContext {
   query: string
-  mode: 'new' | 'edit'
+  mode: 'new' | 'edit' | 'command'
   tabs: TabInfo[]
   spaces: SpaceInfo[]
   activeSpaceId: string
@@ -151,6 +151,31 @@ export function composePalette(ctx: PaletteContext): PaletteItem[] {
   const limit = ctx.limit ?? DEFAULT_LIMIT
   const spaceName = (id: string): string => ctx.spaces.find((s) => s.id === id)?.name ?? ''
 
+  // The command palette lists actions and nothing else, including at rest.
+  if (ctx.mode === 'command') {
+    const scored = ctx.actions.map((action) => ({
+      action,
+      score: query
+        ? Math.max(
+            fuzzyScore(query, action.title),
+            action.keywords ? fuzzyScore(query, action.keywords) * 0.9 : 0,
+          )
+        : 1,
+    }))
+    return scored
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(({ action, score }) => ({
+        key: `action:${action.id}`,
+        type: 'action' as const,
+        title: action.title,
+        hint: action.hint ?? 'Action',
+        payload: { actionId: action.id },
+        score,
+      }))
+  }
+
   if (!query) {
     const items: PaletteItem[] = ctx.tabs
       .filter((t) => t.spaceId === ctx.activeSpaceId)
@@ -227,22 +252,6 @@ export function composePalette(ctx: PaletteContext): PaletteItem[] {
         score: score * 1.6,
       })
     }
-  }
-
-  for (const action of ctx.actions) {
-    const score = Math.max(
-      fuzzyScore(query, action.title),
-      action.keywords ? fuzzyScore(query, action.keywords) * 0.9 : 0,
-    )
-    if (score <= 0) continue
-    items.push({
-      key: `action:${action.id}`,
-      type: 'action',
-      title: action.title,
-      hint: action.hint ?? 'Action',
-      payload: { actionId: action.id },
-      score: score * 1.5,
-    })
   }
 
   for (const row of ctx.history) {

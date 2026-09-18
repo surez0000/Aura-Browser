@@ -161,6 +161,18 @@ export async function createTabViaPalette(chrome: Page, url: string): Promise<vo
   await input.press('Enter')
 }
 
+/**
+ * Run a command through the command palette (⇧⌘P). Commands are deliberately
+ * absent from the New Tab and address fields, which list pages only.
+ */
+export async function runPaletteAction(chrome: Page, label: string): Promise<void> {
+  await chrome.keyboard.press(`${modifierKey()}+Shift+P`)
+  await chrome.getByTestId('palette-input').fill(label)
+  const row = chrome.getByTestId('palette-result').filter({ hasText: label }).first()
+  await row.waitFor()
+  await row.click()
+}
+
 export function modifierKey(): 'Meta' | 'Control' {
   return process.platform === 'darwin' ? 'Meta' : 'Control'
 }

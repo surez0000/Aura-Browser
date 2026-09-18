@@ -6,7 +6,7 @@ const EXTENSION = join(process.cwd(), 'tests', 'e2e', 'fixtures', 'extension')
 
 /** Open the extensions manager through the command palette. */
 async function openExtensions(chrome: import('playwright').Page): Promise<void> {
-  await chrome.keyboard.press(`${modifierKey()}+t`)
+  await chrome.keyboard.press(`${modifierKey()}+Shift+P`)
   await chrome.getByTestId('palette-input').fill('Extensions')
   await chrome.getByTestId('palette-result').filter({ hasText: 'Extensions…' }).first().click()
   await expect(chrome.getByTestId('extensions-panel')).toBeVisible()

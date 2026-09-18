@@ -61,7 +61,7 @@ test('palette action pins and unpins the current tab', async () => {
     await createTabViaPalette(chrome, `${server.url}/a.html`)
     await expect(chrome.getByTestId('tab-title').filter({ hasText: 'Fixture A' })).toBeVisible()
 
-    await chrome.keyboard.press(`${modifierKey()}+t`)
+    await chrome.keyboard.press(`${modifierKey()}+Shift+P`)
     await chrome.getByTestId('palette-input').fill('pin current')
     const pinAction = chrome
       .getByTestId('palette-result')
@@ -74,7 +74,7 @@ test('palette action pins and unpins the current tab', async () => {
     await expect(pinned).toHaveCount(1)
     await expect(chrome.getByTestId('section-today').getByTestId('tab-item')).toHaveCount(0)
 
-    await chrome.keyboard.press(`${modifierKey()}+t`)
+    await chrome.keyboard.press(`${modifierKey()}+Shift+P`)
     await chrome.getByTestId('palette-input').fill('unpin current')
     const unpinAction = chrome
       .getByTestId('palette-result')
@@ -83,6 +83,38 @@ test('palette action pins and unpins the current tab', async () => {
     await expect(unpinAction).toBeVisible()
     await unpinAction.click()
     await expect(chrome.getByTestId('section-today').getByTestId('tab-item')).toHaveCount(1)
+  } finally {
+    await app.close()
+    await server.close()
+  }
+})
+
+test('the New Tab field lists pages, not commands; commands have their own palette', async () => {
+  const server = await startFixtureServer()
+  const { app, chrome } = await launchAurora()
+  try {
+    await createTabViaPalette(chrome, `${server.url}/a.html`)
+    await expect(chrome.getByTestId('tab-title').filter({ hasText: 'Fixture A' })).toBeVisible()
+
+    // New Tab: a query naming a command offers no command. Rows carry their own
+    // type, so this cannot be satisfied by the search row that simply repeats
+    // the words back.
+    const commandRows = chrome.locator('[data-testid="palette-result"][data-type="action"]')
+    await chrome.getByTestId('new-tab-button').click()
+    await chrome.getByTestId('palette-input').fill('split view')
+    await expect(chrome.getByTestId('palette-result').first()).toBeVisible()
+    await expect(commandRows).toHaveCount(0)
+    await chrome.keyboard.press('Escape')
+
+    // The command palette is where they live, and it lists nothing else.
+    await chrome.keyboard.press(`${modifierKey()}+Shift+P`)
+    await chrome.getByTestId('palette-input').fill('split view')
+    await expect(commandRows.first()).toBeVisible()
+    await expect(chrome.getByTestId('palette-result')).toHaveCount(await commandRows.count())
+
+    // And it opens already showing them, with no typing.
+    await chrome.getByTestId('palette-input').fill('')
+    await expect(chrome.getByTestId('palette-result').first()).toBeVisible()
   } finally {
     await app.close()
     await server.close()

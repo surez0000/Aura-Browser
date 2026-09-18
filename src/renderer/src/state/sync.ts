@@ -22,6 +22,9 @@ export function runRendererCommand(id: RendererCommandId): void {
     case 'tab:new':
       ui.openPalette('new')
       break
+    case 'palette:command':
+      ui.openPalette('command')
+      break
     case 'url:focus':
       // The compact rail has no address pill; the palette edits the URL there.
       if (useSettings.getState().settings.sidebarMode === 'compact') ui.openPalette('edit')

@@ -3,6 +3,7 @@ import {
   closeAndWaitForExit,
   createTabViaPalette,
   launchAurora,
+  modifierKey,
   startFixtureServer,
 } from './helpers'
 
@@ -100,8 +101,8 @@ test('incognito space is ephemeral', async () => {
   const first = await launchAurora()
   const { chrome } = first
   try {
-    // Open incognito through the palette action.
-    await chrome.getByTestId('new-tab-button').click()
+    // Open incognito through the command palette.
+    await chrome.keyboard.press(`${modifierKey()}+Shift+P`)
     await chrome.getByTestId('palette-input').fill('incognito')
     await expect(
       chrome.getByTestId('palette-result').filter({ hasText: 'New Incognito Tab' }).first(),

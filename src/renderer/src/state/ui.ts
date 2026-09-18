@@ -8,7 +8,13 @@ import type {
 } from '@shared/models'
 import type { ThemeName } from '@shared/theme'
 
-export type PaletteMode = 'new' | 'edit'
+/**
+ * 'new' opens the New Tab field, 'edit' the address field, 'command' the list
+ * of actions. Actions are deliberately absent from the first two: that field
+ * is for reaching a page, and commands crowded out the tabs and history it is
+ * meant to surface.
+ */
+export type PaletteMode = 'new' | 'edit' | 'command'
 
 export interface UiState {
   /** Effective theme (resolved from the system/light/dark setting). */

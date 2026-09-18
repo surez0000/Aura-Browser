@@ -79,10 +79,30 @@ describe('composePalette', () => {
     expect(search?.payload.url).toContain('duckduckgo.com')
   })
 
-  it('surfaces matching actions', () => {
+  it('surfaces matching actions in the command palette', () => {
     const actions = buildActions({ spaces: [space('s1')], activeSpaceId: 's1', activeTab: null })
-    const items = composePalette(ctx({ query: 'incognito', actions }))
+    const items = composePalette(ctx({ query: 'incognito', mode: 'command', actions }))
     expect(items.some((i) => i.type === 'action' && i.payload.actionId === 'incognito')).toBe(true)
+    expect(items.every((i) => i.type === 'action')).toBe(true)
+  })
+
+  it('lists every action when the command palette opens with no query', () => {
+    const actions = buildActions({ spaces: [space('s1')], activeSpaceId: 's1', activeTab: null })
+    const items = composePalette(ctx({ query: '', mode: 'command', actions, limit: 100 }))
+    expect(items).toHaveLength(actions.length)
+  })
+
+  it('keeps actions out of the New Tab and address fields', () => {
+    // That field is for reaching a page: commands crowded out the tabs and
+    // history it exists to surface, and they have their own palette now.
+    const actions = buildActions({ spaces: [space('s1')], activeSpaceId: 's1', activeTab: null })
+    for (const mode of ['new', 'edit'] as const) {
+      const items = composePalette(ctx({ query: 'incognito', mode, actions }))
+      expect(
+        items.some((i) => i.type === 'action'),
+        mode,
+      ).toBe(false)
+    }
   })
 
   it('offers switch/move actions for other spaces', () => {
