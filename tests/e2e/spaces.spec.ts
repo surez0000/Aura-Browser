@@ -158,15 +158,20 @@ test('Spaces have separate cookie jars — a login in one never leaks into anoth
 
   // Partitions are persistent: each Space still has its own jar after a restart.
   const second = await launchAurora(first.userDataDir)
+  // The tab just created is the active one, and its title is what that page
+  // read from the jar. Asserting on it says exactly that, where counting every
+  // matching title also folded in whether restored tabs had reloaded yet.
+  const activeTitle = (page: import('playwright').Page) =>
+    page.locator('[data-testid="tab-item"][data-active] [data-testid="tab-title"]')
   try {
     await expect(second.chrome.getByTestId('space-name')).toHaveText('Work')
     await createTabViaPalette(second.chrome, `${server.url}/cookie-read.html`)
-    await expect(titled(second.chrome, 'Cookie: none')).toHaveCount(2)
+    await expect(activeTitle(second.chrome)).toHaveText('Cookie: none')
 
     await second.chrome.getByTestId('space-dot').nth(0).click()
     await expect(second.chrome.getByTestId('space-name')).toHaveText('Personal')
     await createTabViaPalette(second.chrome, `${server.url}/cookie-read.html`)
-    await expect(titled(second.chrome, 'Cookie: yes')).toHaveCount(2)
+    await expect(activeTitle(second.chrome)).toHaveText('Cookie: yes')
   } finally {
     await second.app.close()
     await server.close()
