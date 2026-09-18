@@ -86,12 +86,15 @@ if (!app.requestSingleInstanceLock()) {
     manager?.saveSessionNow()
     if (flushedForQuit || !manager) return
     // Give every Space's cookie jar and storage a chance to hit disk, then quit
-    // for real. Bounded so a stuck flush can never keep the app alive.
+    // for real. Still bounded, so a stuck flush can never keep the app alive,
+    // but generously: a cookie set moments before quitting is a login, and
+    // 1.5 s was not enough for several partitions on a loaded machine, which
+    // lost them intermittently.
     flushedForQuit = true
     event.preventDefault()
     void Promise.race([
       manager.flushSessions(),
-      new Promise<void>((resolve) => setTimeout(resolve, 1_500)),
+      new Promise<void>((resolve) => setTimeout(resolve, 5_000)),
     ]).then(() => app.quit())
   })
 

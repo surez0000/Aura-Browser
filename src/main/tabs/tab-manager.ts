@@ -185,6 +185,10 @@ export class TabManager {
 
   /** Commit cookies and DOM storage of every Space to disk (called on quit). */
   async flushSessions(): Promise<void> {
+    // Drop the debounced per-partition flushes: this supersedes them, and one
+    // firing during teardown has nothing left to write to.
+    for (const timer of this.cookieFlushTimers.values()) clearTimeout(timer)
+    this.cookieFlushTimers.clear()
     await Promise.all(
       [...this.sessions.values()].map(async (ses) => {
         try {
