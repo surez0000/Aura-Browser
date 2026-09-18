@@ -7,6 +7,8 @@ a release is cut.
 
 ## [Unreleased]
 
+## [0.1.3] — 2026-09-18
+
 ### Added
 
 - **Screen sharing works.** A page calling `getDisplayMedia` now gets an
