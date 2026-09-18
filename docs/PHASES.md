@@ -103,9 +103,16 @@ e2e tests green.
   collapses; dividers drag; a pane header carries the title and close because
   chrome cannot paint over a native view; panes and ratios persist in the
   session; clicking a page focuses its pane (`webContents` 'focus').
-- Peek: link preview in a floating card, promote-to-tab.
-- Mini window (Little-Arc-style) for links opened while Aura Browser is the default
-  browser.
+- ✅ Peek (2026-09-18): shift-clicking a link asks Chromium for a new window
+  carrying no window features, which is the gesture — a scripted `window.open`
+  _with_ features stays a real tab so sign-in popups keep working. The preview
+  is a Tab deliberately outside the tab list, attached above the panes and
+  re-raised whenever a pane attaches after it.
+- ✅ Mini window (2026-09-18): `open-url` (macOS) and an http(s) argument
+  (Windows, Linux, and handy for tests) open a small window that loads the same
+  renderer with a `#mini` hash. The IPC router now trusts a set of chrome
+  renderers rather than exactly one, and mini channels resolve their window
+  from the sender.
 - MV3 extensions via `electron-chrome-extensions` (+ web store companion):
   documented supported-API subset, tested against a named list (uBlock Origin
   Lite, Dark Reader class).

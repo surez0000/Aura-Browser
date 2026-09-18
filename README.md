@@ -108,6 +108,14 @@ build          app icon: logo.png (source) + icon.png (rendered) for electron-bu
 scripts        build helpers (icon renderer)
 ```
 
+## Peek and the mini window
+
+Shift-click a link to **Peek** it: a floating preview that costs no tab, with
+**Open as Tab** to keep it and Escape to dismiss. When another application
+hands Aura Browser a link it opens in a **mini window** — the active Space's
+storage, so you stay signed in, but no tab and no Space state until you press
+**Open in Aura**.
+
 ## Keyboard shortcuts
 
 ⌘T palette · ⌘L edit address · ⌘S full sidebar ↔ compact rail · ⌘F find in page ·
