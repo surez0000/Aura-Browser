@@ -28,6 +28,8 @@ interface TabManagerDeps {
   saveSession: (snapshot: SessionSnapshotV3) => void
   /** Ask the chrome to put the caret in the address field (a blank pane opened). */
   requestUrlEdit: () => void
+  /** Called after every state push, so the native menu can follow the Spaces. */
+  stateEmitted?: (snapshot: TabsSnapshot) => void
   /** Wire per-session services (downloads, permissions) — once per partition. */
   attachSession: (ses: Session, opts: { persist: boolean }) => void
   pushFindResult: (result: FindResult) => void
@@ -1152,9 +1154,11 @@ export class TabManager {
     this.emitScheduled = true
     setImmediate(() => {
       this.emitScheduled = false
+      const snapshot = this.snapshot()
       if (!this.win.isDestroyed()) {
-        this.win.webContents.send('tabs:state', this.snapshot())
+        this.win.webContents.send('tabs:state', snapshot)
       }
+      this.deps.stateEmitted?.(snapshot)
       // Synchronous per-batch save: SQLite absorbs this easily and no quit
       // path (including abrupt harness kills) can lose more than one batch.
       this.deps.saveSession(this.sessionSnapshot())

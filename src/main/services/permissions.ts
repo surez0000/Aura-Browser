@@ -25,6 +25,17 @@ const AUTO_ALLOW = new Set([
 ])
 
 /**
+ * A camera/microphone request always names at least one device type; a screen
+ * capture request names none. Anything shaped unexpectedly is treated as a
+ * device request, so an unknown case still prompts rather than auto-allowing.
+ */
+function isDisplayCaptureRequest(details: unknown): boolean {
+  if (typeof details !== 'object' || details === null || !('mediaTypes' in details)) return false
+  const { mediaTypes } = details as { mediaTypes: unknown }
+  return Array.isArray(mediaTypes) && mediaTypes.length === 0
+}
+
+/**
  * Deny-by-default permission broker with in-chrome prompts: each request is
  * pushed to the renderer as a banner; the decision can be remembered per
  * (origin, permission) in kv. Incognito sessions never persist decisions.
@@ -43,6 +54,17 @@ export class PermissionService {
   attach(session: Session, opts: { persistDecisions: boolean }): void {
     session.setPermissionRequestHandler((wc, permission, callback, details) => {
       if (AUTO_ALLOW.has(permission)) {
+        callback(true)
+        return
+      }
+      // `getDisplayMedia` reaches us as a 'media' request that names no device
+      // types, because it asks for a screen rather than a camera or a
+      // microphone. Chrome does not prompt for that: the screen-share picker
+      // it leads to *is* the consent, and the page only ever receives the one
+      // surface the user chose. Prompting anyway put a "use your camera or
+      // microphone" dialog in front of screen sharing — and, racing the
+      // picker, could leave sharing working only if that dialog was allowed.
+      if (permission === 'media' && isDisplayCaptureRequest(details)) {
         callback(true)
         return
       }

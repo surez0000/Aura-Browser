@@ -192,6 +192,7 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
         .nullable(),
     })
     .strict(),
+  'mini:get': empty,
   'mini:back': empty,
   'mini:close': empty,
   'mini:promote': empty,

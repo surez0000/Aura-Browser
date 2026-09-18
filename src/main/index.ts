@@ -16,7 +16,7 @@ import { UpdaterService } from './services/updater'
 import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
 import { TabManager } from './tabs/tab-manager'
 import { DEFAULT_PARTITION } from './tabs/partition-names'
-import { createChromeWindow } from './windows/chrome-window'
+import { TRAFFIC_LIGHTS, createChromeWindow } from './windows/chrome-window'
 import { MiniWindowService } from './windows/mini-window'
 import { registerIpcHandlers } from './ipc/handlers'
 import { addTrustedWebContents, pushTo, pushToChrome, setTrustedWebContents } from './ipc/router'
@@ -39,6 +39,8 @@ app.setAboutPanelOptions({ applicationName: 'Aura Browser', applicationVersion: 
 
 let win: BrowserWindow | null = null
 let manager: TabManager | null = null
+let lastSpacesSignature = ''
+let rebuildMenu: () => void = () => undefined
 /** URLs the OS handed us before the window was ready. */
 const pendingUrls: string[] = []
 let openMiniWindows: (urls: string[]) => void = (urls) => pendingUrls.push(...urls)
@@ -108,6 +110,16 @@ function bootstrap(): void {
   // The theme setting drives prefers-color-scheme in every renderer via
   // nativeTheme — one pipe for system/light/dark. Set before window creation
   // so the first paint uses the right ground color.
+  /** Keep the window buttons clear of the compact rail. */
+  const applyTrafficLights = (): void => {
+    if (process.platform !== 'darwin' || !win || win.isDestroyed()) return
+    win.setWindowButtonPosition(
+      settings.sidebarMode === 'compact'
+        ? { ...TRAFFIC_LIGHTS.compact }
+        : { ...TRAFFIC_LIGHTS.fixed },
+    )
+  }
+
   nativeTheme.themeSource = settings.theme
   nativeTheme.on('updated', () => {
     win?.setBackgroundColor(WINDOW_BG[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'])
@@ -141,6 +153,14 @@ function bootstrap(): void {
     archive,
     saveSession: (snapshot) => kv.set('session', snapshot),
     requestUrlEdit: () => pushToChrome('ui:command', { id: 'url:focus' }),
+    stateEmitted: (snapshot) => {
+      // The Spaces menu lists the real Spaces, so rebuild it when that list —
+      // or which one is active — changes. Tab churn must not rebuild it.
+      const signature = `${snapshot.activeSpaceId}|${snapshot.spaces.map((s) => `${s.id}:${s.name}`).join(',')}`
+      if (signature === lastSpacesSignature) return
+      lastSpacesSignature = signature
+      rebuildMenu()
+    },
     pushFindResult: (result) => pushToChrome('find:result', result),
     // Every Space is its own storage partition (ADR-0004); each session gets
     // download tracking and deny-by-default permissions the first time it is used.
@@ -195,18 +215,23 @@ function bootstrap(): void {
       settings = { ...settings, ...patch }
       kv.set('settings', settings)
       if ((settings.sidebarMode as string) === 'hover') settings.sidebarMode = 'compact'
+      if (patch.sidebarMode !== undefined) applyTrafficLights()
       if (patch.theme !== undefined) nativeTheme.themeSource = settings.theme
       pushToChrome('settings:changed', settings)
       return settings
     },
     win: w,
   })
-  installMenu({
-    manager: m,
-    getWindow: () => win,
-    sendCommand: (id) => pushToChrome('ui:command', { id }),
-    checkForUpdates: () => void updater.check(),
-  })
+  const buildMenu = (): void =>
+    installMenu({
+      manager: m,
+      getWindow: () => win,
+      sendCommand: (id) => pushToChrome('ui:command', { id }),
+      checkForUpdates: () => void updater.check(),
+    })
+  rebuildMenu = buildMenu
+  buildMenu()
+  applyTrafficLights()
 
   hardenChromeNavigation(w)
   forwardRendererCombos(w)

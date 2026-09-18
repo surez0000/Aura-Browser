@@ -29,9 +29,14 @@ export function SpaceSwitcher({
           <button
             key={space.id}
             type="button"
-            title={space.name}
+            title={`${space.name} — double-click or right-click to edit`}
             aria-label={`Switch to ${space.name}`}
             onClick={() => void invoke('spaces:activate', { spaceId: space.id })}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              openSpaceEditor(space.id)
+            }}
+            onDoubleClick={() => openSpaceEditor(space.id)}
             className="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform hover:scale-110"
             style={{
               background: space.incognito

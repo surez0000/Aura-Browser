@@ -25,6 +25,43 @@ const GRADIENTS: ReadonlyArray<readonly [number, number]> = [
 ]
 const HUES = GRADIENTS.map(([h]) => h)
 
+/** Rainbow track for the hue sliders, so the handle sits on its own colour. */
+const HUE_TRACK = `linear-gradient(to right, ${[0, 60, 120, 180, 240, 300, 360]
+  .map((h) => `hsl(${h} 75% 55%)`)
+  .join(', ')})`
+
+/** One gradient stop, on a rainbow track. */
+function HueSlider({
+  label,
+  value,
+  onChange,
+  testId,
+}: {
+  label: string
+  value: number
+  onChange: (value: number) => void
+  testId: string
+}): React.JSX.Element {
+  return (
+    <label className="mt-2 flex items-center gap-2">
+      <span className="w-8 shrink-0 text-[11px]" style={{ color: 'var(--ink-3)' }}>
+        {label}
+      </span>
+      <input
+        type="range"
+        min={0}
+        max={359}
+        value={((value % 360) + 360) % 360}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={`${label} colour`}
+        className="h-1.5 w-full cursor-pointer appearance-none rounded-full"
+        style={{ background: HUE_TRACK }}
+        data-testid={testId}
+      />
+    </label>
+  )
+}
+
 /** Popover anchored above the switcher rail: create or edit a space. */
 export function SpaceEditor(): React.JSX.Element | null {
   const compact = useSettings(selectSidebarMode) === 'compact'
@@ -103,25 +140,43 @@ export function SpaceEditor(): React.JSX.Element | null {
             data-testid="space-name-input"
           />
           {!space?.incognito && (
-            <div className="mt-2 flex items-center gap-2">
-              {GRADIENTS.map(([h, h2]) => (
-                <button
-                  key={h}
-                  type="button"
-                  aria-label={`Gradient ${h} to ${h2}`}
-                  onClick={() => {
-                    setHue(h)
-                    setHue2(h2)
-                  }}
-                  className="h-4 w-4 cursor-pointer rounded-full transition-transform hover:scale-110"
-                  style={{
-                    background: gradientSwatchCss(h, h2, theme),
-                    outline: hue === h ? '2px solid var(--ink-2)' : 'none',
-                    outlineOffset: 1,
-                  }}
-                  data-testid={`space-hue-${h}`}
-                />
-              ))}
+            <div className="mt-2">
+              {/* What the Space will actually look like. */}
+              <div
+                className="h-7 w-full rounded-lg"
+                style={{ background: gradientSwatchCss(hue, hue2 ?? hue + 52, theme) }}
+                data-testid="space-gradient-preview"
+                aria-hidden
+              />
+              <div className="mt-2 flex items-center justify-between gap-1">
+                {GRADIENTS.map(([h, h2]) => (
+                  <button
+                    key={h}
+                    type="button"
+                    aria-label={`Gradient ${h} to ${h2}`}
+                    onClick={() => {
+                      setHue(h)
+                      setHue2(h2)
+                    }}
+                    className="h-4 w-4 cursor-pointer rounded-full transition-transform hover:scale-110"
+                    style={{
+                      background: gradientSwatchCss(h, h2, theme),
+                      boxShadow:
+                        hue === h && hue2 === h2
+                          ? '0 0 0 2px var(--ink-2)'
+                          : '0 0 0 1px var(--border-glass)',
+                    }}
+                    data-testid={`space-hue-${h}`}
+                  />
+                ))}
+              </div>
+              <HueSlider label="Start" value={hue} onChange={setHue} testId="space-hue-start" />
+              <HueSlider
+                label="End"
+                value={hue2 ?? hue + 52}
+                onChange={(v) => setHue2(v)}
+                testId="space-hue-end"
+              />
             </div>
           )}
           <div className="mt-3 flex items-center gap-2">

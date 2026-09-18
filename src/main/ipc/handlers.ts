@@ -139,6 +139,10 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
   handleInvoke('mini:setBounds', (req, event) =>
     ctx.miniWindows.forSender(event.sender)?.setBounds(req.rect),
   )
+  handleInvoke(
+    'mini:get',
+    (_req, event) => ctx.miniWindows.forSender(event.sender)?.state() ?? null,
+  )
   handleInvoke('mini:back', (_req, event) => ctx.miniWindows.forSender(event.sender)?.goBack())
   handleInvoke('mini:close', (_req, event) => ctx.miniWindows.forSender(event.sender)?.close())
   handleInvoke('mini:promote', (_req, event) => ctx.miniWindows.promote(event.sender))

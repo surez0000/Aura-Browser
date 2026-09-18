@@ -49,6 +49,9 @@ export function runRendererCommand(id: RendererCommandId): void {
     case 'space:new':
       ui.openSpaceEditor(null)
       break
+    case 'space:edit':
+      ui.openSpaceEditor(useTabs.getState().activeSpaceId || null)
+      break
     case 'settings:toggle':
       ui.toggleSettings()
       break

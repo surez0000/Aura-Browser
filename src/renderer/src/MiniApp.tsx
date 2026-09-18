@@ -20,7 +20,16 @@ export default function MiniApp(): React.JSX.Element {
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const frame = useRef(0)
 
-  useEffect(() => on('mini:state', setState), [])
+  // Subscribe *and* fetch: the page can finish loading before this renderer
+  // is listening, and that push is then lost — which left the window titled
+  // "New Tab" for a page that had in fact loaded.
+  useEffect(() => {
+    const off = on('mini:state', setState)
+    void invoke('mini:get', {}).then((current) => {
+      if (current) setState((prev) => prev ?? current)
+    })
+    return off
+  }, [])
 
   useLayoutEffect(() => {
     const el = bodyRef.current

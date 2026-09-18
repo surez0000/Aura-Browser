@@ -56,14 +56,16 @@ export function installMenu(ctx: MenuContext): void {
     click: () => m.activateAt(Number.MAX_SAFE_INTEGER, true),
   })
 
-  const spacePickItems: MenuItemConstructorOptions[] = []
-  for (let i = 1; i <= 9; i++) {
-    spacePickItems.push({
-      label: `Switch to Space ${i}`,
-      accelerator: `Control+${i}`,
-      click: () => m.activateSpaceAt(i - 1),
-    })
-  }
+  // One entry per Space that actually exists — the menu used to list nine
+  // slots whether or not anything was in them. ⌃1…9 still reach the first nine.
+  const activeSpaceId = m.activeSpace()?.id
+  const spacePickItems: MenuItemConstructorOptions[] = m.spaceList().map((space, index) => ({
+    label: space.name,
+    type: 'checkbox' as const,
+    checked: space.id === activeSpaceId,
+    ...(index < 9 ? { accelerator: `Control+${index + 1}` } : {}),
+    click: () => m.activateSpace(space.id),
+  }))
 
   const checkForUpdates: MenuItemConstructorOptions = {
     label: 'Check for Updates…',
@@ -159,6 +161,7 @@ export function installMenu(ctx: MenuContext): void {
       label: 'Spaces',
       submenu: [
         rendererItem('space:new'),
+        rendererItem('space:edit'),
         {
           label: 'Archive Today Tabs',
           click: () => m.archiveToday({ spaceId: m.activeSpace()?.id }),

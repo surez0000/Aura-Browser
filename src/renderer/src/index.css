@@ -107,6 +107,17 @@ summary:focus-visible,
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border-glass));
 }
 
+/* Hue sliders: a small light handle riding the rainbow track. */
+input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
 ::placeholder {
   color: var(--ink-3);
 }

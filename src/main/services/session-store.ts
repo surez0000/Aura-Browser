@@ -106,9 +106,10 @@ const legacy = (id: string, index: number): string =>
 export function upgradeSession(raw: unknown): SessionSnapshotV3 | null {
   if (isV3(raw) || isV2(raw)) {
     const assign = isV3(raw) ? isolated : legacy
-    const spaces = raw.spaces
-      .map((space, index) => sanitizeSpace(space, index, assign))
-      .filter((s) => s.tabs.length > 0 || s.favorites.length > 0 || raw.spaces.length === 1)
+    // Every stored Space is kept. Spaces carry a name, a gradient and their own
+    // storage, so an empty one is still something the user made — dropping it
+    // used to lose it (and its colours) on the next launch.
+    const spaces = raw.spaces.map((space, index) => sanitizeSpace(space, index, assign))
     if (spaces.length === 0) return null
     const activeSpaceId = spaces.some((s) => s.id === raw.activeSpaceId)
       ? raw.activeSpaceId

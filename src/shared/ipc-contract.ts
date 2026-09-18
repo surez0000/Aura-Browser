@@ -31,6 +31,7 @@ export type RendererCommandId =
   | 'find:prev'
   | 'downloads:toggle'
   | 'space:new'
+  | 'space:edit'
   | 'settings:toggle'
   | 'history:open'
   | 'extensions:open'
@@ -161,6 +162,8 @@ export interface InvokeMap {
     req: { rect: { x: number; y: number; width: number; height: number } | null }
     res: void
   }
+  /** Current state, fetched on mount: a push can land before the renderer subscribes. */
+  'mini:get': { req: Record<string, never>; res: MiniWindowInfo | null }
   'mini:back': { req: Record<string, never>; res: void }
   'mini:close': { req: Record<string, never>; res: void }
   /** Move the page into the main window as a real tab. */
@@ -258,6 +261,7 @@ export const INVOKE_CHANNELS = [
   'ui:setPeekBounds',
   'peek:close',
   'mini:setBounds',
+  'mini:get',
   'mini:back',
   'mini:close',
   'mini:promote',

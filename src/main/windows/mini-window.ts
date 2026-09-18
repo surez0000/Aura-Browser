@@ -81,14 +81,19 @@ export class MiniWindow {
     }
   }
 
-  emitState(): void {
-    if (this.win.isDestroyed()) return
-    this.opts.onState(this.webContents, {
+  /** What the window's chrome shows. Pushed on change, and fetched on mount. */
+  state(): MiniWindowInfo {
+    return {
       url: this.tab.url || this.tab.pendingUrl || '',
       title: this.tab.title,
       isLoading: this.tab.isLoading,
       canGoBack: this.tab.info().canGoBack,
-    })
+    }
+  }
+
+  emitState(): void {
+    if (this.win.isDestroyed()) return
+    this.opts.onState(this.webContents, this.state())
   }
 
   setBounds(rect: { x: number; y: number; width: number; height: number } | null): void {
