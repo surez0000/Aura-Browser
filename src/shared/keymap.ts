@@ -81,6 +81,13 @@ export const KEYMAP: readonly KeyCommand[] = [
     rendererCommand: 'space:new',
   },
   {
+    id: 'history:open',
+    label: 'Show Full History',
+    accelerator: 'CommandOrControl+Y',
+    scope: 'renderer',
+    rendererCommand: 'history:open',
+  },
+  {
     id: 'settings:toggle',
     label: 'Settings…',
     accelerator: 'CommandOrControl+,',
@@ -148,6 +155,7 @@ export const RENDERER_COMBOS: readonly ComboEntry[] = [
   { key: 'g', command: 'find:next' },
   { key: 'g', shift: true, command: 'find:prev' },
   { key: ',', command: 'settings:toggle' },
+  { key: 'y', command: 'history:open' },
 ] as const
 
 export function matchCombo(key: string, shift: boolean): RendererCommandId | null {

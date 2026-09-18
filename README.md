@@ -111,7 +111,7 @@ scripts        build helpers (icon renderer)
 ## Keyboard shortcuts
 
 ⌘T palette · ⌘L edit address · ⌘S full sidebar ↔ compact rail · ⌘F find in page ·
-⌘G / ⇧⌘G find next/previous · ⌘J downloads · ⌘D toggle favorite ·
+⌘G / ⇧⌘G find next/previous · ⌘J downloads · ⌘Y history · ⌘D toggle favorite ·
 ⇧⌘N incognito · ⌘W close tab · ⇧⌘T reopen closed · ⌘R / ⇧⌘R reload ·
 ⌘[ / ⌘] back/forward · ⌃Tab / ⌃⇧Tab next/previous tab · ⌘1–9 pick tab ·
 ⌃1–9 switch space · ⌘+/−/0 zoom · ⌘, settings · ⌥⌘I DevTools. (Ctrl on

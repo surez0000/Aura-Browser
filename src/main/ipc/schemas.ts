@@ -72,6 +72,21 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
   'history:search': z
     .object({ query: z.string().max(512), limit: z.number().int().min(1).max(50).optional() })
     .strict(),
+  'history:list': z
+    .object({
+      query: z.string().max(512).optional(),
+      before: z.number().int().nonnegative().optional(),
+      limit: z.number().int().min(1).max(500).optional(),
+    })
+    .strict(),
+  'history:delete': z
+    .object({
+      ids: z.array(z.number().int().nonnegative()).max(500).optional(),
+      url: z.string().max(8192).optional(),
+    })
+    .strict(),
+  'history:clear': z.object({ since: z.number().int().nonnegative().nullable() }).strict(),
+
   'archive:search': z
     .object({ query: z.string().max(512), limit: z.number().int().min(1).max(50).optional() })
     .strict(),

@@ -3,6 +3,7 @@ import type {
   AuroraSettings,
   DisplayCaptureRequestInfo,
   DownloadInfo,
+  HistoryEntry,
   FavoriteEntry,
   FindResult,
   HistorySearchRow,
@@ -29,6 +30,7 @@ export type RendererCommandId =
   | 'downloads:toggle'
   | 'space:new'
   | 'settings:toggle'
+  | 'history:open'
 
 /** invoke(channel, req) -> Promise<res> */
 export interface InvokeMap {
@@ -73,6 +75,15 @@ export interface InvokeMap {
   'favorites:remove': { req: { url: string }; res: void }
 
   'history:search': { req: { query: string; limit?: number }; res: HistorySearchRow[] }
+  /** History manager: a page of visits, newest first. */
+  'history:list': {
+    req: { query?: string; before?: number; limit?: number }
+    res: HistoryEntry[]
+  }
+  /** Remove single visits by id, or every visit to one URL. */
+  'history:delete': { req: { ids?: number[]; url?: string }; res: number }
+  /** Clear visits newer than `since`; null clears everything. */
+  'history:clear': { req: { since: number | null }; res: number }
   'archive:search': { req: { query: string; limit?: number }; res: ArchivedTabRow[] }
 
   'find:start': { req: { text: string; forward?: boolean; findNext?: boolean }; res: void }
@@ -162,6 +173,9 @@ export const INVOKE_CHANNELS = [
   'favorites:add',
   'favorites:remove',
   'history:search',
+  'history:list',
+  'history:delete',
+  'history:clear',
   'archive:search',
   'find:start',
   'find:stop',

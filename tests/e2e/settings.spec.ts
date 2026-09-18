@@ -8,7 +8,8 @@ test('settings panel changes the search engine; the palette follows and it persi
     // ⌘, opens the panel; the gear closes it.
     await chrome.keyboard.press(`${modifierKey()}+,`)
     await expect(chrome.getByTestId('settings-flyout')).toBeVisible()
-    await expect(chrome.getByTestId('app-version')).toContainText('Aura Browser 0.')
+    // Version-agnostic: the label must name the app and a semver, not a release.
+    await expect(chrome.getByTestId('app-version')).toHaveText(/^Aura Browser \d+\.\d+\.\d+$/)
     await expect(chrome.getByTestId('updates-status')).toContainText('installed builds')
 
     await chrome.getByTestId('setting-search-engine').selectOption('google')

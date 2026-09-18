@@ -7,6 +7,14 @@ a release is cut.
 
 ## [Unreleased]
 
+### Added
+
+- **History manager** (⌘Y, or History → Show Full History, or the command
+  palette). Everything visited, newest first and grouped by day, with search,
+  per-visit delete, "forget every visit to this site", and clear by range
+  (last hour, 24 hours, 7 days, everything). Clicking an entry opens it.
+  Incognito Spaces are never recorded, and the panel says so.
+
 ## [1.0.0] — 2026-09-18
 
 First stable release. Everything below shipped across the 0.1.x line and is

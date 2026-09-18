@@ -157,6 +157,9 @@ export function Palette(): React.JSX.Element {
       case 'settings:open':
         ui.toggleSettings()
         break
+      case 'history:open':
+        ui.toggleHistory()
+        break
       case 'updates:check':
         void invoke('updates:check', {})
         break

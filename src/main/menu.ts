@@ -148,6 +148,8 @@ export function installMenu(ctx: MenuContext): void {
       submenu: [
         mainItem('nav:back', () => m.getTab(undefined)?.goBack()),
         mainItem('nav:forward', () => m.getTab(undefined)?.goForward()),
+        { type: 'separator' },
+        rendererItem('history:open'),
       ],
     },
     {

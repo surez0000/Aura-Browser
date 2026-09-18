@@ -71,6 +71,12 @@ export function buildActions(ctx: {
       keywords: 'settings hide auto collapse tabs bar edge',
     },
     { id: 'settings:open', title: 'Settings…', keywords: 'preferences options', hint: '⌘,' },
+    {
+      id: 'history:open',
+      title: 'Show Full History',
+      keywords: 'browsing visited clear delete',
+      hint: '⌘Y',
+    },
     { id: 'updates:check', title: 'Check for Updates…', keywords: 'version upgrade release new' },
     ...Object.values(SEARCH_ENGINES).map((e) => ({
       id: `search:set:${e.id}`,

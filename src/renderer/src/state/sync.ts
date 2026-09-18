@@ -52,6 +52,9 @@ export function runRendererCommand(id: RendererCommandId): void {
     case 'settings:toggle':
       ui.toggleSettings()
       break
+    case 'history:open':
+      ui.toggleHistory()
+      break
   }
 }
 

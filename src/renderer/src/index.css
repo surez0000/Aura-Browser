@@ -85,13 +85,26 @@ img {
 
 /* Chromium's default focus ring is a bright system colour that clashes with
    every theme and appears on plain clicks. Pointer focus shows nothing;
-   keyboard focus still shows, in our own accent. */
+   keyboard focus still shows, in our own accent — on controls only. Text
+   fields are left alone: they carry a caret and sit in their own pill, and a
+   ring around an auto-focused input reads as an error state. */
 :focus {
   outline: none;
 }
-:focus-visible {
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[role='button']:focus-visible,
+[role='radio']:focus-visible,
+[tabindex]:not([tabindex='-1']):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* A focused field tints its pill instead. */
+.glass:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-glass));
 }
 
 ::placeholder {

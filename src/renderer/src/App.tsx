@@ -6,6 +6,7 @@ import { FindBar } from '@/components/FindBar'
 import { PermissionBanner } from '@/components/PermissionBanner'
 import { LoadingBar } from '@/components/LoadingBar'
 import { ScreenSharePicker } from '@/components/ScreenSharePicker'
+import { HistoryPanel } from '@/components/HistoryPanel'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
 import { auroraPalette, hue2Of, hueOf } from '@/theme/aurora'
 import { toCss } from '@/theme/contrast'
@@ -58,6 +59,7 @@ export default function App(): React.JSX.Element {
       </main>
       <Palette />
       <ScreenSharePicker />
+      <HistoryPanel />
     </div>
   )
 }

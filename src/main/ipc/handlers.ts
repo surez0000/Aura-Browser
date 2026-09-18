@@ -71,6 +71,14 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
   handleInvoke('favorites:remove', (req) => manager.removeFavorite(req.url))
 
   handleInvoke('history:search', (req) => ctx.history.search(req.query, req.limit ?? 8))
+  handleInvoke('history:list', (req) =>
+    ctx.history.list({ query: req.query, before: req.before, limit: req.limit }),
+  )
+  handleInvoke('history:delete', (req) =>
+    req.url ? ctx.history.deleteUrl(req.url) : ctx.history.deleteEntries(req.ids ?? []),
+  )
+  handleInvoke('history:clear', (req) => ctx.history.clear(req.since))
+
   handleInvoke('archive:search', (req) => ctx.archive.search(req.query, req.limit ?? 10))
 
   handleInvoke('find:start', (req) =>

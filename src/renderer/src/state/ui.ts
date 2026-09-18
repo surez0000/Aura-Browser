@@ -29,6 +29,7 @@ export interface UiState {
   downloads: DownloadInfo[]
 
   settingsOpen: boolean
+  historyOpen: boolean
   updateState: UpdateState | null
   /** Version whose prominent notice was hidden with "Later" (until next launch). */
   updateNoticeDismissed: string | null
@@ -55,6 +56,8 @@ export interface UiState {
   setDownloads(list: DownloadInfo[]): void
 
   toggleSettings(): void
+  toggleHistory(): void
+  closeHistory(): void
   closeSettings(): void
   setUpdateState(state: UpdateState): void
   dismissUpdateNotice(version: string): void
@@ -83,6 +86,7 @@ export const useUi = create<UiState>()((set) => ({
   downloads: [],
 
   settingsOpen: false,
+  historyOpen: false,
   updateState: null,
   updateNoticeDismissed: null,
 
@@ -107,6 +111,8 @@ export const useUi = create<UiState>()((set) => ({
 
   toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen, downloadsOpen: false })),
   closeSettings: () => set({ settingsOpen: false }),
+  toggleHistory: () => set((s) => ({ historyOpen: !s.historyOpen })),
+  closeHistory: () => set({ historyOpen: false }),
   setUpdateState: (updateState) => set({ updateState }),
   dismissUpdateNotice: (updateNoticeDismissed) => set({ updateNoticeDismissed }),
 
