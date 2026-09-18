@@ -9,6 +9,13 @@ a release is cut.
 
 ### Added
 
+- **Extensions.** A manager (app menu, command palette, or Extensions…) lists
+  what is installed, switches each on or off, and removes them. Add one from a
+  folder, or turn on store installs and add it from the Chrome Web Store.
+  Content scripts, request blocking, storage and messaging work; toolbar
+  popups do not. Extensions run in every Space, while their storage stays
+  per-Space. Store installs are off by default because that integration
+  registers a preload script on every page in the session.
 - **Peek**: shift-click a link (or "Peek Link" in the page menu) to preview it
   in a floating card without spending a tab. Escape dismisses it; **Open as
   Tab** keeps it. Scripted popups that ask for window features still get a real

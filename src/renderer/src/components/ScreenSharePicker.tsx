@@ -166,6 +166,16 @@ function SourceChooser({
         ))}
       </div>
 
+      {sources.length === 0 && (
+        <p
+          className="px-1 py-6 text-[13px] leading-relaxed"
+          style={{ color: 'var(--ink-2)' }}
+          data-testid="screen-share-empty"
+        >
+          No screens or windows are available to share right now. Check that Aura Browser is allowed
+          to record the screen, then try again.
+        </p>
+      )}
       <div className="grid min-h-0 flex-1 grid-cols-3 gap-2 overflow-y-auto pb-1">
         {shown.map((source) => {
           const isSelected = source.id === selected

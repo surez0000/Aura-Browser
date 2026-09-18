@@ -77,6 +77,7 @@ export function installMenu(ctx: MenuContext): void {
         checkForUpdates,
         { type: 'separator' },
         rendererItem('settings:toggle'),
+        rendererItem('extensions:open'),
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },

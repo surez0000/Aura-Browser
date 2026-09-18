@@ -3,6 +3,7 @@ import type {
   AuroraSettings,
   DisplayCaptureRequestInfo,
   DownloadInfo,
+  ExtensionInfo,
   HistoryEntry,
   MiniWindowInfo,
   FavoriteEntry,
@@ -32,6 +33,7 @@ export type RendererCommandId =
   | 'space:new'
   | 'settings:toggle'
   | 'history:open'
+  | 'extensions:open'
   | 'split:toggle'
 
 /** invoke(channel, req) -> Promise<res> */
@@ -108,6 +110,15 @@ export interface InvokeMap {
     res: void
   }
 
+  'extensions:list': { req: Record<string, never>; res: ExtensionInfo[] }
+  'extensions:setEnabled': { req: { id: string; enabled: boolean }; res: void }
+  'extensions:remove': { req: { id: string }; res: void }
+  /** Pick a folder holding a manifest.json and load it. */
+  'extensions:addUnpacked': { req: Record<string, never>; res: void }
+  /** Open the Chrome Web Store — in a tab when store installs are allowed. */
+  'extensions:openStore': { req: Record<string, never>; res: void }
+  'extensions:checkUpdates': { req: Record<string, never>; res: void }
+
   'settings:get': { req: Record<string, never>; res: AuroraSettings }
   'settings:set': { req: Partial<AuroraSettings>; res: AuroraSettings }
 
@@ -182,6 +193,7 @@ export interface PushMap {
   'displayCapture:close': { id: string }
   'downloads:changed': DownloadInfo[]
   'settings:changed': AuroraSettings
+  'extensions:changed': ExtensionInfo[]
   'updates:state': UpdateState
   /** Pushed only to the mini window it describes. */
   'mini:state': MiniWindowInfo
@@ -225,6 +237,12 @@ export const INVOKE_CHANNELS = [
   'displayCapture:openSystemSettings',
   'downloads:list',
   'downloads:action',
+  'extensions:list',
+  'extensions:setEnabled',
+  'extensions:remove',
+  'extensions:addUnpacked',
+  'extensions:openStore',
+  'extensions:checkUpdates',
   'settings:get',
   'settings:set',
   'updates:get',
@@ -258,6 +276,7 @@ export const PUSH_CHANNELS = [
   'displayCapture:close',
   'downloads:changed',
   'settings:changed',
+  'extensions:changed',
   'updates:state',
   'mini:state',
 ] as const satisfies ReadonlyArray<keyof PushMap>

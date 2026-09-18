@@ -95,6 +95,12 @@ export const KEYMAP: readonly KeyCommand[] = [
     rendererCommand: 'history:open',
   },
   {
+    id: 'extensions:open',
+    label: 'Extensions…',
+    scope: 'renderer',
+    rendererCommand: 'extensions:open',
+  },
+  {
     id: 'settings:toggle',
     label: 'Settings…',
     accelerator: 'CommandOrControl+,',

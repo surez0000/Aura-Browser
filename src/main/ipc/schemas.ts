@@ -111,6 +111,13 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
   'downloads:list': empty,
   'downloads:action': z.object({ id, action: z.enum(['open', 'showInFolder', 'cancel']) }).strict(),
 
+  'extensions:list': empty,
+  'extensions:setEnabled': z.object({ id, enabled: z.boolean() }).strict(),
+  'extensions:remove': z.object({ id }).strict(),
+  'extensions:addUnpacked': empty,
+  'extensions:openStore': empty,
+  'extensions:checkUpdates': empty,
+
   'settings:get': empty,
   'settings:set': z
     .object({
@@ -123,6 +130,7 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
       searchEngine: z.enum(SEARCH_ENGINE_IDS).optional(),
       // 'hover' is retired but still accepted from older builds; normalised in main.
       sidebarMode: z.enum(['fixed', 'compact', 'hover']).optional(),
+      webStoreInstalls: z.boolean().optional(),
     })
     .strict(),
 

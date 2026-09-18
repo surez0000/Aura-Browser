@@ -80,14 +80,18 @@ Key decisions (full rationale in [docs/adr/](docs/adr/)):
 
 - `sandbox: true`, `contextIsolation: true`, `nodeIntegration: false` for every
   renderer, page and chrome alike.
-- The chrome renderer can only load the bundled UI; page renderers get no
-  preload at all.
+- The chrome renderer can only load the bundled UI. Page renderers get no
+  preload at all, unless you turn on installing extensions from the Chrome Web
+  Store — that integration registers one on the session, which is why it is off
+  by default and says so in the extensions manager.
 - Every IPC channel is allowlisted in [src/shared/ipc-contract.ts](src/shared/ipc-contract.ts)
   and zod-validated in the main process; only the chrome window may invoke.
 - Every Space is its own storage partition — cookies, logins, site data, and
   cache never cross Spaces, like Chrome profiles (ADR-0004). Incognito is
   in-memory. Deleting a Space deletes its data.
-- Site permissions are deny-by-default with a per-request prompt. Screen
+- Site permissions are deny-by-default with a per-request prompt. Adding an
+  extension asks first and lists what it will be able to do; extensions run in
+  every Space but their storage stays per-Space. Screen
   sharing shows a picker first: a page only ever receives the one screen or
   window chosen there.
 - No telemetry. Default search is DuckDuckGo (changeable in Settings). Nothing
@@ -107,6 +111,16 @@ docs           phase plan, design spec, ADRs, releasing guide
 build          app icon: logo.png (source) + icon.png (rendered) for electron-builder
 scripts        build helpers (icon renderer)
 ```
+
+## Extensions
+
+Chrome extensions load on Electron's own extension support: content scripts,
+declarative request blocking, storage and messaging all work; toolbar popups
+and the `chrome.tabs` surface do not. Open the manager from the app menu, the
+command palette, or **Extensions…**, then add one from a folder, or turn on
+store installs and add it from the Chrome Web Store. `AURORA_LOAD_EXTENSION`
+takes comma-separated folders for a single run, like Chrome's
+`--load-extension`.
 
 ## Peek and the mini window
 

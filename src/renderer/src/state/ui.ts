@@ -30,6 +30,7 @@ export interface UiState {
 
   settingsOpen: boolean
   historyOpen: boolean
+  extensionsOpen: boolean
   updateState: UpdateState | null
   /** Version whose prominent notice was hidden with "Later" (until next launch). */
   updateNoticeDismissed: string | null
@@ -58,6 +59,8 @@ export interface UiState {
   toggleSettings(): void
   toggleHistory(): void
   closeHistory(): void
+  toggleExtensions(): void
+  closeExtensions(): void
   closeSettings(): void
   setUpdateState(state: UpdateState): void
   dismissUpdateNotice(version: string): void
@@ -87,6 +90,7 @@ export const useUi = create<UiState>()((set) => ({
 
   settingsOpen: false,
   historyOpen: false,
+  extensionsOpen: false,
   updateState: null,
   updateNoticeDismissed: null,
 
@@ -113,6 +117,8 @@ export const useUi = create<UiState>()((set) => ({
   closeSettings: () => set({ settingsOpen: false }),
   toggleHistory: () => set((s) => ({ historyOpen: !s.historyOpen })),
   closeHistory: () => set({ historyOpen: false }),
+  toggleExtensions: () => set((s) => ({ extensionsOpen: !s.extensionsOpen })),
+  closeExtensions: () => set({ extensionsOpen: false }),
   setUpdateState: (updateState) => set({ updateState }),
   dismissUpdateNotice: (updateNoticeDismissed) => set({ updateNoticeDismissed }),
 

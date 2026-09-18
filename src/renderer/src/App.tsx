@@ -8,6 +8,7 @@ import { LoadingBar } from '@/components/LoadingBar'
 import { PeekCard } from '@/components/PeekCard'
 import { ScreenSharePicker } from '@/components/ScreenSharePicker'
 import { HistoryPanel } from '@/components/HistoryPanel'
+import { ExtensionsPanel } from '@/components/ExtensionsPanel'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
 import { auroraPalette, hue2Of, hueOf } from '@/theme/aurora'
 import { toCss } from '@/theme/contrast'
@@ -62,6 +63,7 @@ export default function App(): React.JSX.Element {
       <Palette />
       <ScreenSharePicker />
       <HistoryPanel />
+      <ExtensionsPanel />
     </div>
   )
 }

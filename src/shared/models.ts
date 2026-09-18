@@ -76,6 +76,18 @@ export const MAX_PANES = 4
  * A Peek: a link previewed in a floating card over the page, without taking a
  * tab. Shift-clicking a link opens one; it can be promoted to a real tab.
  */
+/** An installed Chrome extension, as the extensions manager shows it. */
+export interface ExtensionInfo {
+  id: string
+  name: string
+  version: string
+  /** Loaded into the browsing sessions right now. */
+  enabled: boolean
+  /** Added from a folder rather than the Chrome Web Store. */
+  unpacked: boolean
+  iconDataUrl: string | null
+}
+
 /** State of a mini window, pushed to that window's own chrome renderer. */
 export interface MiniWindowInfo {
   url: string
@@ -220,6 +232,12 @@ export interface AuroraSettings {
   /** Provider used when palette / address input is not a URL. */
   searchEngine: SearchEngineId
   /**
+   * Allow installing extensions straight from the Chrome Web Store. Off by
+   * default: that integration registers a preload script on every page in the
+   * session, which the deny-by-default posture would otherwise rule out.
+   */
+  webStoreInstalls: boolean
+  /**
    * 'fixed' keeps the sidebar in the layout; 'hover' hides it until the
    * pointer touches the left edge, then floats it over the page.
    */
@@ -230,6 +248,7 @@ export const DEFAULT_SETTINGS: AuroraSettings = {
   todayArchiveHours: 12,
   theme: 'system',
   searchEngine: 'duckduckgo',
+  webStoreInstalls: false,
   sidebarMode: 'fixed',
 }
 

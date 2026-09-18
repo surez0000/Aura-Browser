@@ -160,6 +160,9 @@ export function Palette(): React.JSX.Element {
       case 'history:open':
         ui.toggleHistory()
         break
+      case 'extensions:open':
+        ui.toggleExtensions()
+        break
       case 'split:toggle':
         void invoke('tabs:toggleSplit', {})
         break

@@ -11,6 +11,7 @@ import { ArchiveStore } from './services/db/archive'
 import { DownloadsService } from './services/downloads'
 import { PermissionService } from './services/permissions'
 import { DisplayCaptureService } from './services/display-capture'
+import { ExtensionService } from './services/extensions'
 import { UpdaterService } from './services/updater'
 import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
 import { TabManager } from './tabs/tab-manager'
@@ -118,6 +119,9 @@ function bootstrap(): void {
   const permissions = new PermissionService(kv, (request) =>
     pushToChrome('permissions:request', request),
   )
+  const extensions = new ExtensionService(kv, (list) => pushToChrome('extensions:changed', list), {
+    webStoreInstalls: () => settings.webStoreInstalls,
+  })
   const displayCapture = new DisplayCaptureService(
     (request) => pushToChrome('displayCapture:request', request),
     (id) => pushToChrome('displayCapture:close', { id }),
@@ -144,6 +148,7 @@ function bootstrap(): void {
       downloads.attach(ses)
       permissions.attach(ses, { persistDecisions: persist })
       displayCapture.attach(ses)
+      void extensions.attach(ses)
     },
   })
   manager = m
@@ -183,6 +188,7 @@ function bootstrap(): void {
     permissions,
     displayCapture,
     miniWindows,
+    extensions,
     updater,
     getSettings: () => settings,
     setSettings: (patch) => {

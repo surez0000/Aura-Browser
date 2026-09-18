@@ -19,6 +19,8 @@ const MAC_SCREEN_SETTINGS =
  * (ADR-0003), because chrome HTML cannot paint above a native view.
  */
 export class DisplayCaptureService {
+  /** The launch-time warm-up, so a request never enumerates alongside it. */
+  private warming: Promise<void> | null = null
   private pending: {
     id: string
     respond: (choice: { sourceId: string; withAudio: boolean } | null) => void
@@ -88,11 +90,8 @@ export class DisplayCaptureService {
           void this.listSources().then(
             (sources) => {
               if (this.pending?.id !== id) return
-              if (sources.length === 0) {
-                this.pending = null
-                resolve(null)
-                return
-              }
+              // Nothing to offer is still an answer: leave the dialog up with
+              // an explanation rather than closing it and denying silently.
               this.push({ ...base, sources, loading: false })
             },
             () => {
@@ -132,8 +131,9 @@ export class DisplayCaptureService {
    * one-pixel thumbnails so it stays cheap.
    */
   warmUp(): void {
-    void desktopCapturer
+    this.warming ??= desktopCapturer
       .getSources({ types: ['screen'], thumbnailSize: { width: 1, height: 1 } })
+      .then(() => undefined)
       .catch(() => undefined)
   }
 
@@ -157,6 +157,9 @@ export class DisplayCaptureService {
   }
 
   private async listSources(): Promise<DisplayCaptureSource[]> {
+    // Two concurrent enumerations serialise inside Chromium, which is what
+    // made an early request take tens of seconds instead of one.
+    await this.warming
     const sources = await desktopCapturer.getSources({
       types: ['screen', 'window'],
       thumbnailSize: THUMBNAIL_SIZE,

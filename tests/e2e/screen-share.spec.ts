@@ -18,7 +18,10 @@ test('a page asking to share gets the picker, and Cancel denies it', async () =>
     if (!page) return
 
     await page.click('#go')
-    await expect(chrome.getByTestId('screen-share-picker')).toBeVisible({ timeout: 30_000 })
+    // Chromium starts its capture stack on the first request and that can take
+    // many seconds on a loaded machine, before our handler is even called; the
+    // app warms it at launch, and the dialog opens with a loading state.
+    await expect(chrome.getByTestId('screen-share-picker')).toBeVisible({ timeout: 90_000 })
     await expect(chrome.getByTestId('screen-share-host')).toContainText('127.0.0.1')
 
     await chrome.getByTestId('screen-share-cancel').click()

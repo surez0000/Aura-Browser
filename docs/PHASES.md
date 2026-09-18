@@ -113,11 +113,24 @@ e2e tests green.
   renderer with a `#mini` hash. The IPC router now trusts a set of chrome
   renderers rather than exactly one, and mini channels resolve their window
   from the sender.
-- MV3 extensions via `electron-chrome-extensions` (+ web store companion):
-  documented supported-API subset, tested against a named list (uBlock Origin
-  Lite, Dark Reader class).
+- ✅ Extensions (2026-09-18), but **not** via `electron-chrome-extensions`:
+  that package is dual-licensed (GPL-3.0 or commercial) and Aura Browser is
+  MIT, so adopting it is a licensing decision for the owner rather than an
+  implementation detail. Extensions therefore run on Electron's own support
+  (`session.extensions`), with the MIT `electron-chrome-web-store` for
+  installing and updating from the store.
+  - Supported: content scripts, `declarativeNetRequest` blocking, storage,
+    messaging, devtools pages — Chromium implements these itself.
+  - Not supported: browser-action popups and the `chrome.tabs` surface. Those
+    need `electron-chrome-extensions`; revisit if the owner accepts GPL-3.0 or
+    buys a licence.
+  - Installed once, loaded into every Space; storage stays per-Space, so an
+    extension's settings never cross Spaces.
+  - Store installs are **opt-in**: that integration registers a preload script
+    on the session, which would otherwise reach every page.
+  - Adding one shows a native confirmation listing its permissions.
 
-**Exit:** the named extensions work; split/Peek stable under e2e.
+**Exit:** split, Peek, the mini window and extensions all covered by e2e.
 
 ## (e) Packaging, onboarding, auto-update — ◐ in progress
 

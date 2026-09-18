@@ -58,6 +58,9 @@ export function runRendererCommand(id: RendererCommandId): void {
     case 'split:toggle':
       void invoke('tabs:toggleSplit', {})
       break
+    case 'extensions:open':
+      ui.toggleExtensions()
+      break
   }
 }
 

@@ -12,6 +12,13 @@ export default ts.config(
     rules: reactHooks.configs.recommended.rules,
   },
   {
+    // Extension fixtures run inside a web page, not in our bundles.
+    files: ['tests/e2e/fixtures/**/*.js'],
+    languageOptions: {
+      globals: { document: 'readonly', window: 'readonly', chrome: 'readonly' },
+    },
+  },
+  {
     // Build-time helpers run by Electron/Node directly (CommonJS).
     files: ['scripts/**/*.{cjs,mjs}'],
     languageOptions: {

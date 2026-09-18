@@ -7,6 +7,7 @@ import type { DownloadsService } from '../services/downloads'
 import type { PermissionService } from '../services/permissions'
 import type { DisplayCaptureService } from '../services/display-capture'
 import type { MiniWindowService } from '../windows/mini-window'
+import type { ExtensionService } from '../services/extensions'
 import type { UpdaterService } from '../services/updater'
 import { handleInvoke } from './router'
 
@@ -18,6 +19,7 @@ interface HandlerContext {
   permissions: PermissionService
   displayCapture: DisplayCaptureService
   miniWindows: MiniWindowService
+  extensions: ExtensionService
   updater: UpdaterService
   getSettings: () => AuroraSettings
   setSettings: (patch: Partial<AuroraSettings>) => AuroraSettings
@@ -100,6 +102,21 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
 
   handleInvoke('downloads:list', () => ctx.downloads.list())
   handleInvoke('downloads:action', (req) => ctx.downloads.action(req.id, req.action))
+
+  handleInvoke('extensions:list', () => ctx.extensions.list())
+  handleInvoke('extensions:setEnabled', (req) => ctx.extensions.setEnabled(req.id, req.enabled))
+  handleInvoke('extensions:remove', (req) => ctx.extensions.remove(req.id))
+  handleInvoke('extensions:addUnpacked', () => ctx.extensions.addUnpacked())
+  handleInvoke('extensions:openStore', () => {
+    // With store installs allowed the page must be a tab, so its install
+    // button can reach the browser; otherwise send it to the system browser.
+    if (ctx.getSettings().webStoreInstalls) {
+      manager.create({ url: ctx.extensions.storeUrl(), activate: true })
+    } else {
+      ctx.extensions.openStore()
+    }
+  })
+  handleInvoke('extensions:checkUpdates', () => ctx.extensions.checkForUpdates())
 
   handleInvoke('settings:get', () => ctx.getSettings())
   handleInvoke('settings:set', (req) => ctx.setSettings(req))
