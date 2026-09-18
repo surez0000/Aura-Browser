@@ -29,6 +29,7 @@ export function applyThemeVars(theme: ThemeName): void {
     '--ink-3': toCss(t.ink3),
     '--surface-glass': toCss(t.surfaceGlass),
     '--surface-glass-strong': toCss(t.surfaceGlassStrong),
+    '--surface-selected': toCss(t.surfaceSelected),
     '--surface-hover': toCss(t.surfaceHover),
     '--border-glass': toCss(t.borderGlass),
     '--danger': toCss(t.danger),

@@ -1,5 +1,5 @@
 import { EyeOff, Pencil } from 'lucide-react'
-import { gradientSwatchCss, hue2Of } from '@/theme/aurora'
+import { spaceGradientCss } from '@/theme/aurora'
 import { useTabs, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
@@ -15,9 +15,13 @@ export function SpaceHeader(): React.JSX.Element | null {
       <span
         className="h-2.5 w-2.5 shrink-0 rounded-full"
         style={{
+          // The Space's own colours, like the switcher dots and the editor.
+          // A ring keeps it defined: in the light theme these are pale, which
+          // is the point — they should look like the Space they stand for.
           background: space.incognito
             ? 'var(--surface-glass-strong)'
-            : gradientSwatchCss(space.accentHue, hue2Of(space), theme),
+            : spaceGradientCss(space, theme),
+          boxShadow: '0 0 0 1px var(--border-glass)',
         }}
       />
       <button

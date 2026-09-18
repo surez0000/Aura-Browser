@@ -5,7 +5,7 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
-## [Unreleased]
+## [1.0.2] — 2026-09-18
 
 ### Added
 
@@ -44,7 +44,16 @@ a release is cut.
   fault held the old colours after a system light/dark switch.
 - The Space gradient preview showed the pale accent colours rather than the
   backdrop's own, so in dark mode it promised a light Space and applied a dark
-  one. The hue sliders follow the theme for the same reason.
+  one. The colour chips, the hue sliders and the Space dots now all use the
+  Space's real colours, which means they read pale under the light theme and
+  deep under the dark one instead of the other way round.
+- **The chosen option in a settings control was invisible in the light theme.**
+  It was built from the glass tokens, which are white on white there, so it
+  painted at a contrast ratio of exactly 1.00 against the dialog behind it.
+  Selections now have their own ground in both themes.
+- Icons and secondary labels were washed out in the light theme. They cleared
+  the contrast threshold on paper but not in the eye, particularly thin icon
+  strokes, so the secondary and tertiary inks carry more weight now.
 
 ## [1.0.1] — 2026-09-18
 

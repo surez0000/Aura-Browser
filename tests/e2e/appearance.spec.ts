@@ -193,3 +193,40 @@ test('dialogs over a page really blur it, with no ancestor blocking the effect',
     await server.close()
   }
 })
+
+test('the chosen option in a settings control is visible in both themes', async () => {
+  const { app, chrome } = await launchAurora()
+  try {
+    for (const theme of ['light', 'dark'] as const) {
+      await chrome.getByTestId('settings-button').click()
+      await chrome.getByTestId(`setting-theme-${theme}`).click()
+
+      // The selected pill used to be built from the glass tokens, which are
+      // white on white in the light theme: it painted at a contrast ratio of
+      // exactly 1.00 against the dialog, so nothing looked chosen at all. It
+      // now carries its own token; the unit sweep checks that token's
+      // contrast, and this checks the control is actually wired to it.
+      const backgrounds = (await chrome.evaluate(String.raw`(() => {
+        const chosen = document.querySelector('[data-testid="setting-sidebar-fixed"]')
+        const other = document.querySelector('[data-testid="setting-sidebar-compact"]')
+        const token = getComputedStyle(document.documentElement)
+          .getPropertyValue('--surface-selected')
+          .trim()
+        return {
+          chosen: getComputedStyle(chosen).backgroundColor,
+          other: getComputedStyle(other).backgroundColor,
+          token: token,
+        }
+      })()`)) as { chosen: string; other: string; token: string }
+
+      expect(backgrounds.token, `${theme} token`).not.toBe('')
+      // Painted, not transparent, and plainly different from its neighbour.
+      expect(backgrounds.chosen, `${theme} chosen`).not.toMatch(/rgba\(0, 0, 0, 0\)|transparent/)
+      expect(backgrounds.other, `${theme} unchosen`).toMatch(/rgba\(0, 0, 0, 0\)|transparent/)
+      expect(backgrounds.chosen).not.toBe(backgrounds.other)
+      await chrome.keyboard.press('Escape')
+    }
+  } finally {
+    await app.close()
+  }
+})

@@ -59,6 +59,7 @@ describe('ink contrast over glass on the aurora (AA)', () => {
         { name: 'bare', color: null, ink2: true },
         { name: 'glass', color: t.surfaceGlass, ink2: true },
         { name: 'glass-strong', color: t.surfaceGlassStrong, ink2: false },
+        { name: 'selected', color: t.surfaceSelected, ink2: false },
         { name: 'hover', color: t.surfaceHover, ink2: true },
       ]
       for (const hue of HUES) {
@@ -99,6 +100,21 @@ describe('ink contrast over glass on the aurora (AA)', () => {
       expect(contrastRatio(t.danger, glassOnBase), `${theme} danger/glass`).toBeGreaterThanOrEqual(
         3.0,
       )
+    }
+  })
+})
+
+describe('selected surface', () => {
+  /**
+   * A chosen segment has to be visible as well as legible. Built from the
+   * glass tokens it was white-on-white in the light theme: a ratio of exactly
+   * 1.00 against the card behind it, so nothing looked selected at all.
+   */
+  it('reads as a distinct ground against the card it sits on', () => {
+    for (const theme of THEME_NAMES) {
+      const t = THEMES[theme]
+      const selected = compositeOver(t.surfaceSelected, t.cardBg)
+      expect(contrastRatio(selected, t.cardBg), `${theme} selected vs card`).toBeGreaterThan(1.1)
     }
   })
 })

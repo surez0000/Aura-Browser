@@ -16,6 +16,13 @@ export interface ThemeTokens {
   ink3: Rgba
   surfaceGlass: Rgba
   surfaceGlassStrong: Rgba
+  /**
+   * The ground under a chosen item — a segmented control's active option.
+   * It cannot be built from the glass tokens: those are white-on-white in the
+   * light theme, so over a white card the selection was literally invisible
+   * (a contrast ratio of 1.00 against its own background).
+   */
+  surfaceSelected: Rgba
   surfaceHover: Rgba
   borderGlass: Rgba
   danger: Rgba
@@ -32,6 +39,7 @@ export const THEMES: Record<ThemeName, ThemeTokens> = {
     ink3: rgba(255, 255, 255, 0.54),
     surfaceGlass: rgba(255, 255, 255, 0.06),
     surfaceGlassStrong: rgba(255, 255, 255, 0.12),
+    surfaceSelected: rgba(255, 255, 255, 0.13),
     surfaceHover: rgba(255, 255, 255, 0.09),
     borderGlass: rgba(255, 255, 255, 0.12),
     danger: parseHex('#ff8585'),
@@ -42,10 +50,17 @@ export const THEMES: Record<ThemeName, ThemeTokens> = {
     bgBase: parseHex('#e9ecf6'),
     cardBg: parseHex('#ffffff'),
     ink1: rgba(18, 21, 38, 0.92),
-    ink2: rgba(18, 21, 38, 0.72),
-    ink3: rgba(18, 21, 38, 0.55),
+    // Secondary and tertiary inks carry most of the icons and labels. At the
+    // old alphas they cleared AA on paper but read as washed out against a
+    // pale mesh, especially for thin icon strokes.
+    ink2: rgba(18, 21, 38, 0.82),
+    ink3: rgba(18, 21, 38, 0.66),
     surfaceGlass: rgba(255, 255, 255, 0.42),
     surfaceGlassStrong: rgba(255, 255, 255, 0.72),
+    // Dark on light, the mirror of the dark theme's light-on-dark. Both sit at
+    // the same alpha: the strongest that keeps tertiary ink above 3:1 on the
+    // lightest mesh a Space can paint, which the AA sweep checks.
+    surfaceSelected: rgba(18, 21, 38, 0.13),
     surfaceHover: rgba(255, 255, 255, 0.58),
     borderGlass: rgba(20, 24, 46, 0.12),
     danger: parseHex('#a52f2f'),

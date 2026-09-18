@@ -4,7 +4,7 @@ import { Trash2 } from 'lucide-react'
 import { popoverAnchorClass } from '@/lib/popover-anchor'
 import { selectSidebarMode, useSettings } from '@/state/settings'
 import { invoke } from '@/lib/ipc'
-import { auroraPalette, gradientSwatchCss, hue2Of, spaceGradientCss } from '@/theme/aurora'
+import { auroraPalette, hue2Of, spaceGradientCss } from '@/theme/aurora'
 import { toCss } from '@/theme/contrast'
 import type { ThemeName } from '@shared/theme'
 import { useTabs } from '@/state/tabs'
@@ -35,7 +35,7 @@ const HUES = GRADIENTS.map(([h]) => h)
 function hueTrack(theme: ThemeName): string {
   const stops = [0, 40, 80, 120, 160, 200, 240, 280, 320, 360]
   return `linear-gradient(to right, ${stops
-    .map((h) => toCss(auroraPalette(h, theme).accent))
+    .map((h) => toCss(auroraPalette(h, theme).blobs[0]))
     .join(', ')})`
 }
 
@@ -192,7 +192,13 @@ export function SpaceEditor(): React.JSX.Element | null {
                     }}
                     className="h-4 w-4 cursor-pointer rounded-full transition-transform hover:scale-110"
                     style={{
-                      background: gradientSwatchCss(h, h2, theme),
+                      // The Space's real colours, so light mode offers the pale
+                      // gradients it will actually paint. Built from the accent
+                      // these read inverted: dark chips under a light theme.
+                      background: spaceGradientCss(
+                        { accentHue: h, accentHue2: h2, incognito: false },
+                        theme,
+                      ),
                       boxShadow:
                         hue === h && hue2 === h2
                           ? '0 0 0 2px var(--ink-2)'

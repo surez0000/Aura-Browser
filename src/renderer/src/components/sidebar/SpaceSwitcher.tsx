@@ -1,6 +1,6 @@
 import { EyeOff, Plus } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
-import { gradientSwatchCss, hue2Of } from '@/theme/aurora'
+import { spaceGradientCss } from '@/theme/aurora'
 import { useTabs } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
@@ -41,7 +41,7 @@ export function SpaceSwitcher({
             style={{
               background: space.incognito
                 ? 'var(--surface-glass-strong)'
-                : gradientSwatchCss(space.accentHue, hue2Of(space), theme),
+                : spaceGradientCss(space, theme),
               boxShadow: isActive ? '0 0 0 2px var(--ink-2)' : '0 0 0 1px var(--border-glass)',
             }}
             data-space-dot={space.id}

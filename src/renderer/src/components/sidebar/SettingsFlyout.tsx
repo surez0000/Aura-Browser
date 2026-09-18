@@ -104,10 +104,11 @@ function Segmented<T extends string>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className="cursor-pointer rounded-md px-2 py-1 text-[11px] whitespace-nowrap transition-colors"
+            className="cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition-colors"
             style={{
-              background: active ? 'var(--surface-glass-strong)' : 'transparent',
+              background: active ? 'var(--surface-selected)' : 'transparent',
               color: active ? 'var(--ink-1)' : 'var(--ink-2)',
+              boxShadow: active ? 'inset 0 0 0 1px var(--border-glass)' : 'none',
             }}
             data-testid={`${testId}-${o.value}`}
           >
