@@ -5,7 +5,7 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
-## [Unreleased]
+## [1.0.3] — 2026-09-18
 
 ### Added
 
