@@ -27,20 +27,52 @@ const DEFAULT_SIZE = { width: 1360, height: 860 }
 /** How long to wait after the last drag/resize event before saving. */
 const SAVE_DEBOUNCE_MS = 400
 
+/** A display's usable rectangle, as Electron reports it. */
+export interface WorkArea {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 /**
- * Keep a remembered position only if it still lands on a connected display.
- * Unplugging a monitor would otherwise reopen the window off-screen.
+ * Pull a remembered placement back onto a connected display, keeping as much
+ * of its size as fits. The window can legitimately be left somewhere it cannot
+ * reopen — dragged partly above the menu bar, or on a monitor that has since
+ * been unplugged — and the size is worth keeping even then, so this nudges
+ * rather than discards. Pure, so it can be tested without a display.
  */
-function onScreen(placement: WindowPlacement): boolean {
-  if (placement.x === undefined || placement.y === undefined) return false
-  // A window is reachable if its title area overlaps some display's work area.
-  return screen.getAllDisplays().some(({ workArea }) => {
-    const left = Math.max(workArea.x, placement.x!)
-    const right = Math.min(workArea.x + workArea.width, placement.x! + placement.width)
-    const top = Math.max(workArea.y, placement.y!)
-    const bottom = Math.min(workArea.y + workArea.height, placement.y! + 60)
-    return right - left > 80 && bottom - top > 8
-  })
+export function clampToWorkArea(
+  placement: WindowPlacement,
+  areas: readonly WorkArea[],
+): WindowPlacement {
+  if (placement.x === undefined || placement.y === undefined || areas.length === 0) return placement
+  // The display holding most of the window, falling back to the first.
+  const overlap = (area: WorkArea): number =>
+    Math.max(
+      0,
+      Math.min(area.x + area.width, placement.x! + placement.width) -
+        Math.max(area.x, placement.x!),
+    ) *
+    Math.max(
+      0,
+      Math.min(area.y + area.height, placement.y! + placement.height) -
+        Math.max(area.y, placement.y!),
+    )
+  const area = areas.reduce(
+    (best, next) => (overlap(next) > overlap(best) ? next : best),
+    areas[0]!,
+  )
+
+  const width = Math.min(placement.width, area.width)
+  const height = Math.min(placement.height, area.height)
+  return {
+    ...placement,
+    width,
+    height,
+    x: Math.min(Math.max(placement.x, area.x), area.x + area.width - width),
+    y: Math.min(Math.max(placement.y, area.y), area.y + area.height - height),
+  }
 }
 
 /**
@@ -55,7 +87,12 @@ export function createChromeWindow(opts: {
   placement: WindowPlacement | null
   onPlacementChanged: (placement: WindowPlacement) => void
 }): BrowserWindow {
-  const saved = opts.placement && onScreen(opts.placement) ? opts.placement : null
+  const saved = opts.placement
+    ? clampToWorkArea(
+        opts.placement,
+        screen.getAllDisplays().map(({ workArea }) => workArea),
+      )
+    : null
   const win = new BrowserWindow({
     width: saved?.width ?? DEFAULT_SIZE.width,
     height: saved?.height ?? DEFAULT_SIZE.height,
