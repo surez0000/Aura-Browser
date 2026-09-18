@@ -10,6 +10,8 @@ export { INCOGNITO_PARTITION }
 export interface TabHost {
   changed(tab: Tab): void
   openUrl(opener: Tab, url: string, activate: boolean): void
+  /** Preview a link in a floating card instead of taking a tab. */
+  peek(opener: Tab, url: string): void
   recordVisit(tab: Tab, url: string): void
   updateTitle(tab: Tab, url: string, title: string): void
   popupMenu(template: MenuItemConstructorOptions[]): void
@@ -171,8 +173,13 @@ export class Tab {
   private wire(): void {
     const wc = this.wc
 
-    wc.setWindowOpenHandler(({ url, disposition }) => {
-      if (isAllowedPageUrl(url)) this.host.openUrl(this, url, disposition !== 'background-tab')
+    wc.setWindowOpenHandler(({ url, disposition, features }) => {
+      if (!isAllowedPageUrl(url)) return { action: 'deny' }
+      // Shift-clicking a link asks Chromium for a new window and carries no
+      // window features — that is the Peek gesture. A scripted window.open
+      // *with* features is a real popup (sign-in flows), so it gets a tab.
+      if (disposition === 'new-window' && !features) this.host.peek(this, url)
+      else this.host.openUrl(this, url, disposition !== 'background-tab')
       return { action: 'deny' }
     })
 
@@ -237,6 +244,11 @@ export class Tab {
         {
           label: 'Open Link in New Tab',
           click: () => this.host.openUrl(this, params.linkURL, true),
+        },
+        {
+          label: 'Peek Link',
+          visible: !!params.linkURL,
+          click: () => this.host.peek(this, params.linkURL),
         },
         { label: 'Copy Link Address', click: () => clipboard.writeText(params.linkURL) },
         { type: 'separator' },

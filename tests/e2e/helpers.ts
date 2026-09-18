@@ -17,7 +17,7 @@ export interface LaunchedApp {
 /** Launch the built app (out/) with an isolated profile directory. */
 export async function launchAurora(
   userDataDir?: string,
-  opts: { env?: Record<string, string> } = {},
+  opts: { env?: Record<string, string>; openUrl?: string } = {},
 ): Promise<LaunchedApp> {
   const profiles = join(root, 'test-results', 'profiles')
   mkdirSync(profiles, { recursive: true })
@@ -33,7 +33,9 @@ export async function launchAurora(
 
   const app = await _electron.launch({
     executablePath: electronPath as unknown as string,
-    args: [join(root, 'out', 'main', 'index.js')],
+    // A trailing http(s) argument is how Windows and Linux hand a default
+    // browser a link; the mini window opens for it.
+    args: [join(root, 'out', 'main', 'index.js'), ...(opts.openUrl ? [opts.openUrl] : [])],
     cwd: root,
     env,
   })
@@ -74,6 +76,15 @@ export async function startFixtureServer(): Promise<FixtureServer> {
   const dir = join(root, 'tests', 'e2e', 'fixtures')
   const server = createServer((req, res) => {
     const name = basename((req.url ?? '/a.html').split('?')[0] ?? '') || 'a.html'
+    // Link page: shift-clicking the link is the Peek gesture.
+    if (name === 'links.html') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      res.end(
+        `<!doctype html><title>Links Fixture</title>
+         <a id="go" href="/b.html" style="font:20px sans-serif;display:block;padding:40px">Open Fixture B</a>`,
+      )
+      return
+    }
     // Screen-share page: a real button, so getDisplayMedia has a user gesture.
     if (name === 'share.html') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })

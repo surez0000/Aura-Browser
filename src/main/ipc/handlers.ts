@@ -6,6 +6,7 @@ import type { ArchiveStore } from '../services/db/archive'
 import type { DownloadsService } from '../services/downloads'
 import type { PermissionService } from '../services/permissions'
 import type { DisplayCaptureService } from '../services/display-capture'
+import type { MiniWindowService } from '../windows/mini-window'
 import type { UpdaterService } from '../services/updater'
 import { handleInvoke } from './router'
 
@@ -16,6 +17,7 @@ interface HandlerContext {
   downloads: DownloadsService
   permissions: PermissionService
   displayCapture: DisplayCaptureService
+  miniWindows: MiniWindowService
   updater: UpdaterService
   getSettings: () => AuroraSettings
   setSettings: (patch: Partial<AuroraSettings>) => AuroraSettings
@@ -113,6 +115,16 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
   handleInvoke('tabs:closePane', (req) => manager.closePane(req.tabId))
   handleInvoke('tabs:focusPane', (req) => manager.focusPane(req.tabId))
   handleInvoke('tabs:setPaneRatios', (req) => manager.setPaneRatios(req.ratios))
+  handleInvoke('ui:setPeekBounds', (req) => manager.setPeekBounds(req.rect))
+  handleInvoke('peek:close', () => manager.closePeek())
+  handleInvoke('peek:promote', () => manager.promotePeek())
+
+  handleInvoke('mini:setBounds', (req, event) =>
+    ctx.miniWindows.forSender(event.sender)?.setBounds(req.rect),
+  )
+  handleInvoke('mini:back', (_req, event) => ctx.miniWindows.forSender(event.sender)?.goBack())
+  handleInvoke('mini:close', (_req, event) => ctx.miniWindows.forSender(event.sender)?.close())
+  handleInvoke('mini:promote', (_req, event) => ctx.miniWindows.promote(event.sender))
   handleInvoke('ui:overlay', (req) => manager.setOverlayShown(req.shown, req.phase))
 
   handleInvoke('window:control', (req) => {

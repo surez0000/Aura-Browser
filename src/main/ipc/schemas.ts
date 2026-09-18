@@ -156,6 +156,38 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
   'tabs:setPaneRatios': z
     .object({ ratios: z.array(z.number().finite().positive()).min(1).max(8) })
     .strict(),
+
+  'ui:setPeekBounds': z
+    .object({
+      rect: z
+        .object({
+          x: z.number().finite(),
+          y: z.number().finite(),
+          width: z.number().finite().nonnegative(),
+          height: z.number().finite().nonnegative(),
+        })
+        .strict()
+        .nullable(),
+    })
+    .strict(),
+  'peek:close': empty,
+  'mini:setBounds': z
+    .object({
+      rect: z
+        .object({
+          x: z.number().finite(),
+          y: z.number().finite(),
+          width: z.number().finite().nonnegative(),
+          height: z.number().finite().nonnegative(),
+        })
+        .strict()
+        .nullable(),
+    })
+    .strict(),
+  'mini:back': empty,
+  'mini:close': empty,
+  'mini:promote': empty,
+  'peek:promote': empty,
   'ui:overlay': z
     .object({ shown: z.boolean(), phase: z.enum(['capture', 'detach']).optional() })
     .strict(),

@@ -65,10 +65,31 @@ export interface TabsSnapshot {
   panes: string[]
   /** Width of each pane as a fraction of the page area; sums to 1. */
   paneRatios: number[]
+  /** The open Peek, if any. */
+  peek: PeekInfo | null
 }
 
 /** Largest split the layout offers. */
 export const MAX_PANES = 4
+
+/**
+ * A Peek: a link previewed in a floating card over the page, without taking a
+ * tab. Shift-clicking a link opens one; it can be promoted to a real tab.
+ */
+/** State of a mini window, pushed to that window's own chrome renderer. */
+export interface MiniWindowInfo {
+  url: string
+  title: string
+  isLoading: boolean
+  canGoBack: boolean
+}
+
+export interface PeekInfo {
+  tabId: string
+  url: string
+  title: string
+  isLoading: boolean
+}
 
 /** Persisted session (kv key "session"), phase (b) schema; upgraded on load. */
 export interface SessionSpaceV2 {

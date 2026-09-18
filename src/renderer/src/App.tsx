@@ -5,6 +5,7 @@ import { Palette } from '@/components/palette/Palette'
 import { FindBar } from '@/components/FindBar'
 import { PermissionBanner } from '@/components/PermissionBanner'
 import { LoadingBar } from '@/components/LoadingBar'
+import { PeekCard } from '@/components/PeekCard'
 import { ScreenSharePicker } from '@/components/ScreenSharePicker'
 import { HistoryPanel } from '@/components/HistoryPanel'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
@@ -57,6 +58,7 @@ export default function App(): React.JSX.Element {
           <PaneArea />
         </div>
       </main>
+      <PeekCard />
       <Palette />
       <ScreenSharePicker />
       <HistoryPanel />

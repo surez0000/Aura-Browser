@@ -16,8 +16,9 @@ import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
 import { TabManager } from './tabs/tab-manager'
 import { DEFAULT_PARTITION } from './tabs/partition-names'
 import { createChromeWindow } from './windows/chrome-window'
+import { MiniWindowService } from './windows/mini-window'
 import { registerIpcHandlers } from './ipc/handlers'
-import { pushToChrome, setTrustedWebContents } from './ipc/router'
+import { addTrustedWebContents, pushTo, pushToChrome, setTrustedWebContents } from './ipc/router'
 import { installMenu } from './menu'
 
 const AUTO_ARCHIVE_SWEEP_MS = 5 * 60_000
@@ -37,16 +38,37 @@ app.setAboutPanelOptions({ applicationName: 'Aura Browser', applicationVersion: 
 
 let win: BrowserWindow | null = null
 let manager: TabManager | null = null
+/** URLs the OS handed us before the window was ready. */
+const pendingUrls: string[] = []
+let openMiniWindows: (urls: string[]) => void = (urls) => pendingUrls.push(...urls)
+
+/** http(s) arguments are how Windows and Linux hand a default browser a link. */
+function urlsFromArgv(argv: readonly string[]): string[] {
+  return argv.filter((arg) => /^https?:\/\//i.test(arg))
+}
 
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, argv) => {
+    const urls = urlsFromArgv(argv)
+    if (urls.length > 0) {
+      openMiniWindows(urls)
+      return
+    }
     if (win) {
       if (win.isMinimized()) win.restore()
       win.focus()
     }
   })
+
+  // macOS delivers links to the default browser this way.
+  app.on('open-url', (event, url) => {
+    event.preventDefault()
+    openMiniWindows([url])
+  })
+
+  openMiniWindows(urlsFromArgv(process.argv.slice(1)))
 
   app.on('window-all-closed', () => {
     app.quit()
@@ -129,6 +151,26 @@ function bootstrap(): void {
   m.prepareSession(DEFAULT_PARTITION, true)
 
   setTrustedWebContents(w.webContents)
+
+  // A URL handed to Aura Browser by another app opens in its own small window,
+  // so a quick read never disturbs the Spaces and tabs in the main window.
+  const miniWindows = new MiniWindowService({
+    openInMain: (url, opts) => {
+      m.create({ url, activate: true, title: opts.title, faviconUrl: opts.faviconUrl })
+      if (!w.isDestroyed()) w.focus()
+    },
+    context: () => {
+      const space = m.activeSpace()
+      return space
+        ? { partition: space.partition, incognito: space.incognito, spaceId: space.id }
+        : null
+    },
+    recordVisit: (url) => history.recordVisit(url),
+    updateTitle: (url, title) => history.updateTitle(url, title),
+    pushState: (wc, info) => pushTo(wc, 'mini:state', info),
+    trust: (wc) => addTrustedWebContents(wc),
+  })
+  openMiniWindows = (urls) => urls.forEach((url) => miniWindows.open(url))
   // Well before a page can ask to share, so the first request is not stuck
   // behind Chromium's capture-stack start-up.
   displayCapture.warmUp()
@@ -140,6 +182,7 @@ function bootstrap(): void {
     downloads,
     permissions,
     displayCapture,
+    miniWindows,
     updater,
     getSettings: () => settings,
     setSettings: (patch) => {
@@ -169,6 +212,10 @@ function bootstrap(): void {
     restoreSession(kv, m)
     m.autoArchive(settings.todayArchiveHours)
     updater.start()
+    // Anything the OS handed us at launch (default-browser click, or a URL on
+    // the command line) opens now that a Space exists to borrow context from.
+    const pending = pendingUrls.splice(0)
+    openMiniWindows(pending)
   })
 
   setInterval(() => m.autoArchive(settings.todayArchiveHours), AUTO_ARCHIVE_SWEEP_MS)

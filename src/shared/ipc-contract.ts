@@ -4,6 +4,7 @@ import type {
   DisplayCaptureRequestInfo,
   DownloadInfo,
   HistoryEntry,
+  MiniWindowInfo,
   FavoriteEntry,
   FindResult,
   HistorySearchRow,
@@ -136,6 +137,25 @@ export interface InvokeMap {
   /** Move keyboard focus and chrome state to a pane. */
   'tabs:focusPane': { req: { tabId: string }; res: void }
   'tabs:setPaneRatios': { req: { ratios: number[] }; res: void }
+
+  /** Where the Peek card's page should sit; null while no Peek is open. */
+  'ui:setPeekBounds': {
+    req: { rect: { x: number; y: number; width: number; height: number } | null }
+    res: void
+  }
+  'peek:close': { req: Record<string, never>; res: void }
+
+  /** Mini window: where its page sits, and what to do with it. */
+  'mini:setBounds': {
+    req: { rect: { x: number; y: number; width: number; height: number } | null }
+    res: void
+  }
+  'mini:back': { req: Record<string, never>; res: void }
+  'mini:close': { req: Record<string, never>; res: void }
+  /** Move the page into the main window as a real tab. */
+  'mini:promote': { req: Record<string, never>; res: void }
+  /** Turn the Peek into a real tab in the current Space. */
+  'peek:promote': { req: Record<string, never>; res: void }
   /**
    * Chrome overlays (palette, hover sidebar) render *under* native views, so
    * while an overlay is open the active view is detached and replaced by a
@@ -163,6 +183,8 @@ export interface PushMap {
   'downloads:changed': DownloadInfo[]
   'settings:changed': AuroraSettings
   'updates:state': UpdateState
+  /** Pushed only to the mini window it describes. */
+  'mini:state': MiniWindowInfo
 }
 
 export const INVOKE_CHANNELS = [
@@ -215,6 +237,13 @@ export const INVOKE_CHANNELS = [
   'tabs:closePane',
   'tabs:focusPane',
   'tabs:setPaneRatios',
+  'ui:setPeekBounds',
+  'peek:close',
+  'mini:setBounds',
+  'mini:back',
+  'mini:close',
+  'mini:promote',
+  'peek:promote',
   'ui:overlay',
   'window:control',
   'state:get',
@@ -230,6 +259,7 @@ export const PUSH_CHANNELS = [
   'downloads:changed',
   'settings:changed',
   'updates:state',
+  'mini:state',
 ] as const satisfies ReadonlyArray<keyof PushMap>
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

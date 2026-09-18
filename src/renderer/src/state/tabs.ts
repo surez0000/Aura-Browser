@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { SpaceInfo, TabInfo, TabKind, TabsSnapshot } from '@shared/models'
+import type { PeekInfo, SpaceInfo, TabInfo, TabKind, TabsSnapshot } from '@shared/models'
 
 export interface TabsState {
   spaces: SpaceInfo[]
@@ -9,6 +9,8 @@ export interface TabsState {
   /** Tabs on screen in the active space, left to right. */
   panes: string[]
   paneRatios: number[]
+  /** The open Peek, if any. */
+  peek: PeekInfo | null
   applySnapshot(snapshot: TabsSnapshot): void
   /** Optimistic order for one (space, kind) group while a drag is in flight. */
   applyGroupOrder(orderedIds: string[]): void
@@ -35,6 +37,7 @@ export const useTabs = create<TabsState>()((set) => ({
   activeTabId: null,
   panes: [],
   paneRatios: [],
+  peek: null,
   applySnapshot: (snapshot) =>
     set({
       spaces: snapshot.spaces,
@@ -43,6 +46,7 @@ export const useTabs = create<TabsState>()((set) => ({
       activeTabId: snapshot.activeTabId,
       panes: snapshot.panes,
       paneRatios: snapshot.paneRatios,
+      peek: snapshot.peek,
     }),
   applyGroupOrder: (orderedIds) => set((s) => ({ tabs: reorderGroup(s.tabs, orderedIds) })),
 }))

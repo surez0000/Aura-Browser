@@ -46,6 +46,7 @@ describe('tabs store', () => {
       activeTabId: 'b',
       panes: [],
       paneRatios: [],
+      peek: null,
     })
     const s = useTabs.getState()
     expect(s.spaces).toHaveLength(2)
@@ -61,6 +62,7 @@ describe('tabs store', () => {
       activeTabId: 'missing',
       panes: [],
       paneRatios: [],
+      peek: null,
     })
     expect(selectActiveTab(useTabs.getState())).toBeNull()
   })
@@ -98,6 +100,7 @@ describe('reorderGroup', () => {
       activeTabId: 'a',
       panes: [],
       paneRatios: [],
+      peek: null,
     })
     useTabs.getState().applyGroupOrder(['b', 'a'])
     expect(useTabs.getState().tabs.map((t) => t.id)).toEqual(['b', 'a'])

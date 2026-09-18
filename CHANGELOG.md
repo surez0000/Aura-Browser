@@ -9,6 +9,14 @@ a release is cut.
 
 ### Added
 
+- **Peek**: shift-click a link (or "Peek Link" in the page menu) to preview it
+  in a floating card without spending a tab. Escape dismisses it; **Open as
+  Tab** keeps it. Scripted popups that ask for window features still get a real
+  tab, so sign-in flows are unaffected.
+- **Mini window**: a URL handed to Aura Browser by another application opens in
+  its own small window instead of disturbing your Spaces and tabs. It browses
+  in the active Space's storage, so you are signed in as usual, and **Open in
+  Aura** promotes it to a real tab.
 - **Split view** (⌘\\, the View menu, a palette action, or a tab's context
   menu). Two to four pages side by side, each with a header showing its
   favicon, title and a close button. Drag the divider to resize; the focused

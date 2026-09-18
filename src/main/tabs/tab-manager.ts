@@ -72,6 +72,10 @@ export class TabManager {
   private tabs: Tab[] = []
   private attachedTabIds: string[] = []
   private paneBounds = new Map<string, Rectangle>()
+  /** The open Peek's tab; deliberately outside `tabs`, so it takes no tab slot. */
+  private peekTab: Tab | null = null
+  private peekBounds: Rectangle | null = null
+  private peekAttached = false
   private overlayShown = false
   private readonly closedStack: Array<{ url: string; spaceId: string; kind: TabKind }> = []
   private emitScheduled = false
@@ -92,6 +96,7 @@ export class TabManager {
       if (!tab.incognito) this.deps.history.updateTitle(url, title)
     },
     popupMenu: (template) => this.popupMenu(template),
+    peek: (opener, url) => this.openPeek(opener, url),
     focused: (tab) => {
       if (this.activeSpace()?.panes.includes(tab.id)) this.focusPane(tab.id)
     },
@@ -243,6 +248,7 @@ export class TabManager {
       return
     }
     this.stopActiveFind()
+    this.closePeek({ silent: true })
     this.activeSpaceId = spaceId
     this.detach()
     let tab = space.activeTabId ? this.getTab(space.activeTabId) : null
@@ -278,6 +284,7 @@ export class TabManager {
 
   getTab(tabId: string | undefined): Tab | null {
     if (tabId === undefined) return this.active()
+    if (tabId === this.peekTab?.id) return this.peekTab
     return this.tabs.find((t) => t.id === tabId) ?? null
   }
 
@@ -686,6 +693,91 @@ export class TabManager {
 
   // ---- layout & overlay -------------------------------------------------------
 
+  // ---- peek ----------------------------------------------------------------
+
+  /**
+   * Preview a link in a floating card. The Peek is a real page with its own
+   * view — same Space, same storage partition — but it is not in the tab list,
+   * so it costs no tab and vanishes when dismissed. Promote it to keep it.
+   */
+  openPeek(opener: Tab, url: string): void {
+    if (!isAllowedPageUrl(url)) return
+    this.closePeek({ silent: true })
+    const space = this.getSpace(opener.spaceId) ?? this.activeSpace()
+    if (!space) return
+    this.peekTab = new Tab(this.host, {
+      spaceId: space.id,
+      kind: 'today',
+      incognito: space.incognito,
+      partition: space.partition,
+      url,
+    })
+    this.scheduleEmit()
+  }
+
+  closePeek(opts: { silent?: boolean } = {}): void {
+    const tab = this.peekTab
+    if (!tab) return
+    if (this.peekAttached && !this.win.isDestroyed()) {
+      this.win.contentView.removeChildView(tab.view)
+    }
+    this.peekAttached = false
+    this.peekBounds = null
+    this.peekTab = null
+    tab.destroy()
+    if (!opts.silent) {
+      this.syncAttachments()
+      this.scheduleEmit()
+    }
+  }
+
+  /** Keep the previewed page: open it as a tab and dismiss the card. */
+  promotePeek(): void {
+    const tab = this.peekTab
+    if (!tab) return
+    const url = tab.url || tab.pendingUrl
+    const spaceId = tab.spaceId
+    const title = tab.title
+    const faviconUrl = tab.faviconUrl
+    this.closePeek({ silent: true })
+    if (url) this.create({ url, activate: true, spaceId, kind: 'today', title, faviconUrl })
+    else this.scheduleEmit()
+  }
+
+  setPeekBounds(rect: Rectangle | null): void {
+    this.peekBounds = rect
+      ? {
+          x: Math.round(rect.x),
+          y: Math.round(rect.y),
+          width: Math.max(0, Math.round(rect.width)),
+          height: Math.max(0, Math.round(rect.height)),
+        }
+      : null
+    this.syncAttachments()
+  }
+
+  /**
+   * The Peek always sits above the panes, so it is attached last and re-raised
+   * whenever a pane attaches after it.
+   */
+  private syncPeek(): void {
+    const tab = this.peekTab
+    const wanted = !!tab && !!this.peekBounds && !this.overlayShown && !tab.crashed
+    if (!tab || this.win.isDestroyed()) return
+    if (!wanted) {
+      if (this.peekAttached) this.win.contentView.removeChildView(tab.view)
+      this.peekAttached = false
+      return
+    }
+    if (this.peekAttached) this.win.contentView.removeChildView(tab.view)
+    this.win.contentView.addChildView(tab.view)
+    const view = tab.view as unknown as { setBorderRadius?: (radius: number) => void }
+    view.setBorderRadius?.(PAGE_CORNER_RADIUS)
+    if (this.peekBounds) tab.view.setBounds(this.peekBounds)
+    if (!this.peekAttached) tab.wc.focus()
+    this.peekAttached = true
+  }
+
   // ---- split view ----------------------------------------------------------
 
   /**
@@ -836,8 +928,12 @@ export class TabManager {
     this.overlayShown = true
     // Every visible pane is captured, so a split looks continuous under an
     // overlay just as a single page does.
+    const capturing = [
+      ...this.attachedTabIds,
+      ...(this.peekAttached && this.peekTab ? [this.peekTab.id] : []),
+    ]
     const captured = await Promise.all(
-      this.attachedTabIds.map(async (tabId) => {
+      capturing.map(async (tabId) => {
         const tab = this.getTab(tabId)
         if (!tab || tab.crashed) return null
         try {
@@ -899,7 +995,10 @@ export class TabManager {
     const gainedFocus = wanted.filter((id) => !this.attachedTabIds.includes(id))
     this.attachedTabIds = wanted
     const focused = space?.activeTabId
-    if (focused && gainedFocus.includes(focused)) this.getTab(focused)?.wc.focus()
+    if (focused && gainedFocus.includes(focused) && !this.peekTab) {
+      this.getTab(focused)?.wc.focus()
+    }
+    this.syncPeek()
   }
 
   /** Remove a single view from the window (a pane closing, crashing, moving). */
@@ -915,8 +1014,12 @@ export class TabManager {
         const tab = this.getTab(id)
         if (tab) this.win.contentView.removeChildView(tab.view)
       }
+      if (this.peekAttached && this.peekTab) {
+        this.win.contentView.removeChildView(this.peekTab.view)
+      }
     }
     this.attachedTabIds = []
+    this.peekAttached = false
   }
 
   private onTabChanged(tab: Tab): void {
@@ -944,6 +1047,14 @@ export class TabManager {
       activeTabId: this.activeSpace()?.activeTabId ?? null,
       panes: [...(this.activeSpace()?.panes ?? [])],
       paneRatios: [...(this.activeSpace()?.paneRatios ?? [])],
+      peek: this.peekTab
+        ? {
+            tabId: this.peekTab.id,
+            url: this.peekTab.url || this.peekTab.pendingUrl || '',
+            title: this.peekTab.title,
+            isLoading: this.peekTab.isLoading,
+          }
+        : null,
     }
   }
 
