@@ -1,7 +1,7 @@
 {
   "name": "aura-browser",
   "productName": "Aura Browser",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Aura Browser — an Arc-inspired desktop browser with the Aurora Glass theme, built on Electron.",
   "main": "./out/main/index.js",
   "author": "Aurora contributors",
