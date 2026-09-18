@@ -10,6 +10,7 @@ import { HistoryStore } from './services/db/history'
 import { ArchiveStore } from './services/db/archive'
 import { DownloadsService } from './services/downloads'
 import { PermissionService } from './services/permissions'
+import { DisplayCaptureService } from './services/display-capture'
 import { UpdaterService } from './services/updater'
 import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
 import { TabManager } from './tabs/tab-manager'
@@ -78,6 +79,8 @@ function bootstrap(): void {
     ...DEFAULT_SETTINGS,
     ...(kv.get<AuroraSettings>('settings') ?? {}),
   }
+  // The show-on-hover sidebar was replaced by the compact rail.
+  if ((settings.sidebarMode as string) === 'hover') settings.sidebarMode = 'compact'
 
   // The theme setting drives prefers-color-scheme in every renderer via
   // nativeTheme — one pipe for system/light/dark. Set before window creation
@@ -92,6 +95,10 @@ function bootstrap(): void {
   )
   const permissions = new PermissionService(kv, (request) =>
     pushToChrome('permissions:request', request),
+  )
+  const displayCapture = new DisplayCaptureService(
+    (request) => pushToChrome('displayCapture:request', request),
+    (id) => pushToChrome('displayCapture:close', { id }),
   )
   const updater = new UpdaterService((state) => {
     pushToChrome('updates:state', state)
@@ -113,6 +120,7 @@ function bootstrap(): void {
     attachSession: (ses, { persist }) => {
       downloads.attach(ses)
       permissions.attach(ses, { persistDecisions: persist })
+      displayCapture.attach(ses)
     },
   })
   manager = m
@@ -120,6 +128,9 @@ function bootstrap(): void {
   m.prepareSession(DEFAULT_PARTITION, true)
 
   setTrustedWebContents(w.webContents)
+  // Well before a page can ask to share, so the first request is not stuck
+  // behind Chromium's capture-stack start-up.
+  displayCapture.warmUp()
 
   registerIpcHandlers({
     manager: m,
@@ -127,11 +138,13 @@ function bootstrap(): void {
     archive,
     downloads,
     permissions,
+    displayCapture,
     updater,
     getSettings: () => settings,
     setSettings: (patch) => {
       settings = { ...settings, ...patch }
       kv.set('settings', settings)
+      if ((settings.sidebarMode as string) === 'hover') settings.sidebarMode = 'compact'
       if (patch.theme !== undefined) nativeTheme.themeSource = settings.theme
       pushToChrome('settings:changed', settings)
       return settings

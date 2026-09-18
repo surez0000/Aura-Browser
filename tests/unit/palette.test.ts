@@ -3,7 +3,15 @@ import { buildActions, composePalette, type PaletteContext } from '@/lib/palette
 import type { SpaceInfo, TabInfo } from '@shared/models'
 
 function space(id: string, overrides: Partial<SpaceInfo> = {}): SpaceInfo {
-  return { id, name: id, accentHue: 226, incognito: false, favorites: [], ...overrides }
+  return {
+    id,
+    name: id,
+    accentHue: 226,
+    accentHue2: null,
+    incognito: false,
+    favorites: [],
+    ...overrides,
+  }
 }
 
 function tab(id: string, title: string, url: string, spaceId = 's1'): TabInfo {

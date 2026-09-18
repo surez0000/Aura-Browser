@@ -7,6 +7,29 @@ a release is cut.
 
 ## [Unreleased]
 
+### Added
+
+- **Screen sharing works.** A page calling `getDisplayMedia` now gets an
+  in-app picker showing every screen and window with live thumbnails; the
+  chosen surface is the only thing handed over, and Cancel denies. On macOS,
+  when Screen Recording has not been granted, the dialog says so and opens the
+  right System Settings pane. The capture stack is warmed at launch so the
+  picker appears in about a second instead of up to twelve.
+- **Per-Space gradients.** Each Space picks a two-stop gradient the way Arc
+  does, and the aurora, the Space dot, and the accent all follow it.
+
+### Changed
+
+- **Show-on-hover sidebar replaced by a compact rail.** ⌘S now switches
+  between the full sidebar and a 60 px rail listing one favicon per tab, both
+  of which sit in the layout. The old mode slid a panel over the page whenever
+  the pointer neared the window edge, which opened and closed unpredictably;
+  nothing reacts to hover any more, so that cannot happen. Clicking a favicon
+  activates the tab, middle-click closes, right-click opens the tab menu, and
+  dragging still reorders or moves a tab to another Space.
+- Spaces are far easier to tell apart: the aurora mesh keeps its proven
+  luminance bands but is much more saturated, so hue reads clearly.
+
 ## [0.1.2] — 2026-09-15
 
 ### Added

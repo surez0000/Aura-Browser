@@ -1,27 +1,23 @@
-import { useState } from 'react'
 import { AnimatePresence, Reorder } from 'motion/react'
-import { Globe, Loader2, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
 import { displayLabel } from '@/lib/url'
 import { useTabs, tabsOf } from '@/state/tabs'
+import { TabFavicon } from './TabFavicon'
+import { TabRailItem } from './TabRailItem'
 import type { TabInfo, TabKind } from '@shared/models'
 
-function TabFavicon({ tab }: { tab: TabInfo }): React.JSX.Element {
-  const [imgFailed, setImgFailed] = useState(false)
-  if (tab.isLoading) {
-    return <Loader2 size={14} className="shrink-0 animate-spin" style={{ color: 'var(--ink-3)' }} />
+/**
+ * Dropping a tab onto a space dot moves it there. elementsFromPoint (plural):
+ * the dragged item itself sits under the pointer, so scan the whole stack.
+ */
+function dropOnSpaceDot(tab: TabInfo, point: { x: number; y: number }): void {
+  const stack = document.elementsFromPoint(point.x, point.y)
+  const dot = stack.map((el) => el.closest('[data-space-dot]')).find((el): el is Element => !!el)
+  const targetSpaceId = dot?.getAttribute('data-space-dot')
+  if (targetSpaceId && targetSpaceId !== tab.spaceId) {
+    void invoke('tabs:moveToSpace', { tabId: tab.id, spaceId: targetSpaceId })
   }
-  if (tab.faviconUrl && !imgFailed) {
-    return (
-      <img
-        src={tab.faviconUrl}
-        alt=""
-        className="h-3.5 w-3.5 shrink-0"
-        onError={() => setImgFailed(true)}
-      />
-    )
-  }
-  return <Globe size={14} className="shrink-0" style={{ color: 'var(--ink-3)' }} />
 }
 
 function TabItem({ tab, isActive }: { tab: TabInfo; isActive: boolean }): React.JSX.Element {
@@ -47,19 +43,7 @@ function TabItem({ tab, isActive }: { tab: TabInfo; isActive: boolean }): React.
         e.preventDefault()
         void invoke('tabs:contextMenu', { tabId: tab.id })
       }}
-      onDragEnd={(_event, info) => {
-        // Dropping a tab onto a space dot in the switcher rail moves it there.
-        // elementsFromPoint (plural): the dragged item itself sits under the
-        // pointer, so scan the whole stack for a dot beneath it.
-        const stack = document.elementsFromPoint(info.point.x, info.point.y)
-        const dot = stack
-          .map((el) => el.closest('[data-space-dot]'))
-          .find((el): el is Element => !!el)
-        const targetSpaceId = dot?.getAttribute('data-space-dot')
-        if (targetSpaceId && targetSpaceId !== tab.spaceId) {
-          void invoke('tabs:moveToSpace', { tabId: tab.id, spaceId: targetSpaceId })
-        }
-      }}
+      onDragEnd={(_event, info) => dropOnSpaceDot(tab, info.point)}
       data-testid="tab-item"
       data-tab-id={tab.id}
       data-kind={tab.kind}
@@ -87,8 +71,17 @@ function TabItem({ tab, isActive }: { tab: TabInfo; isActive: boolean }): React.
   )
 }
 
-/** One reorderable sidebar section (pinned or Today) of the active space. */
-export function TabSection({ kind }: { kind: TabKind }): React.JSX.Element {
+/**
+ * One reorderable sidebar section (pinned or Today) of the active space.
+ * `compact` renders the rail variant: favicons only, in a vertical column.
+ */
+export function TabSection({
+  kind,
+  compact = false,
+}: {
+  kind: TabKind
+  compact?: boolean
+}): React.JSX.Element {
   const tabs = useTabs((s) => s.tabs)
   const activeSpaceId = useTabs((s) => s.activeSpaceId)
   const activeTabId = useTabs((s) => s.activeTabId)
@@ -105,13 +98,22 @@ export function TabSection({ kind }: { kind: TabKind }): React.JSX.Element {
         applyGroupOrder(orderedIds)
         void invoke('tabs:reorder', { orderedIds })
       }}
-      className="space-y-0.5"
+      className={compact ? 'flex flex-col items-center gap-1' : 'space-y-0.5'}
       data-testid={`section-${kind}`}
     >
       <AnimatePresence initial={false}>
-        {sectionTabs.map((tab) => (
-          <TabItem key={tab.id} tab={tab} isActive={tab.id === activeTabId} />
-        ))}
+        {sectionTabs.map((tab) =>
+          compact ? (
+            <TabRailItem
+              key={tab.id}
+              tab={tab}
+              isActive={tab.id === activeTabId}
+              onDragEnd={(point) => dropOnSpaceDot(tab, point)}
+            />
+          ) : (
+            <TabItem key={tab.id} tab={tab} isActive={tab.id === activeTabId} />
+          ),
+        )}
       </AnimatePresence>
     </Reorder.Group>
   )

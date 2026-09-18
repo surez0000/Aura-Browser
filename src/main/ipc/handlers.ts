@@ -5,6 +5,7 @@ import type { HistoryStore } from '../services/db/history'
 import type { ArchiveStore } from '../services/db/archive'
 import type { DownloadsService } from '../services/downloads'
 import type { PermissionService } from '../services/permissions'
+import type { DisplayCaptureService } from '../services/display-capture'
 import type { UpdaterService } from '../services/updater'
 import { handleInvoke } from './router'
 
@@ -14,6 +15,7 @@ interface HandlerContext {
   archive: ArchiveStore
   downloads: DownloadsService
   permissions: PermissionService
+  displayCapture: DisplayCaptureService
   updater: UpdaterService
   getSettings: () => AuroraSettings
   setSettings: (patch: Partial<AuroraSettings>) => AuroraSettings
@@ -50,11 +52,17 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
   handleInvoke('tabs:contextMenu', (req) => manager.showTabContextMenu(req.tabId))
 
   handleInvoke('spaces:create', (req) => ({
-    id: manager.createSpace({ name: req.name, accentHue: req.accentHue, activate: req.activate })
-      .id,
+    id: manager.createSpace({
+      name: req.name,
+      accentHue: req.accentHue,
+      accentHue2: req.accentHue2,
+      activate: req.activate,
+    }).id,
   }))
   handleInvoke('spaces:rename', (req) => manager.renameSpace(req.spaceId, req.name))
-  handleInvoke('spaces:setAccent', (req) => manager.setSpaceAccent(req.spaceId, req.accentHue))
+  handleInvoke('spaces:setAccent', (req) =>
+    manager.setSpaceAccent(req.spaceId, req.accentHue, req.accentHue2),
+  )
   handleInvoke('spaces:remove', (req) => manager.removeSpace(req.spaceId))
   handleInvoke('spaces:activate', (req) => manager.activateSpace(req.spaceId))
   handleInvoke('spaces:openIncognito', () => ({ id: manager.openIncognito().id }))
@@ -74,6 +82,11 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
     ctx.permissions.respond(req.id, req.allow, req.remember),
   )
   handleInvoke('permissions:clearStored', () => ctx.permissions.clearStored())
+
+  handleInvoke('displayCapture:respond', (req) =>
+    ctx.displayCapture.respond(req.id, req.sourceId, req.withAudio ?? false),
+  )
+  handleInvoke('displayCapture:openSystemSettings', () => ctx.displayCapture.openSystemSettings())
 
   handleInvoke('downloads:list', () => ctx.downloads.list())
   handleInvoke('downloads:action', (req) => ctx.downloads.action(req.id, req.action))

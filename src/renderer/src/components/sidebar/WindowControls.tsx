@@ -2,16 +2,22 @@ import { Minus, Square, X } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
 
 /** Custom window controls for Windows/Linux (frameless window). */
-export function WindowControls(): React.JSX.Element {
+export function WindowControls({
+  vertical = false,
+}: { vertical?: boolean } = {}): React.JSX.Element {
   const control = (action: 'minimize' | 'maximize' | 'close'): void => {
     void invoke('window:control', { action })
   }
 
-  const cls =
-    'no-drag flex h-7 w-8 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-(--surface-hover)'
+  const cls = `no-drag flex cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-(--surface-hover) ${
+    vertical ? 'h-7 w-9' : 'h-7 w-8'
+  }`
 
   return (
-    <div className="flex items-center gap-0.5" style={{ color: 'var(--ink-2)' }}>
+    <div
+      className={`flex gap-0.5 ${vertical ? 'flex-col items-center' : 'items-center'}`}
+      style={{ color: 'var(--ink-2)' }}
+    >
       <button
         type="button"
         title="Minimize"

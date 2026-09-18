@@ -1,16 +1,25 @@
 import { EyeOff, Pencil } from 'lucide-react'
+import { gradientSwatchCss, hue2Of } from '@/theme/aurora'
 import { useTabs, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
 /** Active space name; click to edit (rename, accent, delete). */
 export function SpaceHeader(): React.JSX.Element | null {
+  const theme = useUi((s) => s.themeName)
   const space = useTabs(selectActiveSpace)
   const openSpaceEditor = useUi((s) => s.openSpaceEditor)
   if (!space) return null
 
   return (
     <div className="flex h-6 shrink-0 items-center gap-2 px-1" data-testid="space-header">
-      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: 'var(--accent)' }} />
+      <span
+        className="h-2.5 w-2.5 shrink-0 rounded-full"
+        style={{
+          background: space.incognito
+            ? 'var(--surface-glass-strong)'
+            : gradientSwatchCss(space.accentHue, hue2Of(space), theme),
+        }}
+      />
       <button
         type="button"
         onClick={() => openSpaceEditor(space.id)}

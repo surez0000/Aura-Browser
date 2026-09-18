@@ -3,7 +3,15 @@ import { reorderGroup, selectActiveSpace, selectActiveTab, tabsOf, useTabs } fro
 import type { SpaceInfo, TabInfo, TabKind } from '@shared/models'
 
 function space(id: string, overrides: Partial<SpaceInfo> = {}): SpaceInfo {
-  return { id, name: id, accentHue: 226, incognito: false, favorites: [], ...overrides }
+  return {
+    id,
+    name: id,
+    accentHue: 226,
+    accentHue2: null,
+    incognito: false,
+    favorites: [],
+    ...overrides,
+  }
 }
 
 function tab(id: string, spaceId = 's1', kind: TabKind = 'today'): TabInfo {

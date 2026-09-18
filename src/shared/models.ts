@@ -17,8 +17,14 @@ export interface FavoriteEntry {
 export interface SpaceInfo {
   id: string
   name: string
-  /** 0–359; phase (c) maps each hue to a full aurora palette. */
+  /** 0–359; drives the accent and the first half of the aurora mesh. */
   accentHue: number
+  /**
+   * Second gradient stop (0–359). Together with `accentHue` it gives each
+   * Space its own gradient, the way Arc does. Absent on Spaces created before
+   * gradients existed — the palette then derives one from `accentHue`.
+   */
+  accentHue2: number | null
   /** Ephemeral: separate in-memory session partition, never persisted. */
   incognito: boolean
   favorites: FavoriteEntry[]
@@ -77,6 +83,8 @@ export interface SessionSnapshotV2 {
  */
 export interface SessionSpaceV3 extends SessionSpaceV2 {
   partition: string
+  /** Second gradient stop; absent on Spaces saved before gradients. */
+  accentHue2?: number | null
 }
 
 export interface SessionSnapshotV3 {
@@ -128,6 +136,28 @@ export interface DownloadInfo {
   startedAt: number
 }
 
+/** One screen or window offered by the screen-share picker. */
+export interface DisplayCaptureSource {
+  id: string
+  name: string
+  kind: 'screen' | 'window'
+  thumbnailDataUrl: string
+  appIconDataUrl: string | null
+}
+
+export interface DisplayCaptureRequestInfo {
+  id: string
+  /** Host asking to capture, for the picker's headline. */
+  host: string
+  sources: DisplayCaptureSource[]
+  /** True until the source list has been enumerated (it can take seconds). */
+  loading: boolean
+  /** macOS gates screen capture on a system grant we cannot give ourselves. */
+  systemPermission: 'granted' | 'denied'
+  /** System audio capture (Windows loopback only). */
+  canShareAudio: boolean
+}
+
 export interface PermissionRequestInfo {
   id: string
   host: string
@@ -140,7 +170,13 @@ export interface FindResult {
   matches: number
 }
 
-export type SidebarMode = 'fixed' | 'hover'
+/**
+ * 'fixed'   — the full sidebar sits in the layout.
+ * 'compact' — a narrow rail of tab favicons, also in the layout: the page is
+ *             never covered, so nothing has to slide in or out.
+ * 'hover' is the retired show-on-hover mode, normalised to 'compact' on load.
+ */
+export type SidebarMode = 'fixed' | 'compact'
 
 export interface AuroraSettings {
   /** Today tabs idle longer than this are auto-archived; 0 disables. */

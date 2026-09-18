@@ -74,6 +74,22 @@ export async function startFixtureServer(): Promise<FixtureServer> {
   const dir = join(root, 'tests', 'e2e', 'fixtures')
   const server = createServer((req, res) => {
     const name = basename((req.url ?? '/a.html').split('?')[0] ?? '') || 'a.html'
+    // Screen-share page: a real button, so getDisplayMedia has a user gesture.
+    if (name === 'share.html') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      res.end(
+        `<!doctype html><title>Share Fixture</title><button id="go">Share</button><script>
+           window.__share = 'idle'
+           document.getElementById('go').addEventListener('click', () => {
+             window.__share = 'requested'
+             navigator.mediaDevices.getDisplayMedia({ video: true })
+               .then((s) => { window.__share = 'granted'; s.getTracks().forEach((t) => t.stop()) })
+               .catch((e) => { window.__share = 'denied:' + e.name })
+           })
+         </script>`,
+      )
+      return
+    }
     // Cookie pair: one page sets a cookie, the other reports it in its title.
     if (name === 'cookie-set.html') {
       res.writeHead(200, {

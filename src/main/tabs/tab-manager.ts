@@ -34,6 +34,8 @@ interface SpaceRecord {
   id: string
   name: string
   accentHue: number
+  /** Second gradient stop; null means derive one from accentHue. */
+  accentHue2: number | null
   incognito: boolean
   /** Storage partition (ADR-0004): '' default session, persist:space:<id>, or in-memory incognito. */
   partition: string
@@ -111,6 +113,7 @@ export class TabManager {
   createSpace(opts: {
     name?: string
     accentHue?: number
+    accentHue2?: number | null
     incognito?: boolean
     activate?: boolean
     id?: string
@@ -123,6 +126,7 @@ export class TabManager {
       id,
       name: opts.name?.trim() || `Space ${this.spaces.filter((s) => !s.incognito).length + 1}`,
       accentHue: opts.accentHue ?? (this.spaces.length * 47 + DEFAULT_SPACE_HUE) % 360,
+      accentHue2: opts.accentHue2 ?? null,
       incognito,
       partition: opts.partition ?? (incognito ? INCOGNITO_PARTITION : spacePartition(id)),
       favorites: [],
@@ -181,10 +185,13 @@ export class TabManager {
     }
   }
 
-  setSpaceAccent(spaceId: string, accentHue: number): void {
+  setSpaceAccent(spaceId: string, accentHue: number, accentHue2?: number | null): void {
     const space = this.getSpace(spaceId)
     if (space) {
       space.accentHue = ((accentHue % 360) + 360) % 360
+      if (accentHue2 !== undefined) {
+        space.accentHue2 = accentHue2 === null ? null : ((accentHue2 % 360) + 360) % 360
+      }
       this.scheduleEmit()
     }
   }
@@ -719,6 +726,7 @@ export class TabManager {
       id: s.id,
       name: s.name,
       accentHue: s.accentHue,
+      accentHue2: s.accentHue2,
       incognito: s.incognito,
       favorites: [...s.favorites],
     }))
@@ -752,6 +760,7 @@ export class TabManager {
           partition: space.partition,
           name: space.name,
           accentHue: space.accentHue,
+          accentHue2: space.accentHue2,
           favorites: [...space.favorites],
           activeIndex,
           tabs: tabs.map(({ url, title, faviconUrl, kind }) => ({ url, title, faviconUrl, kind })),
@@ -769,6 +778,7 @@ export class TabManager {
         id: s.id,
         name: s.name,
         accentHue: s.accentHue,
+        accentHue2: s.accentHue2,
         partition: s.partition,
         activate: false,
       })

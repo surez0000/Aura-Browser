@@ -3,7 +3,6 @@ import { Loader2, Lock, Search, Star, TriangleAlert } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
 import { displayLabel, normalizeInput } from '@/lib/url'
 import { useSettings } from '@/state/settings'
-import { releaseSidebarIfIdle } from '@/state/sync'
 import { useTabs, selectActiveTab, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
@@ -48,8 +47,6 @@ export function UrlPill(): React.JSX.Element {
 
   const stopEditing = (): void => {
     setEditing(false)
-    // The input unmounts without a blur event; hand the hover sidebar its cue.
-    setTimeout(releaseSidebarIfIdle, 0)
   }
 
   const submit = (): void => {

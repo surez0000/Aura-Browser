@@ -11,9 +11,10 @@ import {
 import { AURORA_BANDS, THEMES } from './tokens'
 
 /**
- * Every Space owns one hue; everything else — the four mesh colors, the base
- * ground, the accent, and the ink that sits on the accent — derives from it,
- * clamped into the theme's luminance bands so contrast stays provable.
+ * Every Space owns a gradient: two hues. The four mesh colors walk from the
+ * first hue to the second, and the ground sits between them; the accent and
+ * the ink on it come from the first. Everything is clamped into the theme's
+ * luminance bands, so contrast stays provable whatever gradient is chosen.
  */
 
 export interface AuroraPalette {
@@ -23,21 +24,39 @@ export interface AuroraPalette {
   accentInk: Rgba
 }
 
-/** Hue offsets for the mesh: analogous pair, counter, complement. */
-const BLOB_HUE_OFFSETS = [0, 34, 300, 168] as const
+/** Where each mesh field sits along the gradient, 0 = first hue, 1 = second. */
+const BLOB_STOPS = [0, 0.38, 1, 0.68] as const
+
+/**
+ * Default second stop for a Space that predates gradients: far enough round
+ * the wheel to read as a gradient, close enough to stay harmonious.
+ */
+export const DEFAULT_HUE_SPREAD = 52
+
+/** Shortest way round the colour wheel, so 350 → 10 travels 20°, not 340°. */
+function mixHue(from: number, to: number, t: number): number {
+  const delta = ((((to - from) % 360) + 540) % 360) - 180
+  return from + delta * t
+}
 
 export function auroraPalette(
   hue: number,
   theme: ThemeName,
-  opts: { muted?: boolean } = {},
+  opts: { muted?: boolean; hue2?: number | null } = {},
 ): AuroraPalette {
   const bands = AURORA_BANDS[theme]
   const satScale = opts.muted ? 0.25 : 1
+  const hueB = opts.hue2 ?? hue + DEFAULT_HUE_SPREAD
 
-  const base = clampLuminance(hue, bands.baseSat * satScale, bands.baseTarget, bands.baseLum)
-  const blobs = BLOB_HUE_OFFSETS.map((offset, i) =>
+  const base = clampLuminance(
+    mixHue(hue, hueB, 0.5),
+    bands.baseSat * satScale,
+    bands.baseTarget,
+    bands.baseLum,
+  )
+  const blobs = BLOB_STOPS.map((stop, i) =>
     clampLuminance(
-      hue + offset,
+      mixHue(hue, hueB, stop),
       bands.blobSat * satScale,
       bands.blobTargets[i] ?? bands.blobTargets[0],
       bands.blobLum,
@@ -75,6 +94,26 @@ export function accentColor(
   return toCss(auroraPalette(space.accentHue, theme, { muted: space.incognito }).accent)
 }
 
+/** Vivid two-stop swatch, for small controls where the mesh would read as black. */
+export function gradientSwatchCss(hue: number, hue2: number, theme: ThemeName): string {
+  const a = auroraPalette(hue, theme).accent
+  const b = auroraPalette(hue2, theme).accent
+  return `linear-gradient(135deg, ${toCss(a)}, ${toCss(b)})`
+}
+
+/** Two-stop swatch for a Space's gradient (dots, previews). */
+export function spaceGradientCss(
+  space: { accentHue: number; accentHue2?: number | null; incognito: boolean },
+  theme: ThemeName,
+): string {
+  const palette = auroraPalette(space.accentHue, theme, {
+    muted: space.incognito,
+    hue2: space.accentHue2 ?? null,
+  })
+  const [first, , last] = palette.blobs
+  return `linear-gradient(135deg, ${toCss(first)}, ${toCss(last)})`
+}
+
 /** CSS fallback gradient (used when WebGL is unavailable). */
 export function cssFallbackGradient(palette: AuroraPalette): string {
   const [a, b, c, d] = palette.blobs
@@ -93,6 +132,13 @@ export function paletteVec3(c: Rgba): [number, number, number] {
 
 export function hueOf(space: { accentHue: number } | null | undefined): number {
   return space?.accentHue ?? 226
+}
+
+/** Second gradient stop of a Space, or the default spread from the first. */
+export function hue2Of(
+  space: { accentHue: number; accentHue2?: number | null } | null | undefined,
+): number {
+  return space?.accentHue2 ?? hueOf(space) + DEFAULT_HUE_SPREAD
 }
 
 // hslToRgba re-exported for the SpaceEditor's decorative swatches.

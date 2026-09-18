@@ -12,8 +12,8 @@ import { launchAurora, modifierKey } from './helpers'
 
 type Page = import('playwright').Page
 
-/** The panel slides off-screen (transform), so its right edge tells the story. */
-const SIDEBAR_RIGHT = `document.querySelector('[data-testid="sidebar"]').getBoundingClientRect().right`
+/** Both modes stay in the layout, so the width is what changes: 264 ↔ 60. */
+const SIDEBAR_RIGHT = `document.querySelector('[data-testid="sidebar"]').getBoundingClientRect().width`
 
 function rightEdgeAfterFrames(chrome: Page, frames: number): Promise<number> {
   const nested = Array.from({ length: frames }).reduce<string>(
@@ -48,16 +48,16 @@ test('reduced motion: the sidebar collapse completes within a frame', async () =
     // between; a spring would leave a trail of intermediate positions.
     await startEdgeSampler(chrome)
     await chrome.keyboard.press(`${modifierKey()}+s`)
-    await expect(sidebar).toHaveAttribute('data-state', 'hidden')
-    await expect.poll(edge, { timeout: 5_000 }).toBeLessThanOrEqual(0)
-    const hiding = (await stopEdgeSampler(chrome)).filter((e) => e > 0 && e < 260)
+    await expect(sidebar).toHaveAttribute('data-state', 'compact')
+    await expect.poll(edge, { timeout: 5_000 }).toBeLessThan(80)
+    const hiding = (await stopEdgeSampler(chrome)).filter((e) => e > 80 && e < 260)
     expect(hiding, `intermediate frames while hiding: ${hiding.join(', ')}`).toEqual([])
 
     await startEdgeSampler(chrome)
     await chrome.keyboard.press(`${modifierKey()}+s`)
     await expect(sidebar).toHaveAttribute('data-state', 'fixed')
     await expect.poll(edge, { timeout: 5_000 }).toBeGreaterThan(200)
-    const showing = (await stopEdgeSampler(chrome)).filter((e) => e > 0 && e < 260)
+    const showing = (await stopEdgeSampler(chrome)).filter((e) => e > 80 && e < 260)
     expect(showing, `intermediate frames while showing: ${showing.join(', ')}`).toEqual([])
   } finally {
     await app.close()
@@ -85,10 +85,8 @@ test('frame-time probe: sidebar spring and Space switch run without long frames'
     expect(
       await rightEdgeAfterFrames(chrome, 1),
       'sidebar should still be sliding one frame after the toggle',
-    ).toBeGreaterThan(0)
-    await expect
-      .poll(() => chrome.evaluate(SIDEBAR_RIGHT), { timeout: 5_000 })
-      .toBeLessThanOrEqual(0)
+    ).toBeGreaterThan(80)
+    await expect.poll(() => chrome.evaluate(SIDEBAR_RIGHT), { timeout: 5_000 }).toBeLessThan(80)
 
     // Sample requestAnimationFrame timestamps across the interactions.
     await chrome.evaluate(

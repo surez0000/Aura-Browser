@@ -1,44 +1,18 @@
 import { useMemo, type CSSProperties } from 'react'
 import { Sidebar } from '@/components/sidebar/Sidebar'
-import { WindowControls } from '@/components/sidebar/WindowControls'
 import { PageCard } from '@/components/PageCard'
 import { Palette } from '@/components/palette/Palette'
 import { FindBar } from '@/components/FindBar'
 import { PermissionBanner } from '@/components/PermissionBanner'
 import { LoadingBar } from '@/components/LoadingBar'
-import { UpdatePill } from '@/components/UpdateNotice'
+import { ScreenSharePicker } from '@/components/ScreenSharePicker'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
-import { isMac } from '@/lib/ipc'
-import { auroraPalette, hueOf } from '@/theme/aurora'
+import { auroraPalette, hue2Of, hueOf } from '@/theme/aurora'
 import { toCss } from '@/theme/contrast'
 import { selectSidebarMode, useSettings } from '@/state/settings'
 import { useIpcSync } from '@/state/sync'
 import { useTabs, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
-
-/**
- * With the sidebar in show-on-hover mode nothing else hosts the window
- * controls or clears the macOS traffic lights, so a slim drag strip does.
- */
-function TopStrip(): React.JSX.Element {
-  const revealed = useUi((s) => s.sidebarRevealed)
-  return (
-    <div
-      className="drag absolute inset-x-0 top-0 z-10 flex h-9 items-center justify-end px-2"
-      data-testid="top-strip"
-    >
-      {/* Update progress stays visible with the sidebar hidden (the panel shows its own card). */}
-      {!revealed && (
-        <div className="pointer-events-none absolute inset-x-0 flex justify-center">
-          <div className="pointer-events-auto">
-            <UpdatePill />
-          </div>
-        </div>
-      )}
-      {!isMac() && <WindowControls />}
-    </div>
-  )
-}
 
 export default function App(): React.JSX.Element {
   useIpcSync()
@@ -47,15 +21,21 @@ export default function App(): React.JSX.Element {
   const space = useTabs(selectActiveSpace)
 
   const hue = hueOf(space)
+  const hue2 = hue2Of(space)
   const muted = space?.incognito ?? false
-  const palette = useMemo(() => auroraPalette(hue, theme, { muted }), [hue, theme, muted])
+  const palette = useMemo(
+    () => auroraPalette(hue, theme, { muted, hue2 }),
+    [hue, hue2, theme, muted],
+  )
 
   const style = {
     '--accent': toCss(palette.accent),
     '--accent-ink': toCss(palette.accentInk),
   } as CSSProperties
 
-  const floating = sidebarMode === 'hover'
+  // The compact rail is narrower than the macOS traffic lights, so the page
+  // card keeps its left gap there; the full sidebar already clears them.
+  const compact = sidebarMode === 'compact'
 
   return (
     <div
@@ -63,14 +43,13 @@ export default function App(): React.JSX.Element {
       style={style}
       data-sidebar-mode={sidebarMode}
     >
-      <AuroraBackdrop palette={palette} paletteKey={`${hue}:${muted}:${theme}`} hue={hue} />
+      <AuroraBackdrop palette={palette} paletteKey={`${hue}:${hue2}:${muted}:${theme}`} hue={hue} />
       <Sidebar />
-      {floating && <TopStrip />}
       <main
-        className={`relative flex h-full min-w-0 flex-1 flex-col gap-2 p-2 ${floating ? 'pt-9' : 'pl-0'}`}
+        className={`relative flex h-full min-w-0 flex-1 flex-col gap-2 p-2 ${compact ? '' : 'pl-0'}`}
       >
-        {/* Sits in the gap above the card: 8 px in fixed mode, under the strip in hover mode. */}
-        <LoadingBar top={floating ? 31 : 3} />
+        {/* Sits in the gap above the page card. */}
+        <LoadingBar top={3} />
         <FindBar />
         <PermissionBanner />
         <div className="min-h-0 flex-1">
@@ -78,6 +57,7 @@ export default function App(): React.JSX.Element {
         </div>
       </main>
       <Palette />
+      <ScreenSharePicker />
     </div>
   )
 }

@@ -39,7 +39,7 @@ function isV1(raw: unknown): raw is SessionSnapshotV1 {
 }
 
 function sanitizeSpace(
-  raw: SessionSpaceV2 & { partition?: unknown },
+  raw: SessionSpaceV2 & { partition?: unknown; accentHue2?: unknown },
   index: number,
   /** Partition to assign when the stored space has none (pre-v3). */
   fallbackPartition: (id: string, index: number) => string,
@@ -50,6 +50,10 @@ function sanitizeSpace(
     partition: typeof raw.partition === 'string' ? raw.partition : fallbackPartition(id, index),
     name: typeof raw.name === 'string' && raw.name.trim() ? raw.name : `Space ${index + 1}`,
     accentHue: Number.isFinite(raw.accentHue) ? ((raw.accentHue % 360) + 360) % 360 : 226,
+    accentHue2:
+      typeof raw.accentHue2 === 'number' && Number.isFinite(raw.accentHue2)
+        ? ((raw.accentHue2 % 360) + 360) % 360
+        : null,
     favorites: Array.isArray(raw.favorites)
       ? raw.favorites.filter((f) => typeof f?.url === 'string')
       : [],

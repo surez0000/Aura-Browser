@@ -2,8 +2,9 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ExternalLink, RefreshCw, Settings } from 'lucide-react'
 import type { AuroraSettings, UpdateState } from '@shared/models'
 import { SEARCH_ENGINE_IDS, SEARCH_ENGINES } from '@shared/search'
+import { popoverAnchorClass } from '@/lib/popover-anchor'
 import { invoke, modKeyLabel } from '@/lib/ipc'
-import { useSettings } from '@/state/settings'
+import { selectSidebarMode, useSettings } from '@/state/settings'
 import { setSidebarMode } from '@/state/sync'
 import { useUi } from '@/state/ui'
 
@@ -129,6 +130,7 @@ const ARCHIVE_OPTIONS = [
  * sidebar mode, search engine, auto-archive, and the update status.
  */
 export function SettingsFlyout(): React.JSX.Element {
+  const compact = useSettings(selectSidebarMode) === 'compact'
   const open = useUi((s) => s.settingsOpen)
   const settings = useSettings((s) => s.settings)
   const update = useSettings((s) => s.update)
@@ -148,7 +150,7 @@ export function SettingsFlyout(): React.JSX.Element {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 8, scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 460, damping: 32 }}
-          className="popover absolute right-3 bottom-12 left-3 z-30 rounded-xl p-2 shadow-2xl"
+          className={`popover ${popoverAnchorClass(compact)} rounded-xl p-2 shadow-2xl`}
           data-testid="settings-flyout"
         >
           <div
@@ -175,11 +177,10 @@ export function SettingsFlyout(): React.JSX.Element {
             <Segmented<AuroraSettings['sidebarMode']>
               value={settings.sidebarMode}
               options={[
-                { value: 'fixed', label: 'Always visible' },
-                { value: 'hover', label: 'Show on hover' },
+                { value: 'fixed', label: 'Full' },
+                { value: 'compact', label: 'Compact' },
               ]}
-              // The pointer is inside the panel: keep it revealed after the switch.
-              onChange={(mode) => setSidebarMode(mode, { revealed: true })}
+              onChange={(mode) => setSidebarMode(mode)}
               testId="setting-sidebar"
             />
           </Row>

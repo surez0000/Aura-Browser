@@ -45,7 +45,7 @@ img {
 /* Popovers stack over other chrome (tab rows, a page snapshot), so unlike
    .glass they need a mostly opaque ground: the card color, still blurred. */
 .popover {
-  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  background: color-mix(in srgb, var(--card-bg) 96%, transparent);
   border: 1px solid var(--border-glass);
   backdrop-filter: blur(var(--blur-glass));
   -webkit-backdrop-filter: blur(var(--blur-glass));
@@ -58,6 +58,12 @@ img {
   border: 1px solid var(--border-glass);
   backdrop-filter: blur(var(--blur-glass));
   -webkit-backdrop-filter: blur(var(--blur-glass));
+}
+
+/* Beside the compact rail a popover sits over the page itself — any color,
+   often white — so it drops the translucency entirely. */
+.popover-over-page {
+  background: var(--card-bg);
 }
 
 .card {

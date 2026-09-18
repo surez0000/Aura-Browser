@@ -19,7 +19,7 @@ describe('ipc contract', () => {
 
   it('namespaces every channel', () => {
     for (const channel of [...INVOKE_CHANNELS, ...PUSH_CHANNELS]) {
-      expect(channel).toMatch(/^[a-z]+:[a-zA-Z]+$/)
+      expect(channel).toMatch(/^[a-z][a-zA-Z]*:[a-zA-Z]+$/)
     }
   })
 })

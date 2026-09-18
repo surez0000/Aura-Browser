@@ -1,11 +1,5 @@
 import { expect, test } from '@playwright/test'
-import {
-  closeAndWaitForExit,
-  createTabViaPalette,
-  launchAurora,
-  modifierKey,
-  startFixtureServer,
-} from './helpers'
+import { closeAndWaitForExit, launchAurora, modifierKey } from './helpers'
 
 test('settings panel changes the search engine; the palette follows and it persists', async () => {
   const first = await launchAurora()
@@ -41,53 +35,21 @@ test('settings panel changes the search engine; the palette follows and it persi
   }
 })
 
-test('show-on-hover sidebar hides, reveals from the left edge over a snapshot, and persists', async () => {
-  const server = await startFixtureServer()
+test('the sidebar mode chosen in Settings persists across a restart', async () => {
   const first = await launchAurora()
   const { chrome } = first
   try {
-    await createTabViaPalette(chrome, `${server.url}/a.html`)
-    await expect(chrome.getByTestId('tab-title').filter({ hasText: 'Fixture A' })).toBeVisible()
-
-    const sidebar = chrome.getByTestId('sidebar')
-    const settingsButton = chrome.getByTestId('settings-button')
-    const box = await settingsButton.boundingBox()
-    if (!box) throw new Error('settings button not laid out')
-    // Put the pointer on the gear before clicking so the panel counts as hovered.
-    await chrome.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-    await settingsButton.click()
-    await chrome.getByTestId('setting-sidebar-hover').click()
-
-    // The panel stays while the settings popover is open under the pointer. It
-    // keeps its layout slot until it first hides, so the page is still live
-    // (no snapshot) — nothing jumps under the pointer.
-    await expect(sidebar).toHaveAttribute('data-state', 'revealed')
-    await expect(chrome.getByTestId('page-card').locator('img')).toHaveCount(0)
-
-    // Close the popover and move away: the panel hides, the view returns.
-    await settingsButton.click()
-    await chrome.mouse.move(900, 400)
-    await expect(sidebar).toHaveAttribute('data-state', 'hidden')
-    await expect(chrome.getByTestId('page-card').locator('img')).toHaveCount(0)
-
-    // Touch the left edge: the panel reveals over a fresh snapshot.
-    await chrome.mouse.move(2, 400)
-    await expect(sidebar).toHaveAttribute('data-state', 'revealed')
-    await expect(chrome.getByTestId('page-card').locator('img')).toBeVisible()
-
-    // Leave: it hides again.
-    await chrome.mouse.move(900, 400)
-    await expect(sidebar).toHaveAttribute('data-state', 'hidden')
+    await chrome.getByTestId('settings-button').click()
+    await chrome.getByTestId('setting-sidebar-compact').click()
+    await expect(chrome.getByTestId('sidebar')).toHaveAttribute('data-state', 'compact')
   } finally {
     await closeAndWaitForExit(first.app)
   }
 
   const second = await launchAurora(first.userDataDir)
   try {
-    await expect(second.chrome.getByTestId('sidebar')).toHaveAttribute('data-state', 'hidden')
-    await expect(second.chrome.getByTestId('top-strip')).toBeVisible()
+    await expect(second.chrome.getByTestId('sidebar')).toHaveAttribute('data-state', 'compact')
   } finally {
     await second.app.close()
-    await server.close()
   }
 })

@@ -1,6 +1,6 @@
 import { EyeOff, Plus } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
-import { accentColor } from '@/theme/aurora'
+import { gradientSwatchCss, hue2Of } from '@/theme/aurora'
 import { useTabs } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
@@ -8,7 +8,9 @@ import { useUi } from '@/state/ui'
  * The dot rail at the sidebar's foot: click to switch, drop a dragged tab on a
  * dot to move it to that space, "+" to create a space.
  */
-export function SpaceSwitcher(): React.JSX.Element {
+export function SpaceSwitcher({
+  vertical = false,
+}: { vertical?: boolean } = {}): React.JSX.Element {
   const spaces = useTabs((s) => s.spaces)
   const activeSpaceId = useTabs((s) => s.activeSpaceId)
   const theme = useUi((s) => s.themeName)
@@ -16,7 +18,9 @@ export function SpaceSwitcher(): React.JSX.Element {
 
   return (
     <div
-      className="no-drag flex min-w-0 flex-1 items-center justify-center gap-2"
+      className={`no-drag flex min-w-0 items-center justify-center gap-2 ${
+        vertical ? 'flex-col py-1' : 'flex-1'
+      }`}
       data-testid="space-switcher"
     >
       {spaces.map((space) => {
@@ -30,7 +34,9 @@ export function SpaceSwitcher(): React.JSX.Element {
             onClick={() => void invoke('spaces:activate', { spaceId: space.id })}
             className="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform hover:scale-110"
             style={{
-              background: accentColor(space, theme),
+              background: space.incognito
+                ? 'var(--surface-glass-strong)'
+                : gradientSwatchCss(space.accentHue, hue2Of(space), theme),
               outline: isActive ? '2px solid var(--ink-2)' : '1px solid var(--border-glass)',
               outlineOffset: 1,
             }}

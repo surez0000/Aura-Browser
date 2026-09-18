@@ -87,7 +87,9 @@ Key decisions (full rationale in [docs/adr/](docs/adr/)):
 - Every Space is its own storage partition — cookies, logins, site data, and
   cache never cross Spaces, like Chrome profiles (ADR-0004). Incognito is
   in-memory. Deleting a Space deletes its data.
-- Site permissions are deny-by-default with a per-request prompt.
+- Site permissions are deny-by-default with a per-request prompt. Screen
+  sharing shows a picker first: a page only ever receives the one screen or
+  window chosen there.
 - No telemetry. Default search is DuckDuckGo (changeable in Settings). Nothing
   leaves the machine except the update check, which fetches a version manifest
   from the release host and carries no identifiers.
@@ -108,7 +110,7 @@ scripts        build helpers (icon renderer)
 
 ## Keyboard shortcuts
 
-⌘T palette · ⌘L edit address · ⌘S sidebar fixed ↔ show-on-hover · ⌘F find in page ·
+⌘T palette · ⌘L edit address · ⌘S full sidebar ↔ compact rail · ⌘F find in page ·
 ⌘G / ⇧⌘G find next/previous · ⌘J downloads · ⌘D toggle favorite ·
 ⇧⌘N incognito · ⌘W close tab · ⇧⌘T reopen closed · ⌘R / ⇧⌘R reload ·
 ⌘[ / ⌘] back/forward · ⌃Tab / ⌃⇧Tab next/previous tab · ⌘1–9 pick tab ·

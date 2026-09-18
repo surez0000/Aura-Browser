@@ -84,16 +84,19 @@ export const AURORA_BANDS: Record<ThemeName, AuroraBands> = {
   dark: {
     baseLum: { min: 0.01, max: 0.03 },
     blobLum: { min: 0.03, max: 0.08 },
-    blobSat: 0.52,
-    baseSat: 0.42,
+    // Chroma is what makes one Space read as a different colour from another.
+    // clampLuminance hits the luminance target whatever the saturation, so
+    // raising it changes hue strength without touching any contrast ratio.
+    blobSat: 0.95,
+    baseSat: 0.82,
     blobTargets: [0.07, 0.055, 0.045, 0.035],
     baseTarget: 0.018,
   },
   light: {
     baseLum: { min: 0.78, max: 0.88 },
     blobLum: { min: 0.52, max: 0.72 },
-    blobSat: 0.5,
-    baseSat: 0.5,
+    blobSat: 0.9,
+    baseSat: 0.78,
     blobTargets: [0.6, 0.68, 0.55, 0.64],
     baseTarget: 0.84,
   },

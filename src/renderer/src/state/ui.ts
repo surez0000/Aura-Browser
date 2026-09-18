@@ -1,5 +1,11 @@
 import { create } from 'zustand'
-import type { DownloadInfo, FindResult, PermissionRequestInfo, UpdateState } from '@shared/models'
+import type {
+  DisplayCaptureRequestInfo,
+  DownloadInfo,
+  FindResult,
+  PermissionRequestInfo,
+  UpdateState,
+} from '@shared/models'
 import type { ThemeName } from '@shared/theme'
 
 export type PaletteMode = 'new' | 'edit'
@@ -8,23 +14,6 @@ export interface UiState {
   /** Effective theme (resolved from the system/light/dark setting). */
   themeName: ThemeName
   setThemeName(theme: ThemeName): void
-  /**
-   * Show-on-hover sidebar: true while the panel floats over the page. Ignored
-   * in fixed mode. Popovers and ⌘L reveal it; leaving the panel hides it.
-   */
-  sidebarRevealed: boolean
-  setSidebarRevealed(revealed: boolean): void
-  /** Pointer is over the sidebar panel (hover mode uses it to decide when to hide). */
-  sidebarPointerInside: boolean
-  setSidebarPointerInside(inside: boolean): void
-  /**
-   * Switching fixed → hover while the panel is in use keeps the panel in the
-   * layout (no page overlap, no snapshot) until it hides for the first time;
-   * the page then grows once, live. Prevents the snapshot stretching under a
-   * layout spring.
-   */
-  sidebarHoldLayout: boolean
-  setSidebarHoldLayout(hold: boolean): void
   paletteOpen: boolean
   paletteMode: PaletteMode
   /** Monotonic counter: each bump asks the URL pill to enter edit mode. */
@@ -45,6 +34,8 @@ export interface UiState {
   updateNoticeDismissed: string | null
 
   permissionQueue: PermissionRequestInfo[]
+  /** Open screen-share picker, or null. */
+  displayCapture: DisplayCaptureRequestInfo | null
 
   /** Space editor popover: closed, create mode (spaceId null), or edit mode. */
   spaceEditor: { open: boolean; spaceId: string | null }
@@ -69,6 +60,7 @@ export interface UiState {
   dismissUpdateNotice(version: string): void
 
   pushPermission(request: PermissionRequestInfo): void
+  setDisplayCapture(request: DisplayCaptureRequestInfo | null): void
   shiftPermission(): void
 
   openSpaceEditor(spaceId: string | null): void
@@ -78,13 +70,6 @@ export interface UiState {
 export const useUi = create<UiState>()((set) => ({
   themeName: 'dark',
   setThemeName: (themeName) => set({ themeName }),
-  sidebarRevealed: false,
-  setSidebarRevealed: (sidebarRevealed) =>
-    set(sidebarRevealed ? { sidebarRevealed } : { sidebarRevealed, sidebarHoldLayout: false }),
-  sidebarPointerInside: false,
-  setSidebarPointerInside: (sidebarPointerInside) => set({ sidebarPointerInside }),
-  sidebarHoldLayout: false,
-  setSidebarHoldLayout: (sidebarHoldLayout) => set({ sidebarHoldLayout }),
   paletteOpen: false,
   paletteMode: 'new',
   urlEditRequest: 0,
@@ -102,13 +87,13 @@ export const useUi = create<UiState>()((set) => ({
   updateNoticeDismissed: null,
 
   permissionQueue: [],
+  displayCapture: null,
 
   spaceEditor: { open: false, spaceId: null },
 
   openPalette: (mode) => set({ paletteOpen: true, paletteMode: mode }),
   closePalette: () => set({ paletteOpen: false }),
-  requestUrlEdit: () =>
-    set((s) => ({ urlEditRequest: s.urlEditRequest + 1, sidebarRevealed: true })),
+  requestUrlEdit: () => set((s) => ({ urlEditRequest: s.urlEditRequest + 1 })),
   setPageSnapshot: (pageSnapshot) => set({ pageSnapshot }),
 
   openFind: () => set({ findOpen: true }),
@@ -116,21 +101,19 @@ export const useUi = create<UiState>()((set) => ({
   setFindQuery: (findQuery) => set({ findQuery }),
   setFindResult: (findResult) => set({ findResult }),
 
-  toggleDownloads: () =>
-    set((s) => ({ downloadsOpen: !s.downloadsOpen, settingsOpen: false, sidebarRevealed: true })),
+  toggleDownloads: () => set((s) => ({ downloadsOpen: !s.downloadsOpen, settingsOpen: false })),
   closeDownloads: () => set({ downloadsOpen: false }),
   setDownloads: (downloads) => set({ downloads }),
 
-  toggleSettings: () =>
-    set((s) => ({ settingsOpen: !s.settingsOpen, downloadsOpen: false, sidebarRevealed: true })),
+  toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen, downloadsOpen: false })),
   closeSettings: () => set({ settingsOpen: false }),
   setUpdateState: (updateState) => set({ updateState }),
   dismissUpdateNotice: (updateNoticeDismissed) => set({ updateNoticeDismissed }),
 
   pushPermission: (request) => set((s) => ({ permissionQueue: [...s.permissionQueue, request] })),
+  setDisplayCapture: (displayCapture) => set({ displayCapture }),
   shiftPermission: () => set((s) => ({ permissionQueue: s.permissionQueue.slice(1) })),
 
-  openSpaceEditor: (spaceId) =>
-    set({ spaceEditor: { open: true, spaceId }, sidebarRevealed: true }),
+  openSpaceEditor: (spaceId) => set({ spaceEditor: { open: true, spaceId } }),
   closeSpaceEditor: () => set({ spaceEditor: { open: false, spaceId: null } }),
 }))

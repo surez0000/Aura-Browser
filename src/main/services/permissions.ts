@@ -14,7 +14,15 @@ const DESCRIPTIONS: Record<string, string> = {
   midiSysex: 'use MIDI devices',
 }
 
-const AUTO_ALLOW = new Set(['fullscreen', 'clipboard-sanitized-write', 'pointerLock'])
+// 'display-capture' is allowed here because the screen-share picker is itself
+// the consent: the page only receives the surface the user chose (Chrome's
+// model). Everything else stays deny-by-default.
+const AUTO_ALLOW = new Set([
+  'fullscreen',
+  'clipboard-sanitized-write',
+  'pointerLock',
+  'display-capture',
+])
 
 /**
  * Deny-by-default permission broker with in-chrome prompts: each request is

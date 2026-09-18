@@ -25,12 +25,12 @@ describe('settings store ordering', () => {
 
   it('a late reply from an older write never undoes a newer optimistic write', async () => {
     const store = useSettings.getState()
-    const first = store.update({ sidebarMode: 'hover' }) // ⌘S
+    const first = store.update({ sidebarMode: 'compact' }) // ⌘S
     const second = store.update({ sidebarMode: 'fixed' }) // ⌘S again, quickly
     expect(useSettings.getState().settings.sidebarMode).toBe('fixed')
 
     // Main answers the first write late, with the settings as of that write.
-    pending[0]!.resolve({ ...DEFAULT_SETTINGS, sidebarMode: 'hover' })
+    pending[0]!.resolve({ ...DEFAULT_SETTINGS, sidebarMode: 'compact' })
     await first
     expect(useSettings.getState().settings.sidebarMode).toBe('fixed')
 

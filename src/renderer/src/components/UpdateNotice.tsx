@@ -97,71 +97,54 @@ export function UpdateCard(): React.JSX.Element {
   )
 }
 
-/** Compact pill for the top strip (show-on-hover mode, sidebar hidden). */
-export function UpdatePill(): React.JSX.Element {
+/**
+ * Compact rail variant: one 36 px button carrying the same information — a
+ * progress ring while downloading, an accent restart button once ready.
+ */
+export function UpdateRailButton(): React.JSX.Element | null {
   const notice = useUpdateNotice()
-  const dismiss = useUi((s) => s.dismissUpdateNotice)
+  if (!notice) return null
+
+  const ready = notice.kind === 'ready'
+  const percent = notice.kind === 'downloading' ? notice.percent : 0
+  const label = ready
+    ? `Restart to update to ${notice.version}`
+    : notice.kind === 'downloading'
+      ? `Downloading ${notice.version}… ${percent}%`
+      : `Preparing ${notice.version}…`
+
   return (
-    <AnimatePresence initial={false}>
-      {notice && (
-        <motion.div
-          key={notice.version}
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ type: 'spring', stiffness: 460, damping: 32 }}
-          className="popover no-drag relative flex h-7 items-center gap-2 overflow-hidden rounded-full pr-1 pl-3 text-[12px]"
-          style={{ color: 'var(--ink-1)' }}
-          data-testid="update-pill"
-          data-kind={notice.kind}
-          role="status"
+    <motion.button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={ready ? install : undefined}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="no-drag relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg"
+      style={
+        ready
+          ? { background: 'var(--accent)', color: 'var(--accent-ink)' }
+          : { color: 'var(--accent)' }
+      }
+      data-testid="update-rail-button"
+      data-kind={notice.kind}
+      role={ready ? undefined : 'status'}
+    >
+      {ready ? <RefreshCw size={16} /> : <Download size={16} />}
+      {!ready && (
+        <span
+          className="absolute inset-x-1.5 bottom-1 h-[3px] overflow-hidden rounded-full"
+          style={{ background: 'var(--surface-glass-strong)' }}
         >
-          {notice.kind === 'ready' ? (
-            <>
-              <span>Aura Browser {notice.version} is ready</span>
-              <button
-                type="button"
-                onClick={install}
-                className="cursor-pointer rounded-full px-2.5 py-0.5 font-medium"
-                style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
-                data-testid="update-ready"
-              >
-                Restart to update
-              </button>
-            </>
-          ) : (
-            <>
-              <Download size={13} style={{ color: 'var(--accent)' }} />
-              <span>
-                Aura Browser {notice.version} ·{' '}
-                {notice.kind === 'downloading'
-                  ? notice.percent === 0
-                    ? 'starting…'
-                    : `${notice.percent}%`
-                  : 'preparing…'}
-              </span>
-              <span
-                className="absolute inset-x-0 bottom-0 h-[2px]"
-                style={{
-                  background: 'var(--accent)',
-                  width: `${notice.kind === 'downloading' ? notice.percent : 3}%`,
-                  transition: 'width 0.4s ease-out',
-                }}
-              />
-            </>
-          )}
-          <button
-            type="button"
-            title="Hide until next launch"
-            aria-label="Hide update notice until next launch"
-            onClick={() => dismiss(notice.version)}
-            className="cursor-pointer rounded-full p-1 transition-colors hover:bg-(--surface-hover)"
-            style={{ color: 'var(--ink-3)' }}
-          >
-            <X size={12} />
-          </button>
-        </motion.div>
+          <motion.span
+            className="block h-full rounded-full"
+            style={{ background: 'var(--accent)' }}
+            animate={{ width: `${Math.max(percent, 4)}%` }}
+            transition={{ type: 'tween', ease: 'easeOut', duration: 0.4 }}
+          />
+        </span>
       )}
-    </AnimatePresence>
+    </motion.button>
   )
 }

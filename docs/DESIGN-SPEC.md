@@ -44,8 +44,15 @@ exposes the three modes as actions (`Theme: Sync with System / Light / Dark`).
 
 ## Per-Space aurora palettes
 
+Each Space owns a **gradient**: `accentHue` and `accentHue2`. The four mesh
+fields walk from the first stop to the second (shortest way round the wheel),
+the ground sits between them, and the accent comes from the first stop.
+Saturation is deliberately high — `clampLuminance` hits its luminance target
+whatever the saturation, so chroma makes Spaces distinguishable without moving
+a single contrast ratio.
+
 [`theme/aurora.ts`](../src/renderer/src/theme/aurora.ts) derives everything
-from a Space's `accentHue`:
+from those stops:
 
 | Derived value | Hue                         | Saturation (dark / light) | Relative-luminance band (dark / light)               |
 | ------------- | --------------------------- | ------------------------- | ---------------------------------------------------- |
@@ -84,7 +91,7 @@ measuring. Adding a token or changing a band without keeping AA fails CI.
 | ---------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | App shell              | `App.tsx`                                                                                          | derives the palette from the active Space; sets `--accent`/`--accent-ink`                                                                      |
 | AuroraBackdrop         | `components/AuroraBackdrop.tsx`                                                                    | WebGL mesh; CSS radial-gradient fallback; see Motion                                                                                           |
-| Sidebar                | `components/sidebar/Sidebar.tsx`                                                                   | two modes (⌘S): fixed in the layout, or show-on-hover floating over a page snapshot; Space column slide; footer rail                           |
+| Sidebar                | `components/sidebar/Sidebar.tsx`                                                                   | two in-layout modes (⌘S): the full panel, or a 60 px rail of tab favicons — neither covers the page                                            |
 | NavCluster             | `components/sidebar/NavCluster.tsx`                                                                | back / forward / reload-stop                                                                                                                   |
 | UrlPill                | `components/sidebar/UrlPill.tsx`                                                                   | security icon, host label, ★, inline edit                                                                                                      |
 | SpaceHeader            | `components/sidebar/SpaceHeader.tsx`                                                               | accent dot, name, edit affordance, incognito badge                                                                                             |
@@ -101,6 +108,8 @@ measuring. Adding a token or changing a band without keeping AA fails CI.
 | SettingsButton/Flyout  | `components/sidebar/SettingsFlyout.tsx`                                                            | appearance, sidebar mode, search engine, auto-archive, update status (segmented controls + selects)                                            |
 | TopStrip               | `App.tsx`                                                                                          | hover mode only: drag strip clearing the traffic lights / hosting window controls                                                              |
 | LoadingBar             | `components/LoadingBar.tsx`                                                                        | page-load progress in the gap above the card: 40 % on start, 85 % at DOM ready, 100 % + fade on finish                                         |
+| ScreenSharePicker      | `components/ScreenSharePicker.tsx`                                                                 | `getDisplayMedia` surface picker over a page snapshot; thumbnails, screen/window tabs, macOS permission panel                                  |
+| TabRailItem            | `components/sidebar/TabRailItem.tsx`                                                               | compact-rail tab: favicon, accent bar when active, drag to reorder or move Space                                                               |
 | UpdateNotice           | `components/UpdateNotice.tsx`                                                                      | prominent, non-blocking update progress: sidebar card + top-strip pill (sidebar hidden); "Later" hides per version; Dock icon mirrors progress |
 | Theme modules          | `theme/tokens.ts` · `theme/aurora.ts` · `theme/contrast.ts` · `theme/apply.ts` · `shared/theme.ts` | tokens, palette derivation, WCAG math, runtime injection, window ground                                                                        |
 

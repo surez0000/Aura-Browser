@@ -1,6 +1,7 @@
 import type {
   ArchivedTabRow,
   AuroraSettings,
+  DisplayCaptureRequestInfo,
   DownloadInfo,
   FavoriteEntry,
   FindResult,
@@ -55,11 +56,14 @@ export interface InvokeMap {
   'tabs:contextMenu': { req: { tabId: string }; res: void }
 
   'spaces:create': {
-    req: { name?: string; accentHue?: number; activate?: boolean }
+    req: { name?: string; accentHue?: number; accentHue2?: number | null; activate?: boolean }
     res: { id: string }
   }
   'spaces:rename': { req: { spaceId: string; name: string }; res: void }
-  'spaces:setAccent': { req: { spaceId: string; accentHue: number }; res: void }
+  'spaces:setAccent': {
+    req: { spaceId: string; accentHue: number; accentHue2?: number | null }
+    res: void
+  }
   'spaces:remove': { req: { spaceId: string }; res: void }
   'spaces:activate': { req: { spaceId: string }; res: void }
   'spaces:openIncognito': { req: Record<string, never>; res: { id: string } }
@@ -75,6 +79,14 @@ export interface InvokeMap {
   'find:stop': { req: { keepSelection?: boolean }; res: void }
 
   'permissions:respond': { req: { id: string; allow: boolean; remember: boolean }; res: void }
+
+  /** Screen-share picker: `sourceId: null` declines. */
+  'displayCapture:respond': {
+    req: { id: string; sourceId: string | null; withAudio?: boolean }
+    res: void
+  }
+  /** macOS only: open the Screen Recording pane of System Settings. */
+  'displayCapture:openSystemSettings': { req: Record<string, never>; res: void }
   'permissions:clearStored': { req: Record<string, never>; res: void }
 
   'downloads:list': { req: Record<string, never>; res: DownloadInfo[] }
@@ -116,6 +128,9 @@ export interface PushMap {
   'ui:command': { id: RendererCommandId }
   'find:result': FindResult
   'permissions:request': PermissionRequestInfo
+  'displayCapture:request': DisplayCaptureRequestInfo
+  /** The picker must close: the requesting page went away. */
+  'displayCapture:close': { id: string }
   'downloads:changed': DownloadInfo[]
   'settings:changed': AuroraSettings
   'updates:state': UpdateState
@@ -152,6 +167,8 @@ export const INVOKE_CHANNELS = [
   'find:stop',
   'permissions:respond',
   'permissions:clearStored',
+  'displayCapture:respond',
+  'displayCapture:openSystemSettings',
   'downloads:list',
   'downloads:action',
   'settings:get',
@@ -171,6 +188,8 @@ export const PUSH_CHANNELS = [
   'ui:command',
   'find:result',
   'permissions:request',
+  'displayCapture:request',
+  'displayCapture:close',
   'downloads:changed',
   'settings:changed',
   'updates:state',

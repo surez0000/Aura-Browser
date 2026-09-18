@@ -44,12 +44,17 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
     .object({
       name: z.string().max(40).optional(),
       accentHue: z.number().int().min(0).max(359).optional(),
+      accentHue2: z.number().int().min(0).max(359).nullable().optional(),
       activate: z.boolean().optional(),
     })
     .strict(),
   'spaces:rename': z.object({ spaceId: id, name: z.string().min(1).max(40) }).strict(),
   'spaces:setAccent': z
-    .object({ spaceId: id, accentHue: z.number().int().min(0).max(359) })
+    .object({
+      spaceId: id,
+      accentHue: z.number().int().min(0).max(359),
+      accentHue2: z.number().int().min(0).max(359).nullable().optional(),
+    })
     .strict(),
   'spaces:remove': z.object({ spaceId: id }).strict(),
   'spaces:activate': z.object({ spaceId: id }).strict(),
@@ -83,6 +88,11 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
   'permissions:respond': z.object({ id, allow: z.boolean(), remember: z.boolean() }).strict(),
   'permissions:clearStored': empty,
 
+  'displayCapture:respond': z
+    .object({ id, sourceId: z.string().max(512).nullable(), withAudio: z.boolean().optional() })
+    .strict(),
+  'displayCapture:openSystemSettings': empty,
+
   'downloads:list': empty,
   'downloads:action': z.object({ id, action: z.enum(['open', 'showInFolder', 'cancel']) }).strict(),
 
@@ -96,7 +106,8 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
         .optional(),
       theme: z.enum(['system', 'light', 'dark']).optional(),
       searchEngine: z.enum(SEARCH_ENGINE_IDS).optional(),
-      sidebarMode: z.enum(['fixed', 'hover']).optional(),
+      // 'hover' is retired but still accepted from older builds; normalised in main.
+      sidebarMode: z.enum(['fixed', 'compact', 'hover']).optional(),
     })
     .strict(),
 
