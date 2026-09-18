@@ -7,6 +7,15 @@ a release is cut.
 
 ## [Unreleased]
 
+### Fixed
+
+- The screen-share picker and the command palette were see-through over page
+  content: they open inside a wrapper whose animated opacity starts a new
+  backdrop root, so `backdrop-filter` had nothing to blur. Both now use a solid
+  ground, and the scrim behind them is stronger.
+- Chromium's bright system focus ring no longer appears on click. Keyboard
+  focus is still shown, in the Space's accent colour.
+
 ## [0.1.3] — 2026-09-18
 
 ### Added

@@ -37,8 +37,7 @@ export function SpaceSwitcher({
               background: space.incognito
                 ? 'var(--surface-glass-strong)'
                 : gradientSwatchCss(space.accentHue, hue2Of(space), theme),
-              outline: isActive ? '2px solid var(--ink-2)' : '1px solid var(--border-glass)',
-              outlineOffset: 1,
+              boxShadow: isActive ? '0 0 0 2px var(--ink-2)' : '0 0 0 1px var(--border-glass)',
             }}
             data-space-dot={space.id}
             data-testid="space-dot"

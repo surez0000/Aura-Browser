@@ -35,7 +35,7 @@ export const THEMES: Record<ThemeName, ThemeTokens> = {
     surfaceHover: rgba(255, 255, 255, 0.09),
     borderGlass: rgba(255, 255, 255, 0.12),
     danger: parseHex('#ff8585'),
-    scrim: rgba(5, 7, 14, 0.55),
+    scrim: rgba(5, 7, 14, 0.72),
     cardShadow: '0 12px 40px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.35)',
   },
   light: {
@@ -49,7 +49,7 @@ export const THEMES: Record<ThemeName, ThemeTokens> = {
     surfaceHover: rgba(255, 255, 255, 0.58),
     borderGlass: rgba(20, 24, 46, 0.12),
     danger: parseHex('#a52f2f'),
-    scrim: rgba(232, 236, 248, 0.55),
+    scrim: rgba(232, 236, 248, 0.72),
     cardShadow: '0 12px 40px rgba(24, 30, 60, 0.18), 0 2px 8px rgba(24, 30, 60, 0.1)',
   },
 }

@@ -66,11 +66,32 @@ img {
   background: var(--card-bg);
 }
 
+/* Dialogs float over page content, which can be any colour. `backdrop-filter`
+   cannot be relied on here: these open inside an AnimatePresence wrapper whose
+   animated opacity makes Chromium start a new backdrop root, so there is
+   nothing behind them left to blur and the page reads straight through. They
+   use a solid ground instead — glass stays for surfaces over our own chrome. */
+.dialog {
+  background: var(--card-bg);
+  border: 1px solid var(--border-glass);
+}
+
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-card);
   box-shadow: var(--card-shadow);
+}
+
+/* Chromium's default focus ring is a bright system colour that clashes with
+   every theme and appears on plain clicks. Pointer focus shows nothing;
+   keyboard focus still shows, in our own accent. */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 ::placeholder {

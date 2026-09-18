@@ -113,6 +113,15 @@ measuring. Adding a token or changing a band without keeping AA fails CI.
 | UpdateNotice           | `components/UpdateNotice.tsx`                                                                      | prominent, non-blocking update progress: sidebar card + top-strip pill (sidebar hidden); "Later" hides per version; Dock icon mirrors progress |
 | Theme modules          | `theme/tokens.ts` · `theme/aurora.ts` · `theme/contrast.ts` · `theme/apply.ts` · `shared/theme.ts` | tokens, palette derivation, WCAG math, runtime injection, window ground                                                                        |
 
+### Glass, popovers and dialogs
+
+`.glass` (translucent + `backdrop-filter`) is for surfaces over our own chrome.
+Anything that floats over **page** content uses a solid ground instead —
+`.popover-over-page` beside the compact rail, `.dialog` for the palette and the
+screen-share picker. Those open inside an `AnimatePresence` wrapper whose
+animated opacity starts a new backdrop root in Chromium, so `backdrop-filter`
+has nothing behind it to blur and the page would read straight through.
+
 ## Motion
 
 Springs only — no duration curves except the palette scrim and the shader

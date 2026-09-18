@@ -37,7 +37,7 @@ export function ScreenSharePicker(): React.JSX.Element {
         >
           <div className="absolute inset-0" style={{ background: 'var(--scrim)' }} />
           <motion.div
-            className="glass relative mt-[10vh] flex max-h-[76vh] w-[min(720px,90vw)] flex-col rounded-2xl p-4 shadow-2xl"
+            className="dialog relative mt-[10vh] flex max-h-[76vh] w-[min(720px,90vw)] flex-col rounded-2xl p-4 shadow-2xl"
             initial={{ opacity: 0, y: -14, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
@@ -178,7 +178,9 @@ function SourceChooser({
               className="flex cursor-pointer flex-col gap-1.5 rounded-xl p-2 text-left transition-colors"
               style={{
                 background: isSelected ? 'var(--surface-glass-strong)' : 'transparent',
-                outline: isSelected ? '2px solid var(--accent)' : '1px solid var(--border-glass)',
+                boxShadow: isSelected
+                  ? 'inset 0 0 0 2px var(--accent)'
+                  : 'inset 0 0 0 1px var(--border-glass)',
               }}
               data-testid="screen-share-source"
               data-selected={isSelected || undefined}
