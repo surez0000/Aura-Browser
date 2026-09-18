@@ -5,7 +5,7 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
-## [Unreleased]
+## [1.0.1] — 2026-09-18
 
 ### Added
 
@@ -30,14 +30,29 @@ a release is cut.
   pane is outlined in the Space's accent and clicking a page focuses its pane.
   Choosing a tab from the sidebar while split replaces the focused pane rather
   than collapsing the split. Splits and their widths survive a restart.
-
-### Added
-
 - **History manager** (⌘Y, or History → Show Full History, or the command
   palette). Everything visited, newest first and grouped by day, with search,
   per-visit delete, "forget every visit to this site", and clear by range
   (last hour, 24 hours, 7 days, everything). Clicking an entry opens it.
   Incognito Spaces are never recorded, and the panel says so.
+- **Editing a Space.** Right-click or double-click a Space dot (or Spaces ▸
+  Edit Space…) to change its name, colour and gradient after the fact, with a
+  live preview, eight presets and separate start and end hue sliders. Until
+  now those were fixed when the Space was created.
+
+### Fixed
+
+- **Screen sharing asked for the camera and microphone first.** Electron
+  reports a screen-share request as a media request that names no device, so
+  the permission prompt appeared and, racing the picker, could leave sharing
+  working only once that prompt had been allowed by hand. The picker is the
+  consent, as in Chrome, so nothing is asked beforehand.
+- The Spaces menu listed nine slots whether or not anything was in them. It
+  now lists the Spaces that exist and marks the active one.
+- A Space with no tabs and no favorites was dropped when the browser reopened,
+  losing its name and colours. Every Space is kept.
+- The mini window could sit titled "New Tab" over a page that had loaded.
+- On macOS the window buttons no longer overlap the compact rail.
 
 ## [1.0.0] — 2026-09-18
 
