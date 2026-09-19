@@ -161,6 +161,9 @@ export class MiniWindowService {
       popupMenu: (template) => {
         Menu.buildFromTemplate(template).popup()
       },
+      // A mini window borrows the active Space and has no switcher of its own.
+      otherSpaces: () => [],
+      openInSpace: (linkUrl) => this.deps.openInMain(linkUrl, {}),
       focused: () => undefined,
     }
 

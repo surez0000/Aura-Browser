@@ -4,7 +4,7 @@ import { Archive, ArrowLeft, PanelLeft, PanelLeftClose, Plus, RotateCw } from 'l
 import { isMac, modKeyLabel, invoke } from '@/lib/ipc'
 import { holdOverlay, releaseOverlay } from '@/lib/overlay'
 import { usePrefersReducedMotion } from '@/lib/use-reduced-motion'
-import { selectSidebarMode, useSettings } from '@/state/settings'
+import { selectSidebarMode, selectTabBar, useSettings } from '@/state/settings'
 import { toggleSidebarMode } from '@/state/sync'
 import { useTabs, tabsOf, selectActiveTab } from '@/state/tabs'
 import { useUi } from '@/state/ui'
@@ -15,7 +15,7 @@ import { FavoritesGrid } from './FavoritesGrid'
 import { TabSection } from './TabSection'
 import { SpaceSwitcher } from './SpaceSwitcher'
 import { SpaceEditor } from './SpaceEditor'
-import { DownloadsButton, DownloadsFlyout } from './DownloadsFlyout'
+import { DownloadsButton } from './DownloadsFlyout'
 import { SettingsButton } from './SettingsFlyout'
 import { UpdateCard, UpdateRailButton } from '@/components/UpdateNotice'
 import { WindowControls } from './WindowControls'
@@ -85,7 +85,11 @@ function RailButton({
  */
 export function Sidebar(): React.JSX.Element {
   const mode = useSettings(selectSidebarMode)
-  const compact = mode === 'compact'
+  const topTabs = useSettings(selectTabBar) === 'top'
+  // With the tabs on top the sidebar is only ever the narrow rail: the tab
+  // list and the address field have moved, and what is left is the Space
+  // switcher, favorites and the footer buttons.
+  const compact = mode === 'compact' || topTabs
   const popoverOpen = useUi((s) => s.downloadsOpen || s.settingsOpen || s.spaceEditor.open)
   const openPalette = useUi((s) => s.openPalette)
   const activeSpaceId = useTabs((s) => s.activeSpaceId)
@@ -120,7 +124,9 @@ export function Sidebar(): React.JSX.Element {
         className="absolute inset-y-0 left-0 flex flex-col gap-2 overflow-hidden pb-3"
         style={{ width, paddingInline: compact ? 12 : 12 }}
       >
-        {compact ? (
+        {topTabs ? (
+          <SpaceRail />
+        ) : compact ? (
           <CompactRail />
         ) : (
           <>
@@ -205,7 +211,6 @@ export function Sidebar(): React.JSX.Element {
       </div>
 
       {/* Popovers sit outside the clipped column so they can open beside the rail. */}
-      <DownloadsFlyout />
       <SpaceEditor />
     </motion.aside>
   )
@@ -279,6 +284,43 @@ function CompactRail(): React.JSX.Element {
         >
           <Plus size={16} />
         </RailButton>
+        <UpdateRailButton />
+        <SpaceSwitcher vertical />
+        <div className="flex flex-col items-center">
+          <DownloadsButton />
+          <SettingsButton />
+        </div>
+      </div>
+    </>
+  )
+}
+
+/**
+ * The left rail in the traditional layout. No tabs and no navigation — those
+ * are on top — but everything that belongs to the Space stays here, because
+ * switching Space in one click is the thing this browser is for.
+ */
+function SpaceRail(): React.JSX.Element {
+  const activeSpaceId = useTabs((s) => s.activeSpaceId)
+
+  return (
+    <>
+      {/* macOS keeps its traffic lights here; Windows/Linux stack their controls. */}
+      <div className="drag flex shrink-0 flex-col items-center">
+        {isMac() ? <div className="h-10" /> : <WindowControls vertical />}
+      </div>
+
+      <motion.div
+        key={activeSpaceId}
+        initial={{ opacity: 0, x: 8 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+        className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto"
+      >
+        <FavoritesGrid compact />
+      </motion.div>
+
+      <div className="flex shrink-0 flex-col items-center gap-1">
         <UpdateRailButton />
         <SpaceSwitcher vertical />
         <div className="flex flex-col items-center">

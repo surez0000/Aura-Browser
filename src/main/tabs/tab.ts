@@ -15,6 +15,10 @@ export interface TabHost {
   recordVisit(tab: Tab, url: string): void
   updateTitle(tab: Tab, url: string, title: string): void
   popupMenu(template: MenuItemConstructorOptions[]): void
+  /** Other Spaces a link can be opened in, for the page context menu. */
+  otherSpaces(tab: Tab): Array<{ id: string; name: string }>
+  /** Open a link in another Space and go there. */
+  openInSpace(url: string, spaceId: string): void
   /** The page took keyboard focus (a click landed in it). */
   focused(tab: Tab): void
 }
@@ -251,8 +255,21 @@ export class Tab {
           click: () => this.host.peek(this, params.linkURL),
         },
         { label: 'Copy Link Address', click: () => clipboard.writeText(params.linkURL) },
-        { type: 'separator' },
       )
+      // Send a link straight into another Space — a different cookie jar, so
+      // the page opens as whoever you are over there.
+      const elsewhere = this.host.otherSpaces(this)
+      if (elsewhere.length > 0) {
+        const { linkURL } = params
+        template.push({
+          label: 'Open Link in Space',
+          submenu: elsewhere.map((space) => ({
+            label: space.name,
+            click: () => this.host.openInSpace(linkURL, space.id),
+          })),
+        })
+      }
+      template.push({ type: 'separator' })
     }
     if (params.isEditable) {
       template.push(

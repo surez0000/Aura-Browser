@@ -51,3 +51,5 @@ export const selectSidebarMode = (s: SettingsState): AuroraSettings['sidebarMode
 
 export const selectBackdropTexture = (s: SettingsState): AuroraSettings['backdropTexture'] =>
   s.settings.backdropTexture
+
+export const selectTabBar = (s: SettingsState): AuroraSettings['tabBar'] => s.settings.tabBar

@@ -98,6 +98,17 @@ export class TabManager {
       if (!tab.incognito) this.deps.history.updateTitle(url, title)
     },
     popupMenu: (template) => this.popupMenu(template),
+    // Incognito is left out: sending a link there from a normal Space reads as
+    // a privacy promise the menu cannot keep, since the opener still knows.
+    otherSpaces: (tab) =>
+      this.spaces
+        .filter((space) => space.id !== tab.spaceId && !space.incognito)
+        .map((space) => ({ id: space.id, name: space.name })),
+    openInSpace: (url, spaceId) => {
+      // `activate` switches the active Space too (see setActiveTab), so this
+      // lands you on the page you asked for.
+      this.create({ url, activate: true, spaceId, kind: 'today' })
+    },
     peek: (opener, url) => this.openPeek(opener, url),
     focused: (tab) => {
       if (this.activeSpace()?.panes.includes(tab.id)) this.focusPane(tab.id)

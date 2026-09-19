@@ -266,8 +266,22 @@ function SettingsDialog(): React.JSX.Element {
             </Row>
           </Section>
 
-          <Section title="Sidebar">
-            <Row label="Width">
+          <Section title="Layout">
+            <Row
+              label="Tabs"
+              hint="On top is the traditional strip. Spaces, favorites, downloads and settings stay on the left either way."
+            >
+              <Segmented<AuroraSettings['tabBar']>
+                value={settings.tabBar}
+                options={[
+                  { value: 'side', label: 'Side' },
+                  { value: 'top', label: 'Top' },
+                ]}
+                onChange={(tabBar) => void update({ tabBar })}
+                testId="setting-tabbar"
+              />
+            </Row>
+            <Row label="Sidebar width" hint="Only applies while the tabs are on the side.">
               <Segmented<AuroraSettings['sidebarMode']>
                 value={settings.sidebarMode}
                 options={[

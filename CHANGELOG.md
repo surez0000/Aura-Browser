@@ -5,6 +5,27 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [Unreleased]
+
+### Added
+
+- **Tabs on top.** Settings ▸ Layout switches the tab list to a traditional
+  strip across the window, with back, forward, reload and the address field
+  beside it. Spaces, favorites, downloads and settings stay on the left rail in
+  both layouts, so switching Space is always one click away.
+- **Open a link in another Space.** Right-click any link for "Open Link in
+  Space", pick one, and the page opens there and takes you with it. It loads in
+  that Space's storage, so you arrive as whoever you are over there.
+- **Downloads show their progress on the button.** A ring fills as the bytes
+  arrive and the icon gives one bounce as each download lands. Nothing but a
+  count appeared there before.
+
+### Changed
+
+- **Downloads is a full section**, like History and Settings, rather than a
+  small panel pinned inside the sidebar. It closes on Escape, on the backdrop,
+  or on its own close button, and long filenames now have room.
+
 ## [1.0.3] — 2026-09-18
 
 ### Added

@@ -248,7 +248,20 @@ export interface AuroraSettings {
    * default, so the gradient is clean unless it is asked for.
    */
   backdropTexture: BackdropTexture
+  /**
+   * Where the tabs live. 'side' is the Arc-style sidebar list; 'top' is the
+   * traditional strip across the window, with navigation and the address field
+   * beside it. Spaces, favorites, downloads and settings stay on the left rail
+   * either way — Space switching is the point of the browser, not a detail to
+   * bury in a menu.
+   */
+  tabBar: TabBarPosition
 }
+
+/** @see AuroraSettings.tabBar */
+export type TabBarPosition = 'side' | 'top'
+
+export const TAB_BAR_POSITIONS = ['side', 'top'] as const satisfies ReadonlyArray<TabBarPosition>
 
 /** @see AuroraSettings.backdropTexture */
 export type BackdropTexture = 'none' | 'grain' | 'particles'
@@ -262,6 +275,7 @@ export const DEFAULT_SETTINGS: AuroraSettings = {
   webStoreInstalls: false,
   sidebarMode: 'fixed',
   backdropTexture: 'none',
+  tabBar: 'side',
 }
 
 export type UpdateStatus =

@@ -57,13 +57,18 @@ function FavoriteTile({ favorite }: { favorite: FavoriteEntry }): React.JSX.Elem
 }
 
 /** Favorites of the active space (each space has its own grid). */
-export function FavoritesGrid(): React.JSX.Element | null {
+export function FavoritesGrid({
+  compact = false,
+}: { compact?: boolean } = {}): React.JSX.Element | null {
   // Select the (stable) space object; deriving `?? []` inside the selector
   // would mint a fresh array per call and loop useSyncExternalStore.
   const space = useTabs(selectActiveSpace)
   const favorites = space?.favorites ?? []
 
   if (favorites.length === 0) {
+    // The rail is 60 px wide: a sentence of advice wraps into a broken column
+    // there, so it stays with the full sidebar that has room for it.
+    if (compact) return null
     return (
       <p className="mx-1 shrink-0 text-[11px] leading-snug" style={{ color: 'var(--ink-3)' }}>
         No favorites yet — hit the ★ in the address pill.
@@ -72,7 +77,10 @@ export function FavoritesGrid(): React.JSX.Element | null {
   }
 
   return (
-    <div className="grid shrink-0 grid-cols-4 gap-2" data-testid="favorites-grid">
+    <div
+      className={`grid shrink-0 gap-2 ${compact ? 'grid-cols-1' : 'grid-cols-4'}`}
+      data-testid="favorites-grid"
+    >
       {favorites.map((f) => (
         <FavoriteTile key={f.url} favorite={f} />
       ))}

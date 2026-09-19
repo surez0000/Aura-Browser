@@ -1,6 +1,6 @@
 import { z, type ZodType } from 'zod'
 import { SEARCH_ENGINE_IDS } from '@shared/search'
-import { BACKDROP_TEXTURES } from '@shared/models'
+import { BACKDROP_TEXTURES, TAB_BAR_POSITIONS } from '@shared/models'
 import type { InvokeChannel } from '@shared/ipc-contract'
 
 const id = z.string().min(1).max(64)
@@ -133,6 +133,7 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
       sidebarMode: z.enum(['fixed', 'compact', 'hover']).optional(),
       webStoreInstalls: z.boolean().optional(),
       backdropTexture: z.enum(BACKDROP_TEXTURES).optional(),
+      tabBar: z.enum(TAB_BAR_POSITIONS).optional(),
     })
     .strict(),
 

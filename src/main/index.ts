@@ -16,11 +16,7 @@ import { UpdaterService } from './services/updater'
 import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
 import { TabManager } from './tabs/tab-manager'
 import { DEFAULT_PARTITION } from './tabs/partition-names'
-import {
-  TRAFFIC_LIGHTS,
-  createChromeWindow,
-  type WindowPlacement,
-} from './windows/chrome-window'
+import { TRAFFIC_LIGHTS, createChromeWindow, type WindowPlacement } from './windows/chrome-window'
 import { MiniWindowService } from './windows/mini-window'
 import { registerIpcHandlers } from './ipc/handlers'
 import { addTrustedWebContents, pushTo, pushToChrome, setTrustedWebContents } from './ipc/router'
@@ -120,10 +116,11 @@ function bootstrap(): void {
   /** Keep the window buttons clear of the compact rail. */
   const applyTrafficLights = (): void => {
     if (process.platform !== 'darwin' || !win || win.isDestroyed()) return
+    // The tabs-on-top layout always uses the narrow rail, so the buttons sit
+    // where they do in compact mode whatever the sidebar width setting says.
+    const narrow = settings.sidebarMode === 'compact' || settings.tabBar === 'top'
     win.setWindowButtonPosition(
-      settings.sidebarMode === 'compact'
-        ? { ...TRAFFIC_LIGHTS.compact }
-        : { ...TRAFFIC_LIGHTS.fixed },
+      narrow ? { ...TRAFFIC_LIGHTS.compact } : { ...TRAFFIC_LIGHTS.fixed },
     )
   }
 
@@ -225,7 +222,7 @@ function bootstrap(): void {
       settings = { ...settings, ...patch }
       kv.set('settings', settings)
       if ((settings.sidebarMode as string) === 'hover') settings.sidebarMode = 'compact'
-      if (patch.sidebarMode !== undefined) applyTrafficLights()
+      if (patch.sidebarMode !== undefined || patch.tabBar !== undefined) applyTrafficLights()
       if (patch.theme !== undefined) nativeTheme.themeSource = settings.theme
       pushToChrome('settings:changed', settings)
       return settings

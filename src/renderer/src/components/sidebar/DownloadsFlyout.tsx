@@ -1,8 +1,9 @@
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Download, FolderOpen, X } from 'lucide-react'
-import { popoverAnchorClass } from '@/lib/popover-anchor'
-import { selectSidebarMode, useSettings } from '@/state/settings'
+import { holdOverlay, releaseOverlay } from '@/lib/overlay'
 import { invoke } from '@/lib/ipc'
+import { overallProgress } from '@/lib/downloads'
 import { useUi } from '@/state/ui'
 import type { DownloadInfo } from '@shared/models'
 
@@ -27,60 +28,161 @@ function stateLabel(d: DownloadInfo): string {
   }
 }
 
-/** Sidebar footer button with a live badge. */
+const RING = 2 * Math.PI * 11
+
+/**
+ * Sidebar footer button. While something is downloading it wears a ring that
+ * fills as the bytes arrive, and it gives one pulse when a download lands —
+ * the count badge alone gave no sense that anything was happening.
+ */
 export function DownloadsButton(): React.JSX.Element {
   const downloads = useUi((s) => s.downloads)
   const toggle = useUi((s) => s.toggleDownloads)
-  const activeCount = downloads.filter((d) => d.state === 'progressing').length
+  const progress = overallProgress(downloads)
+  const completed = downloads.filter((d) => d.state === 'completed').length
+
+  // Pulse on the transition into "one more finished", not on every render.
+  const [justFinished, setJustFinished] = useState(false)
+  const seen = useRef(completed)
+  useEffect(() => {
+    if (completed > seen.current) {
+      setJustFinished(true)
+      const timer = setTimeout(() => setJustFinished(false), 900)
+      seen.current = completed
+      return () => clearTimeout(timer)
+    }
+    seen.current = completed
+    return undefined
+  }, [completed])
 
   return (
     <button
       type="button"
       title="Downloads (⌘J)"
-      aria-label="Downloads"
+      aria-label={progress === null ? 'Downloads' : `Downloads, ${Math.round(progress * 100)}%`}
       onClick={toggle}
       className="no-drag relative flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-(--surface-hover)"
-      style={{ color: 'var(--ink-2)' }}
+      style={{ color: progress === null ? 'var(--ink-2)' : 'var(--accent)' }}
       data-testid="downloads-button"
+      data-downloading={progress === null ? undefined : true}
     >
-      <Download size={15} />
-      {activeCount > 0 && (
-        <span
-          className="absolute -top-0.5 -right-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-0.5 text-[9px] font-bold"
-          style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
+      {progress !== null && (
+        <svg
+          className="absolute inset-0 h-full w-full -rotate-90"
+          viewBox="0 0 28 28"
+          aria-hidden
+          data-testid="downloads-ring"
         >
-          {activeCount}
-        </span>
+          <circle cx="14" cy="14" r="11" fill="none" strokeWidth="2" stroke="var(--border-glass)" />
+          <circle
+            cx="14"
+            cy="14"
+            r="11"
+            fill="none"
+            strokeWidth="2"
+            stroke="var(--accent)"
+            strokeLinecap="round"
+            strokeDasharray={RING}
+            strokeDashoffset={RING * (1 - progress)}
+            style={{ transition: 'stroke-dashoffset 220ms linear' }}
+          />
+        </svg>
       )}
+      <motion.span
+        className="relative flex items-center justify-center"
+        animate={
+          justFinished
+            ? { y: [0, 3, -2, 0], scale: [1, 0.9, 1.08, 1] }
+            : progress !== null
+              ? { y: [0, 1.5, 0] }
+              : { y: 0, scale: 1 }
+        }
+        transition={
+          justFinished
+            ? { duration: 0.5 }
+            : progress !== null
+              ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' }
+              : { duration: 0.2 }
+        }
+      >
+        <Download size={15} />
+      </motion.span>
     </button>
   )
 }
 
-/** The downloads panel, anchored inside the sidebar (never over the page view). */
-export function DownloadsFlyout(): React.JSX.Element {
-  const compact = useSettings(selectSidebarMode) === 'compact'
+/** Downloads (⌘J). Mounted fresh on every open, like History and Settings. */
+export function DownloadsPanel(): React.JSX.Element {
   const open = useUi((s) => s.downloadsOpen)
+  return <AnimatePresence>{open && <DownloadsDialog />}</AnimatePresence>
+}
+
+/**
+ * Everything downloaded, newest first, over a snapshot of the page (ADR-0003).
+ * This was a small popover pinned inside the sidebar; it is a full section now,
+ * so long filenames and a long history have somewhere to go.
+ */
+function DownloadsDialog(): React.JSX.Element {
+  const close = useUi((s) => s.closeDownloads)
   const downloads = useUi((s) => s.downloads)
 
+  useEffect(() => {
+    void holdOverlay('downloads')
+    return () => releaseOverlay('downloads')
+  }, [])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') close()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [close])
+
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0, y: 10, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 8, scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 460, damping: 32 }}
-          className={`popover ${popoverAnchorClass(compact)} max-h-72 overflow-y-auto rounded-xl p-2 shadow-2xl`}
-          data-testid="downloads-flyout"
+    <motion.div
+      className="absolute inset-0 z-50 flex items-start justify-center"
+      data-testid="downloads-flyout"
+    >
+      <motion.div
+        className="absolute inset-0"
+        style={{ background: 'var(--scrim)' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        onClick={close}
+      />
+      <motion.div
+        className="dialog relative mt-[8vh] flex max-h-[80vh] w-[min(700px,92vw)] flex-col rounded-2xl shadow-2xl"
+        initial={{ y: -14, scale: 0.98 }}
+        animate={{ y: 0, scale: 1 }}
+        exit={{ y: -10, scale: 0.98 }}
+        transition={{ type: 'spring', stiffness: 480, damping: 34 }}
+      >
+        <div
+          className="flex shrink-0 items-center gap-3 border-b px-4 py-3"
+          style={{ borderColor: 'var(--border-glass)' }}
         >
-          <div
-            className="px-2 pt-1 pb-2 text-[11px] font-medium tracking-wide uppercase"
-            style={{ color: 'var(--ink-3)' }}
-          >
+          <Download size={15} style={{ color: 'var(--accent)' }} />
+          <h2 className="flex-1 text-[14px] font-medium" style={{ color: 'var(--ink-1)' }}>
             Downloads
-          </div>
+          </h2>
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Close downloads"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-(--surface-hover)"
+            style={{ color: 'var(--ink-2)' }}
+            data-testid="downloads-close"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {downloads.length === 0 && (
-            <p className="px-2 pb-2 text-[12px]" style={{ color: 'var(--ink-3)' }}>
+            <p className="px-3 py-6 text-center text-[13px]" style={{ color: 'var(--ink-3)' }}>
               Nothing downloaded yet.
             </p>
           )}
@@ -88,7 +190,7 @@ export function DownloadsFlyout(): React.JSX.Element {
             {downloads.map((d) => (
               <li
                 key={d.id}
-                className="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-(--surface-hover)"
+                className="group flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-(--surface-hover)"
                 data-testid="download-item"
               >
                 <button
@@ -100,11 +202,11 @@ export function DownloadsFlyout(): React.JSX.Element {
                       void invoke('downloads:action', { id: d.id, action: 'open' })
                   }}
                 >
-                  <span className="block truncate text-[12.5px]" style={{ color: 'var(--ink-1)' }}>
+                  <span className="block truncate text-[13px]" style={{ color: 'var(--ink-1)' }}>
                     {d.filename}
                   </span>
                   <span
-                    className="block truncate text-[11px]"
+                    className="block truncate text-[11.5px]"
                     style={{ color: 'var(--ink-3)' }}
                     data-testid="download-state"
                     data-state={d.state}
@@ -113,14 +215,15 @@ export function DownloadsFlyout(): React.JSX.Element {
                   </span>
                   {d.state === 'progressing' && d.totalBytes > 0 && (
                     <span
-                      className="mt-1 block h-0.5 overflow-hidden rounded-full"
-                      style={{ background: 'var(--surface-glass-strong)' }}
+                      className="mt-1.5 block h-1 overflow-hidden rounded-full"
+                      style={{ background: 'var(--surface-selected)' }}
                     >
                       <span
                         className="block h-full rounded-full"
                         style={{
                           background: 'var(--accent)',
                           width: `${Math.round((d.receivedBytes / d.totalBytes) * 100)}%`,
+                          transition: 'width 220ms linear',
                         }}
                       />
                     </span>
@@ -134,10 +237,10 @@ export function DownloadsFlyout(): React.JSX.Element {
                     onClick={() =>
                       void invoke('downloads:action', { id: d.id, action: 'showInFolder' })
                     }
-                    className="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-(--surface-hover)"
+                    className="cursor-pointer rounded p-1.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-(--surface-hover)"
                     style={{ color: 'var(--ink-2)' }}
                   >
-                    <FolderOpen size={13} />
+                    <FolderOpen size={14} />
                   </button>
                 )}
                 {d.state === 'progressing' && (
@@ -146,17 +249,17 @@ export function DownloadsFlyout(): React.JSX.Element {
                     title="Cancel download"
                     aria-label="Cancel download"
                     onClick={() => void invoke('downloads:action', { id: d.id, action: 'cancel' })}
-                    className="cursor-pointer rounded p-1 hover:bg-(--surface-hover)"
+                    className="cursor-pointer rounded p-1.5 hover:bg-(--surface-hover)"
                     style={{ color: 'var(--ink-2)' }}
                   >
-                    <X size={13} />
+                    <X size={14} />
                   </button>
                 )}
               </li>
             ))}
           </ul>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </div>
+      </motion.div>
+    </motion.div>
   )
 }

@@ -10,11 +10,18 @@ import { ScreenSharePicker } from '@/components/ScreenSharePicker'
 import { HistoryPanel } from '@/components/HistoryPanel'
 import { ExtensionsPanel } from '@/components/ExtensionsPanel'
 import { SettingsPanel } from '@/components/sidebar/SettingsFlyout'
+import { DownloadsPanel } from '@/components/sidebar/DownloadsFlyout'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
 import { BackdropTexture } from '@/components/BackdropTexture'
 import { auroraPalette, hue2Of, hueOf } from '@/theme/aurora'
 import { toCss } from '@/theme/contrast'
-import { selectBackdropTexture, selectSidebarMode, useSettings } from '@/state/settings'
+import { TopBar } from '@/components/TopBar'
+import {
+  selectBackdropTexture,
+  selectSidebarMode,
+  selectTabBar,
+  useSettings,
+} from '@/state/settings'
 import { useIpcSync } from '@/state/sync'
 import { useTabs, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
@@ -24,6 +31,7 @@ export default function App(): React.JSX.Element {
   const theme = useUi((s) => s.themeName)
   const sidebarMode = useSettings(selectSidebarMode)
   const texture = useSettings(selectBackdropTexture)
+  const topTabs = useSettings(selectTabBar) === 'top'
   const space = useTabs(selectActiveSpace)
 
   const hue = hueOf(space)
@@ -47,15 +55,18 @@ export default function App(): React.JSX.Element {
     <div
       className="app-bg isolate relative flex h-full w-full overflow-hidden"
       style={style}
-      data-sidebar-mode={sidebarMode}
+      data-sidebar-mode={topTabs ? 'compact' : sidebarMode}
+      data-tab-bar={topTabs ? 'top' : 'side'}
     >
       <AuroraBackdrop palette={palette} paletteKey={`${hue}:${hue2}:${muted}:${theme}`} hue={hue} />
       {/* Sits over the gradient, under every piece of chrome. */}
       <BackdropTexture texture={texture} theme={theme} />
       <Sidebar />
       <main
-        className={`relative flex h-full min-w-0 flex-1 flex-col gap-2 p-2 pt-3 ${compact ? '' : 'pl-0'}`}
+        className={`relative flex h-full min-w-0 flex-1 flex-col gap-2 p-2 ${topTabs ? 'pt-0' : 'pt-3'} ${compact ? '' : 'pl-0'}`}
       >
+        {/* Tabs, navigation and the address field, when they live on top. */}
+        {topTabs && <TopBar />}
         {/*
          * The strip above the page card is the window's title bar: the only
          * chrome pixels across the top, since the page itself is a native view
@@ -63,7 +74,7 @@ export default function App(): React.JSX.Element {
          * window be moved from the top and, on macOS and Windows alike, gives
          * the double-click-to-zoom gesture something to land on.
          */}
-        <div className="drag absolute inset-x-0 top-0 h-3" aria-hidden />
+        {!topTabs && <div className="drag absolute inset-x-0 top-0 h-3" aria-hidden />}
         {/* Sits in the gap above the page card. */}
         <LoadingBar top={3} />
         <FindBar />
@@ -78,6 +89,7 @@ export default function App(): React.JSX.Element {
       <HistoryPanel />
       <ExtensionsPanel />
       <SettingsPanel />
+      <DownloadsPanel />
     </div>
   )
 }

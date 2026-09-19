@@ -26,3 +26,30 @@ test('downloads land in the panel and complete', async () => {
     await server.close()
   }
 })
+
+test('the downloads section closes like the others, and the button shows progress', async () => {
+  const server = await startFixtureServer()
+  const { app, chrome } = await launchAurora()
+  try {
+    await expect(chrome.getByTestId('sidebar')).toBeVisible()
+    // Nothing running: the button is a plain icon with no ring.
+    await expect(chrome.getByTestId('downloads-ring')).toHaveCount(0)
+
+    await createTabViaPalette(chrome, `${server.url}/file.bin`)
+    await expect(chrome.getByTestId('downloads-button')).toBeVisible()
+
+    await chrome.getByTestId('downloads-button').click()
+    await expect(chrome.getByTestId('downloads-flyout')).toBeVisible()
+    // A full section now, so it closes the way History and Settings do.
+    await chrome.keyboard.press('Escape')
+    await expect(chrome.getByTestId('downloads-flyout')).toHaveCount(0)
+
+    await chrome.getByTestId('downloads-button').click()
+    await expect(chrome.getByTestId('downloads-flyout')).toBeVisible()
+    await chrome.getByTestId('downloads-close').click()
+    await expect(chrome.getByTestId('downloads-flyout')).toHaveCount(0)
+  } finally {
+    await app.close()
+    await server.close()
+  }
+})
