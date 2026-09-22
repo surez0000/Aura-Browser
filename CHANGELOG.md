@@ -5,6 +5,46 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [1.1.0] — 2026-09-22
+
+### Added
+
+- **Aura Apps.** A new **App Store** (app menu, ⇧⌘P, or Aura Apps…) holds small
+  pieces of the browser you can switch on. Nothing is on by default, and an app
+  that is off costs nothing. Switching one on pins it to the sidebar beside
+  Downloads and Settings; unpin it there if you would rather reach it from the
+  command palette. **Reminders** and **Timesheet** are listed as coming next.
+- **Notes**, the first app. ⌘E writes a note about whatever page you are on and
+  opens it with the cursor already in it. Notes remember the page they were
+  taken on, so you can find one later by what you were reading, and they turn
+  up in the command palette beside your tabs and history — searching the whole
+  note, not just its first line.
+
+### Fixed
+
+- **A machine on your own network went to the search engine.** `localmachine/`,
+  `nas/photos`, `myserver:8080` and IPv6 literals were all treated as search
+  terms, because the address field only recognised something as a host if it
+  had a dot in it. A trailing slash, a path, or a port now means "this is a
+  machine, go" — and those addresses load over **http**, since a machine on the
+  LAN rarely carries a certificate and https only failed to connect. Public
+  names are unchanged and still get https. A bare word with nothing to mark it
+  as an address (`localmachine`) still searches, as it does in every browser.
+- **A fat scrollbar in the sidebar, and a horizontal one with it.** The
+  scrollbar styling set a width but no height, so while the vertical bar was
+  8 px the horizontal one kept Chromium's unstyled 16 px default — and since
+  `overflow-y` alone makes a box scrollable sideways too, any stray pixel put
+  that band across the tab list. The tab lists no longer scroll sideways at
+  all, and horizontal bars elsewhere are as slim as the vertical ones.
+- **The address was missing from the top tab bar.** With tabs on top the
+  address field kept showing only the host, as it does in the narrow sidebar,
+  so a full-width bar reported `example.com` for a page deep inside a site. It
+  now shows the whole URL, path and query included.
+- **Tabs on top squeezed instead of scrolling.** Past about a dozen tabs every
+  tab shrank towards its favicon until the titles vanished. Tabs keep a
+  readable minimum width now and the strip scrolls, with no scrollbar drawn
+  across it.
+
 ## [1.0.4] — 2026-09-19
 
 ### Added
