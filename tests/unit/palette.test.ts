@@ -94,6 +94,8 @@ describe('composePalette', () => {
             body: 'they changed the tiers',
             url: 'https://example.com/pricing',
             pageTitle: 'Pricing — Example',
+            color: 'amber',
+            pinned: false,
             createdAt: 1,
             updatedAt: 1,
           },
@@ -114,6 +116,12 @@ describe('composePalette', () => {
     const withNotes = buildActions({ ...base, enabledApps: ['notes'] })
     expect(withNotes.some((a) => a.id === 'notes:new')).toBe(true)
     expect(withNotes.some((a) => a.id === 'notes:open')).toBe(true)
+    // Each app brings only its own commands.
+    expect(withNotes.some((a) => a.id === 'reminders:new')).toBe(false)
+    const withAll = buildActions({ ...base, enabledApps: ['notes', 'reminders', 'timesheet'] })
+    expect(withAll.map((a) => a.id)).toEqual(
+      expect.arrayContaining(['reminders:new', 'reminders:open', 'timesheet:open']),
+    )
   })
 
   it('always appends a web-search fallback for non-empty queries', () => {

@@ -5,6 +5,63 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [Unreleased]
+
+### Added
+
+- **Reminders.** Set a time — one of a few moments that cover most needs, or
+  pick one — and Aura tells you: a bar above the page if you are looking, a
+  system notification if you are not. Anything that fell due while Aura was
+  closed is waiting on the next launch rather than quietly missed. Reminders
+  can repeat daily, on weekdays, or weekly; done on a repeat moves it to the
+  next occurrence. **⇧⌘E** sets one about the page you are on, and the list is
+  cut into the buckets you actually think in: overdue, today, tomorrow, later.
+- **Timesheet.** Aura asks one question — yours to word — on your own interval,
+  only inside your working hours and days. The question arrives as a bar above
+  the page with the page's title suggested, so the common case is one keypress;
+  **Same as last** is one click; Skip counts rather than times. The day view
+  turns every answer into a block of time, totals them by activity, draws the
+  day as a timeline, and copies out as Markdown or CSV. A question ignored for
+  a whole interval counts as skipped, so the day stays honest.
+
+### Changed
+
+- **Stickies are paper now.** A fine grain, the darker glue strip every real
+  sticky has along its top edge, a shadow that lifts the sheet off the wall,
+  and a hair of tilt — the same tilt every time for the same note, so the board
+  does not fidget. A new sticky is yellow, the way a sticky is.
+
+- **Notes are sticky notes now.** The old two-pane list was a filing cabinet:
+  every note looked identical, so finding one meant reading them all. Notes sit
+  on a board as coloured stickies instead — colour first, words second, which is
+  the whole reason the paper version works. Pick one of seven colours, pin the
+  ones you keep coming back to, and they stay at the top. Every colour is run
+  through the same contrast maths that proves the aurora palette, so it is
+  legible in both themes rather than chosen by eye.
+- **Aura Apps has a way in.** The App Store sat in a menu and the command
+  palette only, and pinned apps appear after you switch one on — so nothing on
+  screen suggested apps existed. There is a button in the sidebar now, above
+  Settings, in both layouts.
+
+### Fixed
+
+- **⌘E left an empty note behind if you changed your mind.** The note was
+  written the moment the shortcut was pressed. Nothing is stored now until you
+  type something, and any empty notes left by an earlier build are cleared on
+  launch.
+- **A note typed quickly and dismissed could reopen itself**, or lose the last
+  few characters — the pending save landed after the sticky was put down. It is
+  flushed on close instead, and never raises the editor again.
+- Escape closes an open sticky before the panel, rather than both at once.
+- **A reminder that fell due while Aura was closed was quietly missed.** The
+  launch catch-up told the window before the window was listening. The bars
+  above the page are now worked out from the reminders list itself — told, and
+  neither done nor snoozed since — so a window opening after the telling shows
+  them too.
+- **The Timesheet's schedule card could show stale settings.** A change made
+  anywhere but the card itself did not reach it. Every view of the schedule
+  follows now, the question field included.
+
 ## [1.1.0] — 2026-09-22
 
 ### Added

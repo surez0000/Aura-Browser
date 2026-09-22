@@ -10,7 +10,8 @@ built with React, TypeScript, and design tokens.
 > find-in-page, downloads, in-chrome permission prompts, session restore, the
 > Aurora Glass theme (per-Space WebGL palettes, light/dark/system, WCAG AA
 > proven in CI), Settings, and an in-app updater. Phase (e) is done but for
-> first-run onboarding, and phase (f) — **Aura Apps** — is under way. See
+> first-run onboarding, and phase (f) — **Aura Apps**: Notes, Reminders,
+> Timesheet — is complete. See
 > [docs/PHASES.md](docs/PHASES.md) for the roadmap,
 > [docs/DESIGN-SPEC.md](docs/DESIGN-SPEC.md) for the design system, and
 > [docs/RELEASING.md](docs/RELEASING.md) for versioning and releases.
@@ -134,10 +135,19 @@ The catalogue is first-party and ships with the browser: an app runs inside the
 browser chrome, which is privileged, so third-party code stays in extensions
 where the page sandbox holds. App data is global — one set across every Space.
 
-- **Notes** — ⌘E writes a note about the page you are on and opens it ready to
-  type. Notes keep that page, so you can find one by what you were reading, and
-  they appear in the command palette beside tabs and history.
-- **Reminders** and **Timesheet** are listed in the Store as coming next.
+- **Notes** — a board of coloured stickies. ⌘E starts one about the page you
+  are on, with the cursor already in it; nothing is stored until you type.
+  Stickies keep their page, can be pinned to the top, and appear in the command
+  palette beside tabs and history. Every colour is proven legible in both
+  themes by the same contrast sweep that guards the aurora palette.
+- **Reminders** — a bar above the page when you are looking, a system
+  notification when you are not, and anything that fell due while Aura was
+  closed waiting on the next launch. ⇧⌘E sets one about the page you are on.
+  Once, daily, weekdays, or weekly; snooze for ten minutes, an hour, or a day.
+- **Timesheet** — one question, yours to word, on your interval inside your
+  working hours. Answer it in the bar (the page's title is suggested; Enter
+  takes it), or **Same as last** in one click. The day view totals your
+  answers by activity, draws the timeline, and copies out as Markdown or CSV.
 
 ## Peek and the mini window
 
@@ -151,7 +161,7 @@ storage, so you stay signed in, but no tab and no Space state until you press
 
 ⌘T palette · ⌘L edit address · ⌘S full sidebar ↔ compact rail · ⌘F find in page ·
 ⌘G / ⇧⌘G find next/previous · ⌘J downloads · ⌘Y history · ⌘\\ split view ·
-⌘D toggle favorite · ⌘E new note ·
+⌘D toggle favorite · ⌘E new sticky · ⇧⌘E remind me about this page ·
 ⇧⌘N incognito · ⌘W close tab · ⇧⌘T reopen closed · ⌘R / ⇧⌘R reload ·
 ⌘[ / ⌘] back/forward · ⌃Tab / ⌃⇧Tab next/previous tab · ⌘1–9 pick tab ·
 ⌃1–9 switch space · ⌘+/−/0 zoom · ⌘, settings · ⌥⌘I DevTools. (Ctrl on

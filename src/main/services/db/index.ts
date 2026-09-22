@@ -49,6 +49,36 @@ const MIGRATIONS: readonly string[] = [
      updated_at INTEGER NOT NULL
    );
    CREATE INDEX idx_notes_updated ON notes (updated_at DESC);`,
+  // v4 — a note is a sticky: it carries a colour, and it can be pinned to the
+  // top of the board. Colour is the thing that makes one findable at a glance.
+  `ALTER TABLE notes ADD COLUMN color TEXT NOT NULL DEFAULT 'default';
+   ALTER TABLE notes ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;`,
+  // v5 — Reminders and the Timesheet. Both global, like notes. A reminder
+  // remembers when it was last raised so a tick never says the same thing
+  // twice; a timesheet entry is the question as asked, answered or not.
+  `CREATE TABLE reminders (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     text TEXT NOT NULL,
+     due_at INTEGER NOT NULL,
+     repeat TEXT NOT NULL DEFAULT 'none',
+     done_at INTEGER,
+     snoozed_until INTEGER,
+     notified_at INTEGER,
+     url TEXT,
+     page_title TEXT,
+     created_at INTEGER NOT NULL
+   );
+   CREATE INDEX idx_reminders_due ON reminders (done_at, due_at);
+   CREATE TABLE timesheet_entries (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     asked_at INTEGER NOT NULL,
+     answered_at INTEGER,
+     answer TEXT,
+     tab_title TEXT,
+     tab_url TEXT,
+     skipped INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX idx_timesheet_asked ON timesheet_entries (asked_at DESC);`,
 ]
 
 export type AuroraDb = Database.Database

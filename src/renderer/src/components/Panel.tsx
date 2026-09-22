@@ -20,6 +20,7 @@ export function Panel({
   header,
   footer,
   onClose,
+  onEscape,
   testId,
   width = 760,
   children,
@@ -32,6 +33,11 @@ export function Panel({
   header?: ReactNode
   footer?: ReactNode
   onClose: () => void
+  /**
+   * Escape peels one layer at a time: a panel with something open on top of it
+   * closes that first. Defaults to closing the panel.
+   */
+  onEscape?: () => void
   testId: string
   width?: number
   children: ReactNode
@@ -42,16 +48,17 @@ export function Panel({
   }, [overlayKey])
 
   // Escape works wherever focus is, including before anything inside is focused.
+  const escape = onEscape ?? onClose
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        onClose()
+        escape()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [escape])
 
   return (
     <motion.div

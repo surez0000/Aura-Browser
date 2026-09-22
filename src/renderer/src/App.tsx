@@ -13,6 +13,9 @@ import { SettingsPanel } from '@/components/sidebar/SettingsFlyout'
 import { DownloadsPanel } from '@/components/sidebar/DownloadsFlyout'
 import { AppStorePanel } from '@/apps/AppStorePanel'
 import { NotesPanel } from '@/apps/notes/NotesPanel'
+import { RemindersPanel } from '@/apps/reminders/RemindersPanel'
+import { TimesheetPanel } from '@/apps/timesheet/TimesheetPanel'
+import { AppPrompts } from '@/apps/AppPrompts'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
 import { BackdropTexture } from '@/components/BackdropTexture'
 import { auroraPalette, hue2Of, hueOf } from '@/theme/aurora'
@@ -81,6 +84,7 @@ export default function App(): React.JSX.Element {
         <LoadingBar top={3} />
         <FindBar />
         <PermissionBanner />
+        <AppPrompts />
         <div className="min-h-0 flex-1">
           <PaneArea />
         </div>
@@ -94,6 +98,8 @@ export default function App(): React.JSX.Element {
       <DownloadsPanel />
       <AppStorePanel />
       <NotesPanel />
+      <RemindersPanel />
+      <TimesheetPanel />
     </div>
   )
 }

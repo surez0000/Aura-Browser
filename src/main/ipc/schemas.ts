@@ -1,6 +1,8 @@
 import { z, type ZodType } from 'zod'
 import { SEARCH_ENGINE_IDS } from '@shared/search'
 import { BACKDROP_TEXTURES, TAB_BAR_POSITIONS } from '@shared/models'
+import { STICKY_COLORS } from '@shared/sticky'
+import { REPEAT_RULES } from '@shared/schedule'
 import type { InvokeChannel } from '@shared/ipc-contract'
 
 const id = z.string().min(1).max(64)
@@ -12,6 +14,19 @@ const appId = z.enum(['notes', 'reminders', 'timesheet'])
 const noteId = z.number().int().positive()
 /** A note is a note, not a file: enough room to write, bounded all the same. */
 const NOTE_MAX = 100_000
+const stickyColor = z.enum(STICKY_COLORS)
+const repeat = z.enum(REPEAT_RULES)
+const when = z.number().int().nonnegative()
+const rowId = z.number().int().positive()
+const timesheetPatch = z
+  .object({
+    question: z.string().min(1).max(200).optional(),
+    intervalMinutes: z.number().int().min(1).max(480).optional(),
+    days: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+    startHour: z.number().int().min(0).max(24).optional(),
+    endHour: z.number().int().min(0).max(24).optional(),
+  })
+  .strict()
 const kind = z.enum(['pinned', 'today'])
 
 /**
@@ -159,10 +174,40 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
       body: z.string().max(NOTE_MAX),
       url: z.string().max(8192).nullable().optional(),
       pageTitle: z.string().max(512).nullable().optional(),
+      color: stickyColor.optional(),
     })
     .strict(),
   'notes:update': z.object({ id: noteId, body: z.string().max(NOTE_MAX) }).strict(),
   'notes:delete': z.object({ id: noteId }).strict(),
+  'notes:setColor': z.object({ id: noteId, color: stickyColor }).strict(),
+  'notes:setPinned': z.object({ id: noteId, pinned: z.boolean() }).strict(),
+
+  'apps:getTimesheetConfig': empty,
+  'apps:setTimesheetConfig': timesheetPatch,
+
+  'reminders:list': empty,
+  'reminders:create': z
+    .object({
+      text: z.string().min(1).max(500),
+      dueAt: when,
+      repeat: repeat.optional(),
+      url: z.string().max(8192).nullable().optional(),
+      pageTitle: z.string().max(512).nullable().optional(),
+    })
+    .strict(),
+  'reminders:update': z
+    .object({ id: rowId, text: z.string().min(1).max(500), dueAt: when, repeat })
+    .strict(),
+  'reminders:complete': z.object({ id: rowId }).strict(),
+  'reminders:snooze': z.object({ id: rowId, minutes: z.number().int().min(1).max(1440) }).strict(),
+  'reminders:delete': z.object({ id: rowId }).strict(),
+  'reminders:clearDone': empty,
+
+  'timesheet:pending': empty,
+  'timesheet:answer': z.object({ id: rowId, answer: z.string().min(1).max(500) }).strict(),
+  'timesheet:skip': z.object({ id: rowId }).strict(),
+  'timesheet:day': z.object({ day: when }).strict(),
+  'timesheet:deleteEntry': z.object({ id: rowId }).strict(),
 
   'ui:setPaneBounds': z
     .object({

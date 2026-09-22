@@ -6,6 +6,7 @@ import { openDb, type AuroraDb } from '../../src/main/services/db/index'
 import { KvStore } from '../../src/main/services/db/kv'
 import { AppRegistry } from '../../src/main/apps/registry'
 import type { AppInfo } from '@shared/models'
+import type { AuraAppId } from '@shared/apps'
 
 let dir: string
 let db: AuroraDb
@@ -54,9 +55,11 @@ describe('app registry', () => {
     expect(find('notes').enabled).toBe(true)
   })
 
-  it('refuses to switch on an app that is not built yet', () => {
-    apps.setEnabled('reminders', true)
-    expect(find('reminders').enabled).toBe(false)
+  it('ignores an app it does not know, and says nothing', () => {
+    // Every catalogue entry is real now; the guard still has to hold for an
+    // id that is not in the catalogue at all.
+    apps.setEnabled('nope' as AuraAppId, true)
+    expect(apps.list().every((a) => !a.enabled)).toBe(true)
     expect(pushed).toHaveLength(0)
   })
 

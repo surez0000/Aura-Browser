@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { AppWindow, Archive, Clock3, Globe, NotebookPen, Search, Star, Zap } from 'lucide-react'
+import { AppWindow, Archive, Clock3, Globe, Search, Star, StickyNote, Zap } from 'lucide-react'
 import type { ArchivedTabRow, HistorySearchRow, NoteEntry } from '@shared/models'
 import { searchEngine, type SearchEngineId } from '@shared/search'
 import type { SidebarMode } from '@shared/models'
 import { invoke } from '@/lib/ipc'
 import { holdOverlay, releaseOverlay } from '@/lib/overlay'
 import { selectSearchEngine, useSettings } from '@/state/settings'
-import { captureNoteForActiveTab, setSidebarMode, toggleSidebarMode } from '@/state/sync'
+import {
+  captureNoteForActiveTab,
+  remindAboutActiveTab,
+  setSidebarMode,
+  toggleSidebarMode,
+} from '@/state/sync'
 import { buildActions, composePalette, type PaletteItem, type PaletteItemType } from '@/lib/palette'
 import { useApps } from '@/state/apps'
 import { useTabs, selectActiveTab } from '@/state/tabs'
@@ -18,7 +23,7 @@ const TYPE_ICONS: Record<PaletteItemType, React.ComponentType<{ size?: number | 
   favorite: Star,
   history: Clock3,
   archived: Archive,
-  note: NotebookPen,
+  note: StickyNote,
   action: Zap,
   url: Globe,
   search: Search,
@@ -185,6 +190,15 @@ export function Palette(): React.JSX.Element {
         break
       case 'notes:new':
         captureNoteForActiveTab()
+        break
+      case 'reminders:open':
+        ui.toggleReminders()
+        break
+      case 'reminders:new':
+        remindAboutActiveTab()
+        break
+      case 'timesheet:open':
+        ui.toggleTimesheet()
         break
       case 'split:toggle':
         void invoke('tabs:toggleSplit', {})

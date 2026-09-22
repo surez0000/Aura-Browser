@@ -87,4 +87,38 @@ describe('notes store', () => {
     expect(notes.get(note.id)).toBeNull()
     expect(notes.list()).toEqual([])
   })
+
+  it('is a sticky: it has a colour and can be pinned', () => {
+    const note = notes.create({ body: 'coloured', color: 'amber' })
+    expect(note.color).toBe('amber')
+    expect(note.pinned).toBe(false)
+
+    expect(notes.setColor(note.id, 'mint')?.color).toBe('mint')
+    expect(notes.setPinned(note.id, true)?.pinned).toBe(true)
+  })
+
+  it('defaults to no colour, so a note never has to be decorated', () => {
+    expect(notes.create({ body: 'plain' }).color).toBe('default')
+  })
+
+  it('floats pinned notes to the top of the board, newest first below', () => {
+    notes.create({ body: 'first' })
+    const middle = notes.create({ body: 'second' })
+    notes.create({ body: 'third' })
+    notes.setPinned(middle.id, true)
+    expect(notes.list().map((n) => n.title)).toEqual(['second', 'third', 'first'])
+  })
+
+  it('clears notes that carry nothing, which earlier builds could leave behind', () => {
+    notes.create({ body: 'real' })
+    db.prepare(
+      "INSERT INTO notes (title, body, created_at, updated_at) VALUES ('', '   ', 1, 1)",
+    ).run()
+    db.prepare(
+      "INSERT INTO notes (title, body, created_at, updated_at) VALUES ('', '', 1, 1)",
+    ).run()
+    expect(notes.list()).toHaveLength(3)
+    expect(notes.deleteEmpty()).toBe(2)
+    expect(notes.list().map((n) => n.title)).toEqual(['real'])
+  })
 })

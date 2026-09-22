@@ -143,6 +143,24 @@ export function buildActions(ctx: {
       { id: 'notes:open', title: 'Notes', keywords: 'notebook jotted written' },
     )
   }
+  if (ctx.enabledApps?.includes('reminders')) {
+    actions.push(
+      {
+        id: 'reminders:new',
+        title: 'Remind Me About This Page…',
+        keywords: 'reminder alarm later remember',
+        hint: '⇧⌘E',
+      },
+      { id: 'reminders:open', title: 'Reminders', keywords: 'alarms due later remember' },
+    )
+  }
+  if (ctx.enabledApps?.includes('timesheet')) {
+    actions.push({
+      id: 'timesheet:open',
+      title: 'Timesheet',
+      keywords: 'day log hours work summary what did i do',
+    })
+  }
 
   const activeSpace = ctx.spaces.find((s) => s.id === ctx.activeSpaceId)
   for (const space of ctx.spaces) {

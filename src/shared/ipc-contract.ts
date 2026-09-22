@@ -1,4 +1,5 @@
 import type { AuraAppId } from './apps'
+import type { ReminderEntry, RepeatRule, TimesheetConfig, TimesheetEntry } from './schedule'
 import type {
   AppInfo,
   ArchivedTabRow,
@@ -43,6 +44,9 @@ export type RendererCommandId =
   | 'apps:store'
   | 'notes:open'
   | 'notes:new'
+  | 'reminders:open'
+  | 'reminders:new'
+  | 'timesheet:open'
 
 /** invoke(channel, req) -> Promise<res> */
 export interface InvokeMap {
@@ -148,11 +152,47 @@ export interface InvokeMap {
   'notes:list': { req: { limit?: number }; res: NoteEntry[] }
   'notes:search': { req: { query: string; limit?: number }; res: NoteEntry[] }
   'notes:create': {
-    req: { body: string; url?: string | null; pageTitle?: string | null }
+    req: { body: string; url?: string | null; pageTitle?: string | null; color?: string }
     res: NoteEntry
   }
   'notes:update': { req: { id: number; body: string }; res: NoteEntry | null }
   'notes:delete': { req: { id: number }; res: void }
+  'notes:setColor': { req: { id: number; color: string }; res: NoteEntry | null }
+  'notes:setPinned': { req: { id: number; pinned: boolean }; res: NoteEntry | null }
+
+  'apps:getTimesheetConfig': { req: Record<string, never>; res: TimesheetConfig }
+  'apps:setTimesheetConfig': { req: Partial<TimesheetConfig>; res: TimesheetConfig }
+
+  'reminders:list': { req: Record<string, never>; res: ReminderEntry[] }
+  'reminders:create': {
+    req: {
+      text: string
+      dueAt: number
+      repeat?: RepeatRule
+      url?: string | null
+      pageTitle?: string | null
+    }
+    res: ReminderEntry
+  }
+  'reminders:update': {
+    req: { id: number; text: string; dueAt: number; repeat: RepeatRule }
+    res: ReminderEntry | null
+  }
+  'reminders:complete': { req: { id: number }; res: ReminderEntry | null }
+  'reminders:snooze': { req: { id: number; minutes: number }; res: ReminderEntry | null }
+  'reminders:delete': { req: { id: number }; res: void }
+  'reminders:clearDone': { req: Record<string, never>; res: number }
+
+  /** The question waiting for an answer, if any, plus what to suggest. */
+  'timesheet:pending': {
+    req: Record<string, never>
+    res: { entry: TimesheetEntry | null; question: string; lastAnswer: string | null }
+  }
+  'timesheet:answer': { req: { id: number; answer: string }; res: TimesheetEntry | null }
+  'timesheet:skip': { req: { id: number }; res: TimesheetEntry | null }
+  /** Every question asked on the local day that contains `day`. */
+  'timesheet:day': { req: { day: number }; res: TimesheetEntry[] }
+  'timesheet:deleteEntry': { req: { id: number }; res: void }
 
   /**
    * Where each on-screen pane should sit, in window coordinates (DIP). One
@@ -227,6 +267,12 @@ export interface PushMap {
   'apps:changed': AppInfo[]
   /** A signal to reload, plus what the rail badge shows. */
   'notes:changed': { count: number }
+  'reminders:changed': ReminderEntry[]
+  /** A reminder whose moment has come. */
+  'reminders:due': ReminderEntry
+  /** The timesheet question, freshly asked. */
+  'timesheet:prompt': { entry: TimesheetEntry; question: string; lastAnswer: string | null }
+  'timesheet:changed': Record<string, never>
 }
 
 export const INVOKE_CHANNELS = [
@@ -287,6 +333,22 @@ export const INVOKE_CHANNELS = [
   'notes:create',
   'notes:update',
   'notes:delete',
+  'notes:setColor',
+  'notes:setPinned',
+  'apps:getTimesheetConfig',
+  'apps:setTimesheetConfig',
+  'reminders:list',
+  'reminders:create',
+  'reminders:update',
+  'reminders:complete',
+  'reminders:snooze',
+  'reminders:delete',
+  'reminders:clearDone',
+  'timesheet:pending',
+  'timesheet:answer',
+  'timesheet:skip',
+  'timesheet:day',
+  'timesheet:deleteEntry',
   'ui:setPaneBounds',
   'tabs:split',
   'tabs:toggleSplit',
@@ -320,6 +382,10 @@ export const PUSH_CHANNELS = [
   'mini:state',
   'apps:changed',
   'notes:changed',
+  'reminders:changed',
+  'reminders:due',
+  'timesheet:prompt',
+  'timesheet:changed',
 ] as const satisfies ReadonlyArray<keyof PushMap>
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

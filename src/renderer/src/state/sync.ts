@@ -3,8 +3,9 @@ import type { RendererCommandId } from '@shared/ipc-contract'
 import { matchCombo } from '@shared/keymap'
 import type { SidebarMode } from '@shared/models'
 import { invoke, on, isMac } from '@/lib/ipc'
-import type { NoteEntry } from '@shared/models'
 import { useApps, isAppEnabled } from './apps'
+import { useReminders } from './reminders'
+import { useTimesheet } from './timesheet'
 import { useSettings } from './settings'
 import { useTabs } from './tabs'
 import { useUi } from './ui'
@@ -19,17 +20,27 @@ export function toggleSidebarMode(): void {
 }
 
 /**
- * Write a note about whatever is on screen, and open it. Creating it here
- * rather than inside the panel keeps the panel a pure view of the note it is
- * told to show — and means ⌘E works with the panel closed.
+ * Start a note about whatever is on screen. Nothing is written yet: the note
+ * reaches the database on the first keystroke, so pressing ⌘E and changing
+ * your mind leaves nothing behind.
  */
 export function captureNoteForActiveTab(): void {
-  const active = useTabs.getState().tabs.find((t) => t.id === useTabs.getState().activeTabId)
-  void invoke('notes:create', {
-    body: '',
+  const { tabs, activeTabId } = useTabs.getState()
+  const active = tabs.find((t) => t.id === activeTabId)
+  useUi.getState().composeNote({
     url: active?.url || null,
     pageTitle: active?.title || null,
-  }).then((note: NoteEntry) => useUi.getState().openNote(note.id))
+  })
+}
+
+/** Open Reminders with the page on screen already attached. */
+export function remindAboutActiveTab(): void {
+  const { tabs, activeTabId } = useTabs.getState()
+  const active = tabs.find((t) => t.id === activeTabId)
+  useUi.getState().composeReminder({
+    url: active?.url || null,
+    pageTitle: active?.title || null,
+  })
 }
 
 export function runRendererCommand(id: RendererCommandId): void {
@@ -94,6 +105,15 @@ export function runRendererCommand(id: RendererCommandId): void {
     case 'notes:new':
       if (isAppEnabled(useApps.getState().apps, 'notes')) captureNoteForActiveTab()
       break
+    case 'reminders:open':
+      if (isAppEnabled(useApps.getState().apps, 'reminders')) ui.toggleReminders()
+      break
+    case 'reminders:new':
+      if (isAppEnabled(useApps.getState().apps, 'reminders')) remindAboutActiveTab()
+      break
+    case 'timesheet:open':
+      if (isAppEnabled(useApps.getState().apps, 'timesheet')) ui.toggleTimesheet()
+      break
   }
 }
 
@@ -113,6 +133,12 @@ export function useIpcSync(): void {
     void invoke('settings:get', {}).then(settings.apply)
     void invoke('updates:get', {}).then(ui.setUpdateState)
     void invoke('apps:list', {}).then(useApps.getState().setApps)
+    void invoke('reminders:list', {}).then(useReminders.getState().setReminders)
+    void invoke('apps:getTimesheetConfig', {}).then(useTimesheet.getState().setConfig)
+    // A question asked before this window was ready is still waiting.
+    void invoke('timesheet:pending', {}).then(({ entry, question, lastAnswer }) => {
+      if (entry) useTimesheet.getState().setPrompt({ entry, question, lastAnswer })
+    })
 
     const offs = [
       on('tabs:state', applySnapshot),
@@ -123,6 +149,14 @@ export function useIpcSync(): void {
       on('settings:changed', (next) => useSettings.getState().apply(next)),
       on('updates:state', (state) => useUi.getState().setUpdateState(state)),
       on('apps:changed', (apps) => useApps.getState().setApps(apps)),
+      on('reminders:changed', (list) => useReminders.getState().setReminders(list)),
+      on('reminders:due', (reminder) => useReminders.getState().raise(reminder)),
+      on('timesheet:prompt', (prompt) => useTimesheet.getState().setPrompt(prompt)),
+      on('timesheet:changed', () => {
+        useTimesheet.getState().bump()
+        // The schedule may be what changed.
+        void invoke('apps:getTimesheetConfig', {}).then(useTimesheet.getState().setConfig)
+      }),
       on('displayCapture:request', (request) => useUi.getState().setDisplayCapture(request)),
       on('displayCapture:close', ({ id }) => {
         if (useUi.getState().displayCapture?.id === id) useUi.getState().setDisplayCapture(null)

@@ -167,7 +167,7 @@ with two settings they asked for first.
 
 **Exit:** clean install → auto-update on all three OSes.
 
-## (f) Aura Apps — ◐ in progress
+## (f) Aura Apps — ✅ complete
 
 Small pieces of the browser you switch on in an **App Store**, so Aura can hold
 the things a browser day is actually made of without imposing them on anyone
@@ -193,14 +193,27 @@ reminders and timesheet entries across every Space.
   of the same dialog. Notes: quick capture with ⌘E carrying the page you were
   on, a list-and-editor panel with search and autosave, and notes as results in
   the command palette beside tabs and history. Schema v3 adds `notes`.
-- ☐ **(f2) Reminders**: due times with optional repeat, one scheduler in main
-  that owns every app's timers, an in-window strip when Aura is focused and an
-  OS notification when it is not, launch catch-up for anything that came due
-  while Aura was closed, and "Remind me about this page" in the page menu.
-- ☐ **(f3) Timesheet**: the configured question on the configured interval
-  inside working hours, answered in a non-blocking bar pre-filled from the
-  active tab, with **Same as last** and **Skip**; the day view groups every
-  answer, attributes the time each covered, and copies out as Markdown or CSV.
+- ✅ **(f1½) Stickies** (2026-09-22): the two-pane Notes list was replaced by a
+  board of coloured stickies after the owner called it out — colour first,
+  words second, pinned at the top, each sticky carrying its page. Seven colours
+  run through the aurora contrast clamp, proven AA in both themes in CI. Paper
+  grain, glue strip, lift and tilt make the sheet read as paper. Schema v4.
+- ✅ **(f2) Reminders** (2026-09-22): `AppScheduler` — one clock for every
+  app, ticking every 30 s and on wake, doing nothing for an app that is off.
+  Due reminders push a bar above the page and, when Aura is not focused, a
+  system notification. The bars are a _projection_ of the list (`stillRaised`:
+  told, and neither done nor snoozed since), derived in the renderer from the
+  list it pulls at bootstrap — a push in `did-finish-load` races React's
+  listener and was dropped, which is how launch catch-up was found to be
+  silently failing. Repeat rules; snooze; ⇧⌘E "remind me about this page".
+  Schema v5 `reminders`.
+- ✅ **(f3) Timesheet** (2026-09-22): configurable question, interval, days and
+  hours (kv `apps:config`); pure scheduling in `shared/schedule.ts`
+  (`nextPromptAt`, `summariseDay`, exports) with 22 unit tests; the question as
+  a bar with the page title suggested, Enter-on-empty accepts it; **Same as
+  last**; Skip. Day view: totals per activity, timeline, Markdown/CSV. An
+  ignored question is skipped after one interval. Schema v5 `timesheet_entries`.
+  `AURORA_SCHEDULER_TICK_MS` drives the clock under test.
 
-**Exit:** all three apps switchable from the Store, each covered by e2e, and
-nothing scheduled or stored for an app that is off.
+**Exit met:** all three apps switchable from the Store, each covered by e2e, and
+nothing scheduled or stored for an app that is off. 167 unit + 58 e2e green.

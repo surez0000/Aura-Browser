@@ -7,6 +7,9 @@ import { RENDERER_COMBOS } from '@shared/keymap'
 import { openDb } from './services/db'
 import { NotesStore } from './services/db/notes'
 import { AppRegistry } from './apps/registry'
+import { AppScheduler } from './apps/scheduler'
+import { RemindersStore } from './services/db/reminders'
+import { TimesheetStore } from './services/db/timesheet'
 import { KvStore } from './services/db/kv'
 import { HistoryStore } from './services/db/history'
 import { ArchiveStore } from './services/db/archive'
@@ -105,6 +108,11 @@ function bootstrap(): void {
   const history = new HistoryStore(db)
   const archive = new ArchiveStore(db)
   const notes = new NotesStore(db)
+  // Builds before 1.1.1 wrote a note the moment ⌘E was pressed, so changing
+  // your mind left an empty one behind. An empty note carries nothing.
+  notes.deleteEmpty()
+  const reminders = new RemindersStore(db)
+  const timesheet = new TimesheetStore(db)
 
   let settings: AuroraSettings = {
     ...DEFAULT_SETTINGS,
@@ -212,6 +220,31 @@ function bootstrap(): void {
 
   const apps = new AppRegistry(kv, (list) => pushToChrome('apps:changed', list))
 
+  // One clock for every app: reminders and the timesheet question. It only
+  // does anything for apps that are switched on, and says so in two places —
+  // a bar in the chrome, and a system notification when Aura is not in front.
+  const tickEnv = Number(process.env.AURORA_SCHEDULER_TICK_MS)
+  const scheduler = new AppScheduler({
+    apps,
+    reminders,
+    timesheet,
+    activeTab: () => {
+      const t = m.active()
+      return { title: t?.title || null, url: t?.url || null }
+    },
+    isFocused: () => !!win && !win.isDestroyed() && win.isFocused(),
+    focusWindow: () => {
+      if (!win || win.isDestroyed()) return
+      if (win.isMinimized()) win.restore()
+      win.show()
+      win.focus()
+    },
+    reminderDue: (r) => pushToChrome('reminders:due', r),
+    remindersChanged: () => pushToChrome('reminders:changed', reminders.list()),
+    timesheetPrompt: (prompt) => pushToChrome('timesheet:prompt', prompt),
+    tickMs: Number.isFinite(tickEnv) && tickEnv > 0 ? tickEnv : undefined,
+  })
+
   registerIpcHandlers({
     manager: m,
     history,
@@ -225,6 +258,11 @@ function bootstrap(): void {
     apps,
     notes,
     notesChanged: () => pushToChrome('notes:changed', { count: notes.list(1000).length }),
+    reminders,
+    remindersChanged: () => pushToChrome('reminders:changed', reminders.list()),
+    timesheet,
+    timesheetChanged: () => pushToChrome('timesheet:changed', {}),
+    scheduler,
     getSettings: () => settings,
     setSettings: (patch) => {
       settings = { ...settings, ...patch }
@@ -258,6 +296,9 @@ function bootstrap(): void {
     restoreSession(kv, m)
     m.autoArchive(settings.todayArchiveHours)
     updater.start()
+    // The apps' clock starts once the chrome can hear it, so launch catch-up
+    // (reminders that fell due while Aura was closed) actually lands somewhere.
+    scheduler.start()
     // Anything the OS handed us at launch (default-browser click, or a URL on
     // the command line) opens now that a Space exists to borrow context from.
     const pending = pendingUrls.splice(0)

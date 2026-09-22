@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ThemeName } from '@shared/theme'
 import { auroraPalette } from '@/theme/aurora'
+import { STICKY_COLORS, stickyContrast } from '@/theme/sticky'
 import { compositeOver, contrastRatio, relativeLuminance, type Rgba } from '@/theme/contrast'
 import { AURORA_BANDS, THEMES } from '@/theme/tokens'
 
@@ -134,6 +135,16 @@ describe('accent contrast', () => {
             `${theme} h${hue}${muted ? ' muted' : ''} accent/ground`,
           ).toBeGreaterThanOrEqual(3.0)
         }
+      }
+    }
+  })
+})
+
+describe('sticky note colours', () => {
+  it('every colour is legible in both themes', () => {
+    for (const theme of THEME_NAMES) {
+      for (const color of STICKY_COLORS) {
+        expect(stickyContrast(color, theme), `${theme} ${color}`).toBeGreaterThanOrEqual(4.5)
       }
     }
   })

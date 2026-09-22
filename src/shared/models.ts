@@ -326,6 +326,10 @@ export interface AppInfo {
  */
 export interface NoteEntry {
   id: number
+  /** One of STICKY_COLORS — what makes a note findable at a glance. */
+  color: string
+  /** Pinned notes sit at the top of the board, as on a real one. */
+  pinned: boolean
   /** First line, kept separate so lists and search do not load every body. */
   title: string
   body: string

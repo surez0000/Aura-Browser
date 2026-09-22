@@ -41,6 +41,16 @@ export interface UiState {
   notesOpen: boolean
   /** A note something asked to open; the panel selects it until you pick another. */
   notesRequestedId: number | null
+  /**
+   * An unwritten note: the page it is about, and a sequence so a second ⌘E
+   * starts a fresh one. Nothing reaches the database until something is typed,
+   * so changing your mind leaves nothing behind.
+   */
+  notesCompose: { url: string | null; pageTitle: string | null; seq: number } | null
+  remindersOpen: boolean
+  /** "Remind me about this page": the composer opens with the page attached. */
+  remindersCompose: { url: string | null; pageTitle: string | null; seq: number } | null
+  timesheetOpen: boolean
   updateState: UpdateState | null
   /** Version whose prominent notice was hidden with "Later" (until next launch). */
   updateNoticeDismissed: string | null
@@ -77,6 +87,14 @@ export interface UiState {
   closeNotes(): void
   openNote(id: number): void
   clearNoteRequest(): void
+  toggleReminders(): void
+  closeReminders(): void
+  composeReminder(page: { url: string | null; pageTitle: string | null }): void
+  clearReminderCompose(): void
+  toggleTimesheet(): void
+  closeTimesheet(): void
+  composeNote(page: { url: string | null; pageTitle: string | null }): void
+  clearCompose(): void
   closeSettings(): void
   setUpdateState(state: UpdateState): void
   dismissUpdateNotice(version: string): void
@@ -110,6 +128,10 @@ export const useUi = create<UiState>()((set) => ({
   appStoreOpen: false,
   notesOpen: false,
   notesRequestedId: null,
+  notesCompose: null,
+  remindersOpen: false,
+  remindersCompose: null,
+  timesheetOpen: false,
   updateState: null,
   updateNoticeDismissed: null,
 
@@ -142,8 +164,25 @@ export const useUi = create<UiState>()((set) => ({
   closeAppStore: () => set({ appStoreOpen: false }),
   toggleNotes: () => set((s) => ({ notesOpen: !s.notesOpen, settingsOpen: false })),
   closeNotes: () => set({ notesOpen: false }),
-  openNote: (id) => set({ notesOpen: true, notesRequestedId: id }),
+  openNote: (id) => set({ notesOpen: true, notesRequestedId: id, notesCompose: null }),
+  composeNote: (page) =>
+    set((s) => ({
+      notesOpen: true,
+      notesRequestedId: null,
+      notesCompose: { ...page, seq: (s.notesCompose?.seq ?? 0) + 1 },
+    })),
+  clearCompose: () => set({ notesCompose: null }),
   clearNoteRequest: () => set({ notesRequestedId: null }),
+  toggleReminders: () => set((s) => ({ remindersOpen: !s.remindersOpen, settingsOpen: false })),
+  closeReminders: () => set({ remindersOpen: false, remindersCompose: null }),
+  composeReminder: (page) =>
+    set((s) => ({
+      remindersOpen: true,
+      remindersCompose: { ...page, seq: (s.remindersCompose?.seq ?? 0) + 1 },
+    })),
+  clearReminderCompose: () => set({ remindersCompose: null }),
+  toggleTimesheet: () => set((s) => ({ timesheetOpen: !s.timesheetOpen, settingsOpen: false })),
+  closeTimesheet: () => set({ timesheetOpen: false }),
   setUpdateState: (updateState) => set({ updateState }),
   dismissUpdateNotice: (updateNoticeDismissed) => set({ updateNoticeDismissed }),
 

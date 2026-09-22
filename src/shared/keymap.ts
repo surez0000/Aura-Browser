@@ -133,6 +133,25 @@ export const KEYMAP: readonly KeyCommand[] = [
     rendererCommand: 'notes:new',
   },
   {
+    id: 'reminders:open',
+    label: 'Reminders',
+    scope: 'renderer',
+    rendererCommand: 'reminders:open',
+  },
+  {
+    id: 'reminders:new',
+    label: 'Remind Me About This Page…',
+    accelerator: 'CommandOrControl+Shift+E',
+    scope: 'renderer',
+    rendererCommand: 'reminders:new',
+  },
+  {
+    id: 'timesheet:open',
+    label: 'Timesheet',
+    scope: 'renderer',
+    rendererCommand: 'timesheet:open',
+  },
+  {
     id: 'settings:toggle',
     label: 'Settings…',
     accelerator: 'CommandOrControl+,',
@@ -200,6 +219,7 @@ export const RENDERER_COMBOS: readonly ComboEntry[] = [
   { key: 'g', command: 'find:next' },
   { key: 'g', shift: true, command: 'find:prev' },
   { key: 'e', command: 'notes:new' },
+  { key: 'e', shift: true, command: 'reminders:new' },
   { key: ',', command: 'settings:toggle' },
   { key: 'y', command: 'history:open' },
   { key: '\\', command: 'split:toggle' },

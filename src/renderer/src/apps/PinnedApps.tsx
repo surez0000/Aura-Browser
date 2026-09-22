@@ -42,10 +42,14 @@ export function PinnedApps({
   )
 }
 
-/** Each app knows which panel it raises; reminders and timesheet join later. */
+/** Each app knows which panel it raises. */
 function useAppOpener(): (id: string) => void {
   const toggleNotes = useUi((s) => s.toggleNotes)
+  const toggleReminders = useUi((s) => s.toggleReminders)
+  const toggleTimesheet = useUi((s) => s.toggleTimesheet)
   return (id: string) => {
     if (id === 'notes') toggleNotes()
+    else if (id === 'reminders') toggleReminders()
+    else if (id === 'timesheet') toggleTimesheet()
   }
 }

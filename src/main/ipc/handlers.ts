@@ -11,6 +11,10 @@ import type { ExtensionService } from '../services/extensions'
 import type { UpdaterService } from '../services/updater'
 import type { AppRegistry } from '../apps/registry'
 import type { NotesStore } from '../services/db/notes'
+import type { RemindersStore } from '../services/db/reminders'
+import type { TimesheetStore } from '../services/db/timesheet'
+import type { AppScheduler } from '../apps/scheduler'
+import { startOfDay } from '@shared/schedule'
 import { handleInvoke } from './router'
 
 interface HandlerContext {
@@ -26,6 +30,11 @@ interface HandlerContext {
   apps: AppRegistry
   notes: NotesStore
   notesChanged: () => void
+  reminders: RemindersStore
+  remindersChanged: () => void
+  timesheet: TimesheetStore
+  timesheetChanged: () => void
+  scheduler: AppScheduler
   getSettings: () => AuroraSettings
   setSettings: (patch: Partial<AuroraSettings>) => AuroraSettings
   win: BrowserWindow
@@ -150,6 +159,81 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
   handleInvoke('notes:delete', (req) => {
     ctx.notes.remove(req.id)
     ctx.notesChanged()
+  })
+  handleInvoke('notes:setColor', (req) => {
+    const note = ctx.notes.setColor(req.id, req.color)
+    ctx.notesChanged()
+    return note
+  })
+  handleInvoke('notes:setPinned', (req) => {
+    const note = ctx.notes.setPinned(req.id, req.pinned)
+    ctx.notesChanged()
+    return note
+  })
+
+  handleInvoke('apps:getTimesheetConfig', () => ctx.apps.timesheetConfig())
+  handleInvoke('apps:setTimesheetConfig', (req) => {
+    const cfg = ctx.apps.setTimesheetConfig(req)
+    // Every view of the schedule follows, and a changed schedule may be due already.
+    ctx.timesheetChanged()
+    ctx.scheduler.tick()
+    return cfg
+  })
+
+  handleInvoke('reminders:list', () => ctx.reminders.list())
+  handleInvoke('reminders:create', (req) => {
+    const r = ctx.reminders.create(req)
+    ctx.remindersChanged()
+    ctx.scheduler.tick()
+    return r
+  })
+  handleInvoke('reminders:update', (req) => {
+    const r = ctx.reminders.update(req.id, req)
+    ctx.remindersChanged()
+    return r
+  })
+  handleInvoke('reminders:complete', (req) => {
+    const r = ctx.reminders.complete(req.id)
+    ctx.remindersChanged()
+    return r
+  })
+  handleInvoke('reminders:snooze', (req) => {
+    const r = ctx.reminders.snooze(req.id, Date.now() + req.minutes * 60_000)
+    ctx.remindersChanged()
+    return r
+  })
+  handleInvoke('reminders:delete', (req) => {
+    ctx.reminders.remove(req.id)
+    ctx.remindersChanged()
+  })
+  handleInvoke('reminders:clearDone', () => {
+    const n = ctx.reminders.clearDone()
+    ctx.remindersChanged()
+    return n
+  })
+
+  handleInvoke('timesheet:pending', () => ({
+    entry: ctx.timesheet.pending(),
+    question: ctx.apps.timesheetConfig().question,
+    lastAnswer: ctx.timesheet.lastAnswer(),
+  }))
+  handleInvoke('timesheet:answer', (req) => {
+    const e = ctx.timesheet.answer(req.id, req.answer)
+    ctx.timesheetChanged()
+    return e
+  })
+  handleInvoke('timesheet:skip', (req) => {
+    const e = ctx.timesheet.skip(req.id)
+    ctx.timesheetChanged()
+    return e
+  })
+  handleInvoke('timesheet:day', (req) => {
+    const from = startOfDay(req.day)
+    return ctx.timesheet.between(from, from + 86_400_000)
+  })
+  handleInvoke('timesheet:deleteEntry', (req) => {
+    ctx.timesheet.remove(req.id)
+    ctx.timesheetChanged()
   })
 
   handleInvoke('ui:setPaneBounds', (req) => manager.setPaneBounds(req.panes))

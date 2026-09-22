@@ -1,8 +1,14 @@
 import { AURA_APPS, DEFAULT_APP_STATE, type AppState, type AuraAppId } from '@shared/apps'
 import type { AppInfo } from '@shared/models'
+import { DEFAULT_TIMESHEET, type TimesheetConfig } from '@shared/schedule'
 import type { KvStore } from '../services/db/kv'
 
 const KV_KEY = 'apps'
+const CONFIG_KEY = 'apps:config'
+
+interface AppConfigs {
+  timesheet?: Partial<TimesheetConfig>
+}
 
 /**
  * Which Aura Apps are switched on, and which are pinned to the rail.
@@ -14,12 +20,25 @@ const KV_KEY = 'apps'
  */
 export class AppRegistry {
   private state: Partial<Record<AuraAppId, AppState>>
+  private configs: AppConfigs
 
   constructor(
     private readonly kv: KvStore,
     private readonly notify: (apps: AppInfo[]) => void,
   ) {
     this.state = kv.get<Partial<Record<AuraAppId, AppState>>>(KV_KEY) ?? {}
+    this.configs = kv.get<AppConfigs>(CONFIG_KEY) ?? {}
+  }
+
+  /** The timesheet's question and schedule, with defaults filled in. */
+  timesheetConfig(): TimesheetConfig {
+    return { ...DEFAULT_TIMESHEET, ...this.configs.timesheet }
+  }
+
+  setTimesheetConfig(patch: Partial<TimesheetConfig>): TimesheetConfig {
+    this.configs = { ...this.configs, timesheet: { ...this.configs.timesheet, ...patch } }
+    this.kv.set(CONFIG_KEY, this.configs)
+    return this.timesheetConfig()
   }
 
   list(): AppInfo[] {

@@ -35,7 +35,7 @@ export const AURA_APPS: readonly AuraAppMeta[] = [
     tagline: 'Be told about something at the time you choose',
     description:
       'Set a time and Aura tells you — in the window if you are here, as a system notification if you are not. Anything that came due while Aura was closed is waiting when you open it, rather than quietly missed.',
-    available: false,
+    available: true,
   },
   {
     id: 'timesheet',
@@ -43,7 +43,7 @@ export const AURA_APPS: readonly AuraAppMeta[] = [
     tagline: 'Answer one question through the day, read it back at the end',
     description:
       'Aura asks what you are working on, on your own schedule and only inside your working hours. At the end of the day you get every answer, the time each one covered, and a summary you can copy straight into a timesheet.',
-    available: false,
+    available: true,
   },
 ] as const
 
