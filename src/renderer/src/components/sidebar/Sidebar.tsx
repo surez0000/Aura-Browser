@@ -158,7 +158,7 @@ export function Sidebar(): React.JSX.Element {
               <SpaceHeader />
               <FavoritesGrid />
 
-              <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-1 pt-1">
+              <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto px-1 pt-1">
                 {hasPinned && (
                   <>
                     <SectionLabel>Pinned</SectionLabel>
@@ -263,7 +263,7 @@ function CompactRail(): React.JSX.Element {
         initial={{ opacity: 0, x: 8 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ type: 'spring', stiffness: 420, damping: 36 }}
-        className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto"
+        className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-x-hidden overflow-y-auto"
       >
         {hasPinned && <TabSection kind="pinned" compact />}
         {hasPinned && (
@@ -315,7 +315,7 @@ function SpaceRail(): React.JSX.Element {
         initial={{ opacity: 0, x: 8 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ type: 'spring', stiffness: 420, damping: 36 }}
-        className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto"
+        className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-x-hidden overflow-y-auto"
       >
         <FavoritesGrid compact />
       </motion.div>

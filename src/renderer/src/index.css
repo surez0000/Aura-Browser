@@ -126,8 +126,15 @@ input[type='range']::-webkit-slider-thumb {
   color: var(--ink-3);
 }
 
+/* Scrollbars. `height` matters as much as `width`: with only a width set, a
+   horizontal scrollbar keeps Chromium's default (16 px against our 8 px
+   vertical) and none of the styling, so any sideways overflow showed up as a
+   thick unstyled band. Lists that should never scroll sideways set
+   overflow-x: hidden at the element; strips that scroll but want no visible
+   bar — the top tab strip — use .no-scrollbar. */
 *::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 *::-webkit-scrollbar-thumb {
   background: var(--surface-glass-strong);
@@ -135,6 +142,14 @@ input[type='range']::-webkit-slider-thumb {
 }
 *::-webkit-scrollbar-track {
   background: transparent;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 /* Reduced motion: CSS transitions/animations collapse to a single frame.

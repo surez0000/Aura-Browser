@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, Lock, Search, Star, TriangleAlert } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
-import { displayLabel, normalizeInput } from '@/lib/url'
+import { displayLabel, fullLabel, normalizeInput } from '@/lib/url'
 import { useSettings } from '@/state/settings'
 import { useTabs, selectActiveTab, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
@@ -13,10 +13,16 @@ function SecurityIcon({ state }: { state: 'secure' | 'insecure' | 'neutral' }): 
 }
 
 /**
- * The compact address pill (no persistent address bar). Click — or ⌘L — to
- * expand it into an inline editor.
+ * The address field. In the sidebar it is a compact pill showing just the host,
+ * because the column is narrow and the host is what identifies a page at a
+ * glance; click it, or ⌘L, to edit inline.
+ *
+ * With the tabs on top it is a full-width address bar, so `full` shows the
+ * whole URL — path and query included — the way an address bar is expected to.
+ * Showing only the host in a bar that wide reads as a browser that has lost
+ * the address.
  */
-export function UrlPill(): React.JSX.Element {
+export function UrlPill({ full = false }: { full?: boolean } = {}): React.JSX.Element {
   const active = useTabs(selectActiveTab)
   const activeSpace = useTabs(selectActiveSpace)
   const favorites = activeSpace?.favorites ?? []
@@ -81,7 +87,11 @@ export function UrlPill(): React.JSX.Element {
 
   if (editing) {
     return (
-      <div className="glass no-drag flex h-9 shrink-0 items-center gap-2 rounded-(--radius-pill) px-3">
+      <div
+        className={`glass no-drag flex h-9 items-center gap-2 rounded-(--radius-pill) px-3 ${
+          full ? 'w-full' : 'shrink-0'
+        }`}
+      >
         <Search size={13} style={{ color: 'var(--ink-3)' }} />
         <input
           ref={inputRef}
@@ -106,7 +116,9 @@ export function UrlPill(): React.JSX.Element {
 
   return (
     <div
-      className="glass no-drag flex h-9 shrink-0 cursor-text items-center gap-2 rounded-(--radius-pill) px-3"
+      className={`glass no-drag flex h-9 cursor-text items-center gap-2 rounded-(--radius-pill) px-3 ${
+        full ? 'w-full' : 'shrink-0'
+      }`}
       onClick={() => {
         setValue(currentUrl)
         setEditing(true)
@@ -124,8 +136,12 @@ export function UrlPill(): React.JSX.Element {
       ) : (
         <SecurityIcon state={active?.security ?? 'neutral'} />
       )}
-      <span className="min-w-0 flex-1 truncate text-[13px]" style={{ color: 'var(--ink-2)' }}>
-        {displayLabel(currentUrl || null)}
+      <span
+        className="min-w-0 flex-1 truncate text-[13px]"
+        style={{ color: 'var(--ink-2)' }}
+        data-testid="url-label"
+      >
+        {full ? fullLabel(currentUrl) || 'Search or enter URL' : displayLabel(currentUrl || null)}
       </span>
       {active && currentUrl.startsWith('http') && (
         <button

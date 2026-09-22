@@ -90,3 +90,30 @@ test('a tab opened into another Space takes you there, in that Space’s storage
     await server.close()
   }
 })
+
+test('the top address bar shows the whole URL, and the sidebar pill still shows the host', async () => {
+  const server = await startFixtureServer()
+  const { app, chrome } = await launchAurora()
+  try {
+    const deep = `${server.url}/a.html?section=configuration&view=details`
+    await createTabViaPalette(chrome, deep)
+    await expect(chrome.getByTestId('tab-title').filter({ hasText: 'Fixture A' })).toBeVisible()
+
+    // Side layout: the column is narrow, so the pill identifies the page by host.
+    const label = chrome.getByTestId('url-label')
+    await expect(label).toHaveText(/^127\.0\.0\.1:\d+$/)
+
+    await chrome.getByTestId('settings-button').click()
+    await chrome.getByTestId('setting-tabbar-top').click()
+    await chrome.keyboard.press('Escape')
+    await expect(chrome.getByTestId('top-bar')).toBeVisible()
+
+    // A full-width bar shows the path and query too — the address, not the host.
+    await expect(label).toContainText('/a.html?section=configuration&view=details')
+    // http:// stays visible; it pairs with the security icon beside it.
+    await expect(label).toContainText('http://127.0.0.1')
+  } finally {
+    await app.close()
+    await server.close()
+  }
+})

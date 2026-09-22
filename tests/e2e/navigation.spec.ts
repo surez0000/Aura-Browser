@@ -35,3 +35,28 @@ test('navigates, then goes back and forward', async () => {
     await server.close()
   }
 })
+
+test('a local address typed without a scheme loads the machine, not a search', async () => {
+  const server = await startFixtureServer()
+  const { app, chrome } = await launchAurora()
+  try {
+    // Exactly what a user types for a machine on their network: no scheme.
+    // This used to become a web search, and before that an https:// URL that
+    // could not connect, because only names with a dot counted as addresses.
+    const bare = `${server.url.replace('http://', '')}/a.html`
+    await chrome.getByTestId('new-tab-button').click()
+    await chrome.getByTestId('palette-input').fill(bare)
+
+    // The palette offers the machine itself, above the search fallback.
+    const top = chrome.getByTestId('palette-result').first()
+    await expect(top).toHaveAttribute('data-type', 'url')
+    await chrome.getByTestId('palette-input').press('Enter')
+
+    // And it really loads: the title only appears if the page was fetched.
+    await expect(chrome.getByTestId('tab-title').filter({ hasText: 'Fixture A' })).toBeVisible()
+    await expect(chrome.getByTestId('url-pill')).toContainText('127.0.0.1')
+  } finally {
+    await app.close()
+    await server.close()
+  }
+})

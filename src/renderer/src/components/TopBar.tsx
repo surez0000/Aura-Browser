@@ -20,15 +20,19 @@ function TopTab({ tab, isActive }: { tab: TabInfo; isActive: boolean }): React.J
   return (
     <motion.div
       layout
-      className="group relative flex h-8 min-w-0 shrink items-center gap-2 rounded-lg px-2.5"
+      className="group relative flex h-8 shrink items-center gap-2 rounded-lg px-2.5"
       style={{
         // Matches the sidebar's own active treatment, so the two layouts read
         // as the same browser rather than two different ones.
         background: isActive ? 'var(--surface-glass-strong)' : 'transparent',
         border: `1px solid ${isActive ? 'var(--border-glass)' : 'transparent'}`,
         color: isActive ? 'var(--ink-1)' : 'var(--ink-2)',
-        // Wide enough to read, narrow enough that many tabs still fit.
+        // Wide enough to read, narrow enough that many tabs still fit. The
+        // minimum is what makes the strip scroll rather than squeeze: without
+        // it every tab shrinks towards its favicon once there are enough of
+        // them, and the titles disappear instead of moving off the edge.
         flexBasis: 190,
+        minWidth: 112,
       }}
       data-testid="top-tab"
       data-active={isActive || undefined}
@@ -78,7 +82,7 @@ export function TopBar(): React.JSX.Element {
     <div className="flex shrink-0 flex-col gap-1.5 pt-1.5" data-testid="top-bar">
       {/* Tab strip. The row is draggable between tabs, like a real title bar. */}
       <div className="drag flex min-w-0 items-center gap-1 pr-2">
-        <div className="no-drag flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+        <div className="no-scrollbar no-drag flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
           {strip.map((tab) => (
             <TopTab key={tab.id} tab={tab} isActive={tab.id === activeTabId} />
           ))}
@@ -100,7 +104,8 @@ export function TopBar(): React.JSX.Element {
       <div className="flex min-w-0 items-center gap-2 pr-2">
         <NavCluster />
         <div className="min-w-0 flex-1">
-          <UrlPill />
+          {/* A full-width bar: show the whole address, not just the host. */}
+          <UrlPill full />
         </div>
       </div>
     </div>
