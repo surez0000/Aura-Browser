@@ -1,5 +1,6 @@
 import type { SearchEngineId } from './search'
 import type { ThemeMode } from './theme'
+import type { AuraAppId } from './apps'
 
 /** Security indication shown on the URL pill. */
 export type SecurityState = 'secure' | 'insecure' | 'neutral'
@@ -266,7 +267,11 @@ export const TAB_BAR_POSITIONS = ['side', 'top'] as const satisfies ReadonlyArra
 /** @see AuroraSettings.backdropTexture */
 export type BackdropTexture = 'none' | 'grain' | 'particles'
 
-export const BACKDROP_TEXTURES = ['none', 'grain', 'particles'] as const satisfies ReadonlyArray<BackdropTexture>
+export const BACKDROP_TEXTURES = [
+  'none',
+  'grain',
+  'particles',
+] as const satisfies ReadonlyArray<BackdropTexture>
 
 export const DEFAULT_SETTINGS: AuroraSettings = {
   todayArchiveHours: 12,
@@ -301,4 +306,31 @@ export interface UpdateState {
   releasesUrl: string | null
   /** Milliseconds since epoch of the last completed check. */
   checkedAt: number | null
+}
+
+/** An Aura App as the chrome sees it: its catalogue entry plus its switches. */
+export interface AppInfo {
+  id: AuraAppId
+  name: string
+  tagline: string
+  description: string
+  available: boolean
+  enabled: boolean
+  pinned: boolean
+}
+
+/**
+ * A note. Global, not per Space: a thought you had in one Space is still worth
+ * finding from another. It remembers the page it was taken on, which is what
+ * makes it findable later by what you were reading.
+ */
+export interface NoteEntry {
+  id: number
+  /** First line, kept separate so lists and search do not load every body. */
+  title: string
+  body: string
+  url: string | null
+  pageTitle: string | null
+  createdAt: number
+  updatedAt: number
 }

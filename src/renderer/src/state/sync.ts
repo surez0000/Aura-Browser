@@ -3,6 +3,8 @@ import type { RendererCommandId } from '@shared/ipc-contract'
 import { matchCombo } from '@shared/keymap'
 import type { SidebarMode } from '@shared/models'
 import { invoke, on, isMac } from '@/lib/ipc'
+import type { NoteEntry } from '@shared/models'
+import { useApps, isAppEnabled } from './apps'
 import { useSettings } from './settings'
 import { useTabs } from './tabs'
 import { useUi } from './ui'
@@ -14,6 +16,20 @@ export function setSidebarMode(mode: SidebarMode): void {
 
 export function toggleSidebarMode(): void {
   setSidebarMode(useSettings.getState().settings.sidebarMode === 'fixed' ? 'compact' : 'fixed')
+}
+
+/**
+ * Write a note about whatever is on screen, and open it. Creating it here
+ * rather than inside the panel keeps the panel a pure view of the note it is
+ * told to show — and means ⌘E works with the panel closed.
+ */
+export function captureNoteForActiveTab(): void {
+  const active = useTabs.getState().tabs.find((t) => t.id === useTabs.getState().activeTabId)
+  void invoke('notes:create', {
+    body: '',
+    url: active?.url || null,
+    pageTitle: active?.title || null,
+  }).then((note: NoteEntry) => useUi.getState().openNote(note.id))
 }
 
 export function runRendererCommand(id: RendererCommandId): void {
@@ -67,6 +83,17 @@ export function runRendererCommand(id: RendererCommandId): void {
     case 'extensions:open':
       ui.toggleExtensions()
       break
+    case 'apps:store':
+      ui.toggleAppStore()
+      break
+    case 'notes:open':
+      // A shortcut for an app that is off should do nothing rather than open
+      // an empty panel: the Store is where an app gets turned on.
+      if (isAppEnabled(useApps.getState().apps, 'notes')) ui.toggleNotes()
+      break
+    case 'notes:new':
+      if (isAppEnabled(useApps.getState().apps, 'notes')) captureNoteForActiveTab()
+      break
   }
 }
 
@@ -85,6 +112,7 @@ export function useIpcSync(): void {
     void invoke('downloads:list', {}).then(ui.setDownloads)
     void invoke('settings:get', {}).then(settings.apply)
     void invoke('updates:get', {}).then(ui.setUpdateState)
+    void invoke('apps:list', {}).then(useApps.getState().setApps)
 
     const offs = [
       on('tabs:state', applySnapshot),
@@ -94,6 +122,7 @@ export function useIpcSync(): void {
       on('downloads:changed', (list) => useUi.getState().setDownloads(list)),
       on('settings:changed', (next) => useSettings.getState().apply(next)),
       on('updates:state', (state) => useUi.getState().setUpdateState(state)),
+      on('apps:changed', (apps) => useApps.getState().setApps(apps)),
       on('displayCapture:request', (request) => useUi.getState().setDisplayCapture(request)),
       on('displayCapture:close', ({ id }) => {
         if (useUi.getState().displayCapture?.id === id) useUi.getState().setDisplayCapture(null)

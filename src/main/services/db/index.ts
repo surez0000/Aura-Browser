@@ -37,6 +37,18 @@ const MIGRATIONS: readonly string[] = [
      started_at INTEGER NOT NULL
    );
    CREATE INDEX idx_downloads_started ON downloads (started_at DESC);`,
+  // v3 — Aura Apps: Notes. Global, not per Space (a thought had in one Space is
+  // still worth finding from another); it keeps the page it was taken on.
+  `CREATE TABLE notes (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     title TEXT NOT NULL DEFAULT '',
+     body TEXT NOT NULL DEFAULT '',
+     url TEXT,
+     page_title TEXT,
+     created_at INTEGER NOT NULL,
+     updated_at INTEGER NOT NULL
+   );
+   CREATE INDEX idx_notes_updated ON notes (updated_at DESC);`,
 ]
 
 export type AuroraDb = Database.Database

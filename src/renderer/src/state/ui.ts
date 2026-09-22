@@ -37,6 +37,10 @@ export interface UiState {
   settingsOpen: boolean
   historyOpen: boolean
   extensionsOpen: boolean
+  appStoreOpen: boolean
+  notesOpen: boolean
+  /** A note something asked to open; the panel selects it until you pick another. */
+  notesRequestedId: number | null
   updateState: UpdateState | null
   /** Version whose prominent notice was hidden with "Later" (until next launch). */
   updateNoticeDismissed: string | null
@@ -67,6 +71,12 @@ export interface UiState {
   closeHistory(): void
   toggleExtensions(): void
   closeExtensions(): void
+  toggleAppStore(): void
+  closeAppStore(): void
+  toggleNotes(): void
+  closeNotes(): void
+  openNote(id: number): void
+  clearNoteRequest(): void
   closeSettings(): void
   setUpdateState(state: UpdateState): void
   dismissUpdateNotice(version: string): void
@@ -97,6 +107,9 @@ export const useUi = create<UiState>()((set) => ({
   settingsOpen: false,
   historyOpen: false,
   extensionsOpen: false,
+  appStoreOpen: false,
+  notesOpen: false,
+  notesRequestedId: null,
   updateState: null,
   updateNoticeDismissed: null,
 
@@ -125,6 +138,12 @@ export const useUi = create<UiState>()((set) => ({
   closeHistory: () => set({ historyOpen: false }),
   toggleExtensions: () => set((s) => ({ extensionsOpen: !s.extensionsOpen })),
   closeExtensions: () => set({ extensionsOpen: false }),
+  toggleAppStore: () => set((s) => ({ appStoreOpen: !s.appStoreOpen, settingsOpen: false })),
+  closeAppStore: () => set({ appStoreOpen: false }),
+  toggleNotes: () => set((s) => ({ notesOpen: !s.notesOpen, settingsOpen: false })),
+  closeNotes: () => set({ notesOpen: false }),
+  openNote: (id) => set({ notesOpen: true, notesRequestedId: id }),
+  clearNoteRequest: () => set({ notesRequestedId: null }),
   setUpdateState: (updateState) => set({ updateState }),
   dismissUpdateNotice: (updateNoticeDismissed) => set({ updateNoticeDismissed }),
 

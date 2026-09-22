@@ -5,6 +5,8 @@ import { DEFAULT_SETTINGS, type AuroraSettings } from '@shared/models'
 import { WINDOW_BG } from '@shared/theme'
 import { RENDERER_COMBOS } from '@shared/keymap'
 import { openDb } from './services/db'
+import { NotesStore } from './services/db/notes'
+import { AppRegistry } from './apps/registry'
 import { KvStore } from './services/db/kv'
 import { HistoryStore } from './services/db/history'
 import { ArchiveStore } from './services/db/archive'
@@ -102,6 +104,7 @@ function bootstrap(): void {
   const kv = new KvStore(db)
   const history = new HistoryStore(db)
   const archive = new ArchiveStore(db)
+  const notes = new NotesStore(db)
 
   let settings: AuroraSettings = {
     ...DEFAULT_SETTINGS,
@@ -207,6 +210,8 @@ function bootstrap(): void {
   // behind Chromium's capture-stack start-up.
   displayCapture.warmUp()
 
+  const apps = new AppRegistry(kv, (list) => pushToChrome('apps:changed', list))
+
   registerIpcHandlers({
     manager: m,
     history,
@@ -217,6 +222,9 @@ function bootstrap(): void {
     miniWindows,
     extensions,
     updater,
+    apps,
+    notes,
+    notesChanged: () => pushToChrome('notes:changed', { count: notes.list(1000).length }),
     getSettings: () => settings,
     setSettings: (patch) => {
       settings = { ...settings, ...patch }

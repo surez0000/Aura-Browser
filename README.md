@@ -4,13 +4,14 @@ An Arc-inspired desktop browser with an original **Aurora Glass** look — a rea
 Chromium engine (Electron + `WebContentsView` per tab) under a frameless chrome
 built with React, TypeScript, and design tokens.
 
-> Phases (a)–(c) are complete and the first installable build (0.1.0) is
-> packaged: shell, tab engine, sidebar, command palette, Spaces, incognito,
-> Today auto-archive, find-in-page, downloads, in-chrome permission prompts,
-> session restore, the Aurora Glass theme (per-Space WebGL palettes,
-> light/dark/system, WCAG AA proven in CI), a Settings panel (search engine,
-> sidebar always-visible / show-on-hover, appearance, auto-archive), and an
-> in-app updater. See [docs/PHASES.md](docs/PHASES.md) for the roadmap,
+> Phases (a)–(d) are complete and shipping: shell, tab engine, sidebar,
+> command palette, Spaces as isolated profiles, incognito, split view, Peek,
+> the mini window, Chrome extensions, screen sharing, history manager,
+> find-in-page, downloads, in-chrome permission prompts, session restore, the
+> Aurora Glass theme (per-Space WebGL palettes, light/dark/system, WCAG AA
+> proven in CI), Settings, and an in-app updater. Phase (e) is done but for
+> first-run onboarding, and phase (f) — **Aura Apps** — is under way. See
+> [docs/PHASES.md](docs/PHASES.md) for the roadmap,
 > [docs/DESIGN-SPEC.md](docs/DESIGN-SPEC.md) for the design system, and
 > [docs/RELEASING.md](docs/RELEASING.md) for versioning and releases.
 
@@ -122,6 +123,22 @@ store installs and add it from the Chrome Web Store. `AURORA_LOAD_EXTENSION`
 takes comma-separated folders for a single run, like Chrome's
 `--load-extension`.
 
+## Aura Apps
+
+Beyond browsing, Aura carries small apps you switch on in the **App Store** —
+the app menu, the command palette, or **Aura Apps…**. Nothing is on by default.
+Switching an app on pins it to the sidebar beside Downloads and Settings, and
+unpinning leaves it on but out of the way.
+
+The catalogue is first-party and ships with the browser: an app runs inside the
+browser chrome, which is privileged, so third-party code stays in extensions
+where the page sandbox holds. App data is global — one set across every Space.
+
+- **Notes** — ⌘E writes a note about the page you are on and opens it ready to
+  type. Notes keep that page, so you can find one by what you were reading, and
+  they appear in the command palette beside tabs and history.
+- **Reminders** and **Timesheet** are listed in the Store as coming next.
+
 ## Peek and the mini window
 
 Shift-click a link to **Peek** it: a floating preview that costs no tab, with
@@ -134,7 +151,7 @@ storage, so you stay signed in, but no tab and no Space state until you press
 
 ⌘T palette · ⌘L edit address · ⌘S full sidebar ↔ compact rail · ⌘F find in page ·
 ⌘G / ⇧⌘G find next/previous · ⌘J downloads · ⌘Y history · ⌘\\ split view ·
-⌘D toggle favorite ·
+⌘D toggle favorite · ⌘E new note ·
 ⇧⌘N incognito · ⌘W close tab · ⇧⌘T reopen closed · ⌘R / ⇧⌘R reload ·
 ⌘[ / ⌘] back/forward · ⌃Tab / ⌃⇧Tab next/previous tab · ⌘1–9 pick tab ·
 ⌃1–9 switch space · ⌘+/−/0 zoom · ⌘, settings · ⌥⌘I DevTools. (Ctrl on

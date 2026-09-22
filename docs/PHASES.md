@@ -166,3 +166,41 @@ with two settings they asked for first.
 - Telemetry stays at zero (the update check carries no identifiers).
 
 **Exit:** clean install → auto-update on all three OSes.
+
+## (f) Aura Apps — ◐ in progress
+
+Small pieces of the browser you switch on in an **App Store**, so Aura can hold
+the things a browser day is actually made of without imposing them on anyone
+who wants a browser and nothing else.
+
+**The platform is first-party** (decided 2026-09-22 with the owner). An app runs
+inside the browser chrome, which is privileged: unlike a Chrome extension there
+is no sandbox between it and your tabs, so a third-party app platform would
+need its own permission model, isolation and review story before the first app
+could ship. Extensions already cover third-party code, in the page where the
+sandbox holds. The Store is therefore a catalogue of switches, and apps join it
+as they are built — the ones still coming are listed but cannot be switched on,
+so the shape of what is next is visible without pretending it is here.
+
+**App data is global, not per Space** (owner's call): one set of notes,
+reminders and timesheet entries across every Space.
+
+- ✅ **(f1) Platform + Notes** (2026-09-22): the catalogue (`shared/apps.ts`),
+  the registry and its two switches per app (enabled, pinned — kv `apps`), the
+  App Store panel, pinned apps in the sidebar footer beside Downloads and
+  Settings in both layouts, and a `<Panel>` shell extracted from History and
+  Extensions so an app panel is a header and a body rather than a fourth copy
+  of the same dialog. Notes: quick capture with ⌘E carrying the page you were
+  on, a list-and-editor panel with search and autosave, and notes as results in
+  the command palette beside tabs and history. Schema v3 adds `notes`.
+- ☐ **(f2) Reminders**: due times with optional repeat, one scheduler in main
+  that owns every app's timers, an in-window strip when Aura is focused and an
+  OS notification when it is not, launch catch-up for anything that came due
+  while Aura was closed, and "Remind me about this page" in the page menu.
+- ☐ **(f3) Timesheet**: the configured question on the configured interval
+  inside working hours, answered in a non-blocking bar pre-filled from the
+  active tab, with **Same as last** and **Skip**; the day view groups every
+  answer, attributes the time each covered, and copies out as Markdown or CSV.
+
+**Exit:** all three apps switchable from the Store, each covered by e2e, and
+nothing scheduled or stored for an app that is off.

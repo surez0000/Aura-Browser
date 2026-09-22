@@ -11,6 +11,8 @@ import { HistoryPanel } from '@/components/HistoryPanel'
 import { ExtensionsPanel } from '@/components/ExtensionsPanel'
 import { SettingsPanel } from '@/components/sidebar/SettingsFlyout'
 import { DownloadsPanel } from '@/components/sidebar/DownloadsFlyout'
+import { AppStorePanel } from '@/apps/AppStorePanel'
+import { NotesPanel } from '@/apps/notes/NotesPanel'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
 import { BackdropTexture } from '@/components/BackdropTexture'
 import { auroraPalette, hue2Of, hueOf } from '@/theme/aurora'
@@ -90,6 +92,8 @@ export default function App(): React.JSX.Element {
       <ExtensionsPanel />
       <SettingsPanel />
       <DownloadsPanel />
+      <AppStorePanel />
+      <NotesPanel />
     </div>
   )
 }

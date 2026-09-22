@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { AppWindow, Archive, Clock3, Globe, Search, Star, Zap } from 'lucide-react'
-import type { ArchivedTabRow, HistorySearchRow } from '@shared/models'
+import { AppWindow, Archive, Clock3, Globe, NotebookPen, Search, Star, Zap } from 'lucide-react'
+import type { ArchivedTabRow, HistorySearchRow, NoteEntry } from '@shared/models'
 import { searchEngine, type SearchEngineId } from '@shared/search'
 import type { SidebarMode } from '@shared/models'
 import { invoke } from '@/lib/ipc'
 import { holdOverlay, releaseOverlay } from '@/lib/overlay'
 import { selectSearchEngine, useSettings } from '@/state/settings'
-import { setSidebarMode, toggleSidebarMode } from '@/state/sync'
+import { captureNoteForActiveTab, setSidebarMode, toggleSidebarMode } from '@/state/sync'
 import { buildActions, composePalette, type PaletteItem, type PaletteItemType } from '@/lib/palette'
+import { useApps } from '@/state/apps'
 import { useTabs, selectActiveTab } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
@@ -17,6 +18,7 @@ const TYPE_ICONS: Record<PaletteItemType, React.ComponentType<{ size?: number | 
   favorite: Star,
   history: Clock3,
   archived: Archive,
+  note: NotebookPen,
   action: Zap,
   url: Globe,
   search: Search,
@@ -39,12 +41,16 @@ export function Palette(): React.JSX.Element {
   const spaces = useTabs((s) => s.spaces)
   const activeSpaceId = useTabs((s) => s.activeSpaceId)
   const engine = useSettings(selectSearchEngine)
+  const apps = useApps((s) => s.apps)
+  const enabledApps = useMemo(() => apps.filter((a) => a.enabled).map((a) => a.id), [apps])
+  const notesEnabled = enabledApps.includes('notes')
 
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [value, setValue] = useState('')
   const [selected, setSelected] = useState(0)
   const [history, setHistory] = useState<HistorySearchRow[]>([])
   const [archived, setArchived] = useState<ArchivedTabRow[]>([])
+  const [notes, setNotes] = useState<NoteEntry[]>([])
 
   // Seed the input when the palette transitions closed -> open (render-time
   // state adjustment; no effect needed).
@@ -85,12 +91,19 @@ export function Palette(): React.JSX.Element {
       void invoke('archive:search', { query: value, limit: 6 }).then((rows) => {
         if (!cancelled) setArchived(value.trim() ? rows : [])
       })
+      if (notesEnabled && value.trim()) {
+        void invoke('notes:search', { query: value, limit: 6 }).then((rows) => {
+          if (!cancelled) setNotes(rows)
+        })
+      } else if (!cancelled) {
+        setNotes([])
+      }
     }, 80)
     return () => {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [open, value])
+  }, [open, value, notesEnabled])
 
   const items = composePalette({
     query: value,
@@ -100,7 +113,8 @@ export function Palette(): React.JSX.Element {
     activeSpaceId,
     history,
     archived,
-    actions: buildActions({ spaces, activeSpaceId, activeTab: active }),
+    notes,
+    actions: buildActions({ spaces, activeSpaceId, activeTab: active, enabledApps }),
     searchEngine: engine,
   })
   const selectedIndex = Math.min(selected, Math.max(0, items.length - 1))
@@ -163,6 +177,15 @@ export function Palette(): React.JSX.Element {
       case 'extensions:open':
         ui.toggleExtensions()
         break
+      case 'apps:store':
+        ui.toggleAppStore()
+        break
+      case 'notes:open':
+        ui.toggleNotes()
+        break
+      case 'notes:new':
+        captureNoteForActiveTab()
+        break
       case 'split:toggle':
         void invoke('tabs:toggleSplit', {})
         break
@@ -217,7 +240,9 @@ export function Palette(): React.JSX.Element {
   const run = (item: PaletteItem | undefined): void => {
     close()
     if (!item) return
-    if (item.type === 'tab' && item.payload.tabId) {
+    if (item.type === 'note' && item.payload.noteId !== undefined) {
+      useUi.getState().openNote(item.payload.noteId)
+    } else if (item.type === 'tab' && item.payload.tabId) {
       void invoke('tabs:activate', { tabId: item.payload.tabId })
     } else if (item.type === 'action' && item.payload.actionId) {
       runAction(item.payload.actionId)

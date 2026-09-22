@@ -79,6 +79,7 @@ export function installMenu(ctx: MenuContext): void {
         checkForUpdates,
         { type: 'separator' },
         rendererItem('settings:toggle'),
+        rendererItem('apps:store'),
         rendererItem('extensions:open'),
         { type: 'separator' },
         { role: 'services' },
@@ -136,7 +137,11 @@ export function installMenu(ctx: MenuContext): void {
         { type: 'separator' },
         rendererItem('sidebar:toggle'),
         rendererItem('downloads:toggle'),
-        ...(process.platform === 'darwin' ? [] : [rendererItem('settings:toggle')]),
+        rendererItem('notes:open'),
+        rendererItem('notes:new'),
+        ...(process.platform === 'darwin'
+          ? []
+          : [rendererItem('settings:toggle'), rendererItem('apps:store')]),
         { type: 'separator' },
         mainItem('tab:devtools', () => m.getTab(undefined)?.openDevTools()),
         ...(isDev

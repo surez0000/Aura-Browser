@@ -19,6 +19,7 @@ import { DownloadsButton } from './DownloadsFlyout'
 import { SettingsButton } from './SettingsFlyout'
 import { UpdateCard, UpdateRailButton } from '@/components/UpdateNotice'
 import { WindowControls } from './WindowControls'
+import { PinnedApps } from '@/apps/PinnedApps'
 
 export const SIDEBAR_WIDTH = 264
 /** Compact rail: wide enough for a 36 px target plus the panel's padding. */
@@ -204,6 +205,7 @@ export function Sidebar(): React.JSX.Element {
             <div className="flex h-8 shrink-0 items-center gap-2">
               <DownloadsButton />
               <SpaceSwitcher />
+              <PinnedApps />
               <SettingsButton />
             </div>
           </>
@@ -288,6 +290,7 @@ function CompactRail(): React.JSX.Element {
         <SpaceSwitcher vertical />
         <div className="flex flex-col items-center">
           <DownloadsButton />
+          <PinnedApps vertical />
           <SettingsButton />
         </div>
       </div>
@@ -325,6 +328,7 @@ function SpaceRail(): React.JSX.Element {
         <SpaceSwitcher vertical />
         <div className="flex flex-col items-center">
           <DownloadsButton />
+          <PinnedApps vertical />
           <SettingsButton />
         </div>
       </div>

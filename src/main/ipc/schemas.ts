@@ -8,6 +8,10 @@ const url = z.string().min(1).max(8192)
 const tabIdOnly = z.object({ tabId: id }).strict()
 const optionalTab = z.object({ tabId: id.optional() }).strict()
 const empty = z.object({}).strict()
+const appId = z.enum(['notes', 'reminders', 'timesheet'])
+const noteId = z.number().int().positive()
+/** A note is a note, not a file: enough room to write, bounded all the same. */
+const NOTE_MAX = 100_000
 const kind = z.enum(['pinned', 'today'])
 
 /**
@@ -141,6 +145,24 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
   'updates:check': empty,
   'updates:install': empty,
   'updates:openReleases': empty,
+
+  'apps:list': empty,
+  'apps:setEnabled': z.object({ id: appId, enabled: z.boolean() }).strict(),
+  'apps:setPinned': z.object({ id: appId, pinned: z.boolean() }).strict(),
+
+  'notes:list': z.object({ limit: z.number().int().min(1).max(1000).optional() }).strict(),
+  'notes:search': z
+    .object({ query: z.string().max(512), limit: z.number().int().min(1).max(200).optional() })
+    .strict(),
+  'notes:create': z
+    .object({
+      body: z.string().max(NOTE_MAX),
+      url: z.string().max(8192).nullable().optional(),
+      pageTitle: z.string().max(512).nullable().optional(),
+    })
+    .strict(),
+  'notes:update': z.object({ id: noteId, body: z.string().max(NOTE_MAX) }).strict(),
+  'notes:delete': z.object({ id: noteId }).strict(),
 
   'ui:setPaneBounds': z
     .object({

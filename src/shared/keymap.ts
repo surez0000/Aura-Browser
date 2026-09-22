@@ -114,6 +114,25 @@ export const KEYMAP: readonly KeyCommand[] = [
     rendererCommand: 'extensions:open',
   },
   {
+    id: 'apps:store',
+    label: 'Aura Apps…',
+    scope: 'renderer',
+    rendererCommand: 'apps:store',
+  },
+  {
+    id: 'notes:open',
+    label: 'Notes',
+    scope: 'renderer',
+    rendererCommand: 'notes:open',
+  },
+  {
+    id: 'notes:new',
+    label: 'New Note',
+    accelerator: 'CommandOrControl+E',
+    scope: 'renderer',
+    rendererCommand: 'notes:new',
+  },
+  {
     id: 'settings:toggle',
     label: 'Settings…',
     accelerator: 'CommandOrControl+,',
@@ -180,6 +199,7 @@ export const RENDERER_COMBOS: readonly ComboEntry[] = [
   { key: 'j', command: 'downloads:toggle' },
   { key: 'g', command: 'find:next' },
   { key: 'g', shift: true, command: 'find:prev' },
+  { key: 'e', command: 'notes:new' },
   { key: ',', command: 'settings:toggle' },
   { key: 'y', command: 'history:open' },
   { key: '\\', command: 'split:toggle' },

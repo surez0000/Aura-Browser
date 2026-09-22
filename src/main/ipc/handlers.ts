@@ -9,6 +9,8 @@ import type { DisplayCaptureService } from '../services/display-capture'
 import type { MiniWindowService } from '../windows/mini-window'
 import type { ExtensionService } from '../services/extensions'
 import type { UpdaterService } from '../services/updater'
+import type { AppRegistry } from '../apps/registry'
+import type { NotesStore } from '../services/db/notes'
 import { handleInvoke } from './router'
 
 interface HandlerContext {
@@ -21,6 +23,9 @@ interface HandlerContext {
   miniWindows: MiniWindowService
   extensions: ExtensionService
   updater: UpdaterService
+  apps: AppRegistry
+  notes: NotesStore
+  notesChanged: () => void
   getSettings: () => AuroraSettings
   setSettings: (patch: Partial<AuroraSettings>) => AuroraSettings
   win: BrowserWindow
@@ -125,6 +130,27 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
   handleInvoke('updates:check', () => ctx.updater.check())
   handleInvoke('updates:install', () => ctx.updater.install())
   handleInvoke('updates:openReleases', () => ctx.updater.openReleases())
+
+  handleInvoke('apps:list', () => ctx.apps.list())
+  handleInvoke('apps:setEnabled', (req) => ctx.apps.setEnabled(req.id, req.enabled))
+  handleInvoke('apps:setPinned', (req) => ctx.apps.setPinned(req.id, req.pinned))
+
+  handleInvoke('notes:list', (req) => ctx.notes.list(req.limit))
+  handleInvoke('notes:search', (req) => ctx.notes.search(req.query, req.limit))
+  handleInvoke('notes:create', (req) => {
+    const note = ctx.notes.create(req)
+    ctx.notesChanged()
+    return note
+  })
+  handleInvoke('notes:update', (req) => {
+    const note = ctx.notes.update(req.id, req.body)
+    ctx.notesChanged()
+    return note
+  })
+  handleInvoke('notes:delete', (req) => {
+    ctx.notes.remove(req.id)
+    ctx.notesChanged()
+  })
 
   handleInvoke('ui:setPaneBounds', (req) => manager.setPaneBounds(req.panes))
   handleInvoke('tabs:split', (req) => manager.split(req.tabId))

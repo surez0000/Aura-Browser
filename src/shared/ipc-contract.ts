@@ -1,4 +1,6 @@
+import type { AuraAppId } from './apps'
 import type {
+  AppInfo,
   ArchivedTabRow,
   AuroraSettings,
   DisplayCaptureRequestInfo,
@@ -6,6 +8,7 @@ import type {
   ExtensionInfo,
   HistoryEntry,
   MiniWindowInfo,
+  NoteEntry,
   FavoriteEntry,
   FindResult,
   HistorySearchRow,
@@ -37,6 +40,9 @@ export type RendererCommandId =
   | 'history:open'
   | 'extensions:open'
   | 'split:toggle'
+  | 'apps:store'
+  | 'notes:open'
+  | 'notes:new'
 
 /** invoke(channel, req) -> Promise<res> */
 export interface InvokeMap {
@@ -132,6 +138,23 @@ export interface InvokeMap {
   'updates:openReleases': { req: Record<string, never>; res: void }
 
   /**
+   * Aura Apps (phase f): the catalogue plus each app's switches. The catalogue
+   * is static and shared; only the switches live in the main process.
+   */
+  'apps:list': { req: Record<string, never>; res: AppInfo[] }
+  'apps:setEnabled': { req: { id: AuraAppId; enabled: boolean }; res: void }
+  'apps:setPinned': { req: { id: AuraAppId; pinned: boolean }; res: void }
+
+  'notes:list': { req: { limit?: number }; res: NoteEntry[] }
+  'notes:search': { req: { query: string; limit?: number }; res: NoteEntry[] }
+  'notes:create': {
+    req: { body: string; url?: string | null; pageTitle?: string | null }
+    res: NoteEntry
+  }
+  'notes:update': { req: { id: number; body: string }; res: NoteEntry | null }
+  'notes:delete': { req: { id: number }; res: void }
+
+  /**
    * Where each on-screen pane should sit, in window coordinates (DIP). One
    * entry is the ordinary view; several are a split. The renderer measures,
    * the main process positions (ADR-0003).
@@ -201,6 +224,9 @@ export interface PushMap {
   'updates:state': UpdateState
   /** Pushed only to the mini window it describes. */
   'mini:state': MiniWindowInfo
+  'apps:changed': AppInfo[]
+  /** A signal to reload, plus what the rail badge shows. */
+  'notes:changed': { count: number }
 }
 
 export const INVOKE_CHANNELS = [
@@ -253,6 +279,14 @@ export const INVOKE_CHANNELS = [
   'updates:check',
   'updates:install',
   'updates:openReleases',
+  'apps:list',
+  'apps:setEnabled',
+  'apps:setPinned',
+  'notes:list',
+  'notes:search',
+  'notes:create',
+  'notes:update',
+  'notes:delete',
   'ui:setPaneBounds',
   'tabs:split',
   'tabs:toggleSplit',
@@ -284,6 +318,8 @@ export const PUSH_CHANNELS = [
   'extensions:changed',
   'updates:state',
   'mini:state',
+  'apps:changed',
+  'notes:changed',
 ] as const satisfies ReadonlyArray<keyof PushMap>
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

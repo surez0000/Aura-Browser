@@ -72,6 +72,50 @@ describe('composePalette', () => {
     expect(items[0]?.payload.tabId).toBe('t1')
   })
 
+  it('offers a machine on this network as a destination, not a search', () => {
+    // The reported case: a bare host with a trailing slash went to the search
+    // engine, so the palette never offered the machine at all.
+    for (const query of ['localmachine/', 'nas/photos', 'myserver:8080', '192.168.1.5']) {
+      const items = composePalette(ctx({ query }))
+      const top = items[0]
+      expect(top?.type, query).toBe('url')
+      expect(top?.payload.url, query).toMatch(/^http:\/\//)
+    }
+  })
+
+  it('finds a note, and says which page it came from', () => {
+    const items = composePalette(
+      ctx({
+        query: 'tiers',
+        notes: [
+          {
+            id: 7,
+            title: 'Check the pricing page',
+            body: 'they changed the tiers',
+            url: 'https://example.com/pricing',
+            pageTitle: 'Pricing — Example',
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+      }),
+    )
+    const note = items.find((i) => i.type === 'note')
+    expect(note?.payload.noteId).toBe(7)
+    expect(note?.title).toBe('Check the pricing page')
+    expect(note?.subtitle).toBe('Pricing — Example')
+  })
+
+  it('offers app commands only for apps that are switched on', () => {
+    const base = { spaces: [space('s1')], activeSpaceId: 's1', activeTab: null }
+    // The Store is always reachable — it is how an app gets switched on.
+    expect(buildActions(base).some((a) => a.id === 'apps:store')).toBe(true)
+    expect(buildActions(base).some((a) => a.id === 'notes:new')).toBe(false)
+    const withNotes = buildActions({ ...base, enabledApps: ['notes'] })
+    expect(withNotes.some((a) => a.id === 'notes:new')).toBe(true)
+    expect(withNotes.some((a) => a.id === 'notes:open')).toBe(true)
+  })
+
   it('always appends a web-search fallback for non-empty queries', () => {
     const items = composePalette(ctx({ query: 'weather tomorrow' }))
     const search = items.find((i) => i.type === 'search')

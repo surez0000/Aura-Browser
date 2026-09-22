@@ -1,4 +1,10 @@
-import type { ArchivedTabRow, HistorySearchRow, SpaceInfo, TabInfo } from '@shared/models'
+import type {
+  ArchivedTabRow,
+  HistorySearchRow,
+  NoteEntry,
+  SpaceInfo,
+  TabInfo,
+} from '@shared/models'
 import { fuzzyBest, fuzzyScore } from './fuzzy'
 import {
   DEFAULT_SEARCH_ENGINE,
@@ -9,7 +15,7 @@ import {
 import { displayLabel, normalizeInput, searchUrl } from './url'
 
 export type PaletteItemType =
-  'tab' | 'favorite' | 'history' | 'archived' | 'action' | 'url' | 'search'
+  'tab' | 'favorite' | 'history' | 'archived' | 'note' | 'action' | 'url' | 'search'
 
 export interface PaletteItem {
   key: string
@@ -17,7 +23,7 @@ export interface PaletteItem {
   title: string
   subtitle?: string
   hint?: string
-  payload: { tabId?: string; url?: string; actionId?: string }
+  payload: { tabId?: string; url?: string; actionId?: string; noteId?: number }
   score: number
 }
 
@@ -37,6 +43,8 @@ export interface PaletteContext {
   activeSpaceId: string
   history: HistorySearchRow[]
   archived: ArchivedTabRow[]
+  /** Notes, when the Notes app is on; absent otherwise. */
+  notes?: NoteEntry[]
   actions: ActionDef[]
   /** Provider for the web-search fallback (settings). */
   searchEngine?: SearchEngineId
@@ -50,8 +58,11 @@ export function buildActions(ctx: {
   spaces: SpaceInfo[]
   activeSpaceId: string
   activeTab: TabInfo | null
+  /** Apps that are switched on — their commands only exist when they are. */
+  enabledApps?: readonly string[]
 }): ActionDef[] {
   const actions: ActionDef[] = [
+    { id: 'apps:store', title: 'Aura Apps…', keywords: 'app store apps notes reminders timesheet' },
     { id: 'space:new', title: 'New Space…', keywords: 'create workspace' },
     {
       id: 'incognito',
@@ -123,6 +134,13 @@ export function buildActions(ctx: {
         keywords: 'pin pinned tab',
       },
       { id: 'url:copy', title: 'Copy Current URL', keywords: 'address link' },
+    )
+  }
+
+  if (ctx.enabledApps?.includes('notes')) {
+    actions.push(
+      { id: 'notes:new', title: 'New Note', keywords: 'write jot capture', hint: '⌘E' },
+      { id: 'notes:open', title: 'Notes', keywords: 'notebook jotted written' },
     )
   }
 
@@ -265,6 +283,20 @@ export function composePalette(ctx: PaletteContext): PaletteItem[] {
       hint: 'History',
       payload: { url: row.url },
       score: score * 1.1 + Math.min(row.visits, 5) * 0.05,
+    })
+  }
+
+  for (const note of ctx.notes ?? []) {
+    const score = fuzzyBest(query, [note.title, note.body, note.pageTitle])
+    if (score <= 0) continue
+    items.push({
+      key: `note:${note.id}`,
+      type: 'note',
+      title: note.title || 'Untitled note',
+      subtitle: note.pageTitle ?? (note.url ? displayLabel(note.url) : undefined),
+      hint: 'Note',
+      payload: { noteId: note.id },
+      score: score * 1.3,
     })
   }
 
