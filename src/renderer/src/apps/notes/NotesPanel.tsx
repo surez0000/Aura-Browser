@@ -238,9 +238,11 @@ function Section({
           {label}
         </div>
       )}
-      {/* Columns rather than a grid: stickies keep their own height, and the
-          board fills the way a real one does. */}
-      <div className="columns-3 gap-3 [column-fill:_balance]">
+      {/* A grid, not CSS columns: columns stacked a short section (two pinned
+          stickies) down the first column and left the rest of the row empty,
+          and they read top-to-bottom, which is the wrong order for "newest
+          first". Rows keep each sticky its own height via items-start. */}
+      <div className="grid grid-cols-3 items-start gap-3">
         {notes.map((note) => (
           <StickyCard key={note.id} note={note} theme={theme} onOpen={onOpen} />
         ))}
@@ -259,13 +261,13 @@ function Paper({ ink }: { ink: string }): React.JSX.Element {
     <>
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.11] mix-blend-soft-light"
+        className="pointer-events-none absolute inset-0 opacity-[0.2] mix-blend-multiply"
         style={{ backgroundImage: PAPER_GRAIN, backgroundSize: '160px 160px' }}
       />
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[22px]"
-        style={{ background: `linear-gradient(to bottom, ${ink}, transparent)`, opacity: 0.09 }}
+        style={{ background: `linear-gradient(to bottom, ${ink}, transparent)`, opacity: 0.1 }}
       />
     </>
   )
@@ -285,7 +287,7 @@ function StickyCard({
 
   return (
     <motion.div
-      className="group relative mb-3 inline-block w-full cursor-pointer break-inside-avoid overflow-hidden rounded-[5px] p-3.5 pt-5"
+      className="group relative cursor-pointer overflow-hidden rounded-[5px] px-4 pt-5 pb-3.5"
       style={{
         background: skin.background,
         rotate: stickyTilt(note.id),
@@ -299,9 +301,9 @@ function StickyCard({
       data-pinned={note.pinned || undefined}
     >
       <Paper ink={skin.ink} />
-      <div className="flex items-start gap-2">
+      <div className="relative flex items-start gap-2">
         <span
-          className="min-w-0 flex-1 text-[13.5px] leading-snug font-semibold"
+          className="min-w-0 flex-1 text-[14.5px] leading-[1.3] font-semibold"
           style={{ color: skin.ink }}
           data-testid="note-title"
         >
@@ -327,14 +329,17 @@ function StickyCard({
 
       {rest.trim() && (
         <p
-          className="mt-1.5 line-clamp-[8] text-[12.5px] leading-relaxed whitespace-pre-wrap"
+          className="relative mt-1.5 line-clamp-[8] text-[13px] leading-[1.45] whitespace-pre-wrap"
           style={{ color: skin.inkSoft }}
         >
           {rest.trim()}
         </p>
       )}
 
-      <div className="mt-2.5 flex items-center gap-1.5 text-[11px]" style={{ color: skin.inkSoft }}>
+      <div
+        className="relative mt-2.5 flex items-center gap-1.5 font-mono text-[10.5px]"
+        style={{ color: skin.inkMeta }}
+      >
         <span>{ago(note.updatedAt)}</span>
         {note.url && (
           <>
@@ -524,11 +529,14 @@ function StickyEditor({
                   onClick={() => pickColor(c)}
                   title={STICKY_LABELS[c]}
                   aria-label={STICKY_LABELS[c]}
-                  className="h-4 w-4 cursor-pointer rounded-full transition-transform hover:scale-110"
+                  className="h-[18px] w-[18px] cursor-pointer rounded-full transition-transform hover:scale-110"
                   style={{
                     background: swatch.background,
-                    border: `1px solid ${swatch.border}`,
-                    boxShadow: active ? `0 0 0 2px ${skin.ink}` : undefined,
+                    // Pale on pale: every swatch needs its own ring to be seen,
+                    // and the chosen one a second, clear of it.
+                    boxShadow: active
+                      ? `inset 0 0 0 1px ${skin.inkMeta}, 0 0 0 2px ${skin.background}, 0 0 0 3.5px ${skin.ink}`
+                      : `inset 0 0 0 1px ${skin.inkMeta}`,
                   }}
                   data-testid="note-color"
                   data-color={c}

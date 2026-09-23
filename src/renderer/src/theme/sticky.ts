@@ -1,23 +1,31 @@
 import type { ThemeName } from '@shared/theme'
-import { clampLuminance, contrastRatio, onAccentInk, toCss, type Rgba } from './contrast'
-import { THEMES } from './tokens'
+import { STICKY_COLORS, type StickyColor } from '@shared/sticky'
+import {
+  clampLuminance,
+  compositeOver,
+  contrastRatio,
+  onAccentInk,
+  toCss,
+  type Rgba,
+} from './contrast'
 
 /**
- * Sticky note colours.
+ * Sticky note paper.
  *
- * A paper sticky is found by its colour before it is read, which is the whole
- * reason the metaphor works — so the colour has to be strong enough to scan and
- * still leave the writing legible. Rather than guess hex values per theme, each
- * colour is one hue run through the same luminance clamp that proves the aurora
- * palette: pale in the light theme, deep in the dark one, with the ink chosen
- * by measured contrast. `aurora-aa.test.ts` sweeps every colour in both themes.
+ * Paper is pale in both themes, with dark ink — a sticky doesn't turn black
+ * when the lights go down, and the deep "night" paper this replaced read as
+ * coloured glass rather than a note. On a dark board, pale paper is also what
+ * makes a sticky jump out, the way it does on a real wall.
+ *
+ * Each colour is one hue run through the same luminance clamp that proves the
+ * aurora palette, with the ink chosen by measured contrast, so none of them is
+ * picked by eye. `aurora-aa.test.ts` sweeps every colour and every ink level.
  */
-import { STICKY_COLORS, type StickyColor } from '@shared/sticky'
-
 export { STICKY_COLORS }
 export type { StickyColor }
 
-const HUES: Record<Exclude<StickyColor, 'default'>, number> = {
+const HUES: Record<StickyColor, number> = {
+  default: 42,
   amber: 44,
   rose: 348,
   violet: 278,
@@ -26,7 +34,7 @@ const HUES: Record<Exclude<StickyColor, 'default'>, number> = {
   clay: 18,
 }
 
-/** Names for the colour picker; "default" is the theme's own surface. */
+/** Names for the colour picker. "Plain" is cream, like an ordinary notepad. */
 export const STICKY_LABELS: Record<StickyColor, string> = {
   default: 'Plain',
   amber: 'Amber',
@@ -37,87 +45,86 @@ export const STICKY_LABELS: Record<StickyColor, string> = {
   clay: 'Clay',
 }
 
-/** Pale enough to write on in the light theme, deep enough to read in the dark. */
-const BAND = {
-  light: { min: 0.6, max: 0.86, target: 0.74, sat: 0.62 },
-  dark: { min: 0.035, max: 0.11, target: 0.075, sat: 0.42 },
-} as const
+/** Pale enough to write on, strong enough to find by colour. */
+const BAND = { min: 0.6, max: 0.86 } as const
+const TINT = { sat: 0.62, target: 0.74 }
+/** Plain paper is barely tinted and nearly white — a notepad, not a colour. */
+const PLAIN = { sat: 0.3, target: 0.84 }
+
+/** How far each line of writing steps back from full ink. */
+export const INK_LEVELS = { title: 1, body: 0.72, meta: 0.64 } as const
 
 export interface StickySkin {
-  /** Card ground. */
+  /** The paper. */
   background: string
-  /** Text on that ground, chosen by contrast rather than by eye. */
+  /** Titles — full ink, chosen by contrast rather than by eye. */
   ink: string
-  /** Secondary text — the same ink, stepped back. */
+  /** The note itself, stepped back a little. */
   inkSoft: string
+  /** Time and page, stepped back further. */
+  inkMeta: string
+  /** Hairlines on the paper: the editor's footer rule, swatch rings. */
   border: string
 }
 
-function paper(color: Exclude<StickyColor, 'default'>, theme: ThemeName): Rgba {
-  const band = BAND[theme]
-  return clampLuminance(HUES[color], band.sat, band.target, { min: band.min, max: band.max })
-}
-
-export function stickySkin(color: StickyColor, theme: ThemeName): StickySkin {
-  if (color === 'default') {
-    const t = THEMES[theme]
-    return {
-      background: toCss(t.surfaceGlassStrong),
-      ink: toCss(t.ink1),
-      inkSoft: toCss(t.ink3),
-      border: toCss(t.borderGlass),
-    }
-  }
-  const bg = paper(color, theme)
-  const ink = onAccentInk(bg)
-  return {
-    background: toCss(bg),
-    ink: toCss(ink),
-    inkSoft: toCss({ ...ink, a: 0.62 }),
-    border: toCss({ ...ink, a: 0.14 }),
-  }
-}
-
-/** The swatch in the picker: the paper itself, at full strength. */
-export function stickySwatch(color: StickyColor, theme: ThemeName): string {
-  return stickySkin(color, theme).background
-}
-
-/** Exposed for the contrast sweep. */
-export function stickyContrast(color: StickyColor, theme: ThemeName): number {
-  if (color === 'default') {
-    const t = THEMES[theme]
-    return contrastRatio(t.ink1, t.bgBase)
-  }
-  const bg = paper(color, theme)
-  return contrastRatio(onAccentInk(bg), bg)
+function paper(color: StickyColor): Rgba {
+  const { sat, target } = color === 'default' ? PLAIN : TINT
+  return clampLuminance(HUES[color], sat, target, BAND)
 }
 
 /**
- * What makes paper read as paper rather than a coloured rectangle: a fine
- * grain, a glue strip along the top edge, and a shadow that lifts the sheet
- * off the wall. The grain is one tiny SVG noise tile laid over the colour with
- * soft-light blending, so it darkens pale paper and lightens deep paper alike.
+ * The theme no longer changes the paper — only the shadow it casts (see
+ * PAPER_SHADOW). It stays in the signature so callers read naturally.
+ */
+export function stickySkin(color: StickyColor, _theme?: ThemeName): StickySkin {
+  const bg = paper(color)
+  const ink = onAccentInk(bg)
+  return {
+    background: toCss(bg),
+    ink: toCss({ ...ink, a: INK_LEVELS.title }),
+    inkSoft: toCss({ ...ink, a: INK_LEVELS.body }),
+    inkMeta: toCss({ ...ink, a: INK_LEVELS.meta }),
+    border: toCss({ ...ink, a: 0.12 }),
+  }
+}
+
+/** Contrast of each ink level on its paper — exposed for the AA sweep. */
+export function stickyInkContrast(color: StickyColor): Record<keyof typeof INK_LEVELS, number> {
+  const bg = paper(color)
+  const ink = onAccentInk(bg)
+  const at = (a: number): number => contrastRatio(compositeOver({ ...ink, a }, bg), bg)
+  return { title: at(INK_LEVELS.title), body: at(INK_LEVELS.body), meta: at(INK_LEVELS.meta) }
+}
+
+/** Relative luminance of the paper — exposed so a test can prove it stays pale. */
+export function stickyPaper(color: StickyColor): Rgba {
+  return paper(color)
+}
+
+/**
+ * What makes paper read as paper rather than a coloured rectangle: a grain
+ * multiplied into the sheet, a glue strip along the top edge, and a shadow that
+ * lifts it off the wall. The grain is one small SVG noise tile.
  */
 export const PAPER_GRAIN =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.9 0'/></filter><rect width='160' height='160' filter='url(%23g)'/></svg>\")"
 
+/** Pale paper on a dark board needs a deeper, darker shadow than on a light one. */
 export const PAPER_SHADOW: Record<ThemeName, string> = {
-  light: '0 1px 2px rgba(20,14,8,0.10), 0 6px 14px -4px rgba(20,14,8,0.22)',
-  dark: '0 1px 2px rgba(0,0,0,0.35), 0 8px 18px -6px rgba(0,0,0,0.6)',
+  light: '0 1px 2px rgba(20,14,8,0.14), 0 14px 28px -12px rgba(40,24,10,0.36)',
+  dark: '0 1px 2px rgba(20,14,8,0.18), 0 18px 34px -12px rgba(0,0,0,0.6)',
 }
 
 export const PAPER_SHADOW_LIFTED: Record<ThemeName, string> = {
-  light: '0 2px 3px rgba(20,14,8,0.12), 0 14px 28px -8px rgba(20,14,8,0.30)',
-  dark: '0 2px 3px rgba(0,0,0,0.4), 0 16px 32px -8px rgba(0,0,0,0.7)',
+  light: '0 2px 4px rgba(20,14,8,0.16), 0 24px 40px -14px rgba(40,24,10,0.44)',
+  dark: '0 2px 4px rgba(20,14,8,0.22), 0 28px 46px -14px rgba(0,0,0,0.72)',
 }
 
 /**
- * A wall of stickies is never perfectly square. Each sheet leans a hair, the
- * same way every time for the same note, so the board does not fidget on
- * every reload. Under a degree: enough to read as paper, not enough to look
- * like a mess.
+ * A wall of stickies is never square. Each sheet leans up to about two degrees,
+ * the same way every time for the same note so the board doesn't fidget on
+ * reload, and straightens when you reach for it.
  */
 export function stickyTilt(id: number): number {
-  return (((id * 7919) % 5) - 2) * 0.4
+  return (((id * 7919) % 5) - 2) * 1.1
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ThemeName } from '@shared/theme'
 import { auroraPalette } from '@/theme/aurora'
-import { STICKY_COLORS, stickyContrast } from '@/theme/sticky'
+import { STICKY_COLORS, stickyInkContrast, stickyPaper } from '@/theme/sticky'
 import { compositeOver, contrastRatio, relativeLuminance, type Rgba } from '@/theme/contrast'
 import { AURORA_BANDS, THEMES } from '@/theme/tokens'
 
@@ -140,12 +140,20 @@ describe('accent contrast', () => {
   })
 })
 
-describe('sticky note colours', () => {
-  it('every colour is legible in both themes', () => {
-    for (const theme of THEME_NAMES) {
-      for (const color of STICKY_COLORS) {
-        expect(stickyContrast(color, theme), `${theme} ${color}`).toBeGreaterThanOrEqual(4.5)
-      }
+describe('sticky note paper', () => {
+  it('every colour is legible at every ink level — title, note and the time line', () => {
+    for (const color of STICKY_COLORS) {
+      const inks = stickyInkContrast(color)
+      // All three are small text, so all three need the full 4.5 : 1.
+      expect(inks.title, `${color} title`).toBeGreaterThanOrEqual(4.5)
+      expect(inks.body, `${color} note`).toBeGreaterThanOrEqual(4.5)
+      expect(inks.meta, `${color} time line`).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it('stays pale paper in both themes — a sticky does not turn dark at night', () => {
+    for (const color of STICKY_COLORS) {
+      expect(relativeLuminance(stickyPaper(color)), color).toBeGreaterThanOrEqual(0.6)
     }
   })
 })
