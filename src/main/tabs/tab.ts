@@ -98,14 +98,31 @@ function securityFor(url: string): SecurityState {
   return 'neutral'
 }
 
-function errorPage(url: string, description: string): string {
-  const esc = (s: string): string =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Can’t open page</title>
+const esc = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+/** One of Aura's own pages in a tab: an error, or a page it chose not to open. */
+function notePage(title: string, body: string): string {
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
 <style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#101321;color:rgba(255,255,255,.9);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-main{text-align:center;max-width:32rem;padding:2rem}h1{font-size:1.1rem;font-weight:600}p{color:rgba(255,255,255,.55);font-size:.85rem;word-break:break-all}</style></head>
-<body><main><h1>Aura Browser can’t open this page</h1><p>${esc(url)}</p><p>${esc(description)}</p></main></body></html>`
+main{text-align:center;max-width:32rem;padding:2rem}h1{font-size:1.1rem;font-weight:600}p{color:rgba(255,255,255,.55);font-size:.85rem;word-break:break-all}a{color:#a9b8ff}</style></head>
+<body><main>${body}</main></body></html>`
   return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
+}
+
+function errorPage(url: string, description: string): string {
+  return notePage(
+    'Can’t open page',
+    `<h1>Aura Browser can’t open this page</h1><p>${esc(url)}</p><p>${esc(description)}</p>`,
+  )
+}
+
+/** In place of a page that was on screen when Aura crashed (see `held`). */
+function heldPage(url: string): string {
+  return notePage(
+    'Not reopened',
+    `<h1>Aura Browser closed unexpectedly</h1><p>This page was open at the time, so it wasn’t reopened by itself.</p><p><a href="${esc(url)}">Open it again</a></p><p>${esc(url)}</p>`,
+  )
 }
 
 export interface TabOptions {
@@ -138,6 +155,14 @@ export class Tab {
   domReady = false
   crashed = false
   security: SecurityState = 'neutral'
+  /**
+   * Set on restored tabs after Aura crashed. Instead of loading, the tab shows
+   * a note with a link back to its page, keeping the real address meanwhile —
+   * for the session, and for Reload. Following the link, Reload or a new
+   * address lets it go.
+   */
+  held = false
+  showingHeldNote = false
 
   constructor(
     private readonly host: TabHost,
@@ -203,7 +228,10 @@ export class Tab {
       this.isLoading = false
       this.host.changed(this)
     })
+    // The held note's link is the way back to the real page.
+    wc.on('will-navigate', () => this.release())
     wc.on('did-navigate', (_e, url) => {
+      if (this.held) return
       this.url = url
       this.pendingUrl = null
       this.security = securityFor(url)
@@ -211,17 +239,19 @@ export class Tab {
       this.host.changed(this)
     })
     wc.on('did-navigate-in-page', (_e, url, isMainFrame) => {
-      if (!isMainFrame) return
+      if (!isMainFrame || this.held) return
       this.url = url
       this.host.recordVisit(this, url)
       this.host.changed(this)
     })
     wc.on('page-title-updated', (_e, title) => {
+      if (this.held) return
       this.title = title
       this.host.updateTitle(this, this.url, title)
       this.host.changed(this)
     })
     wc.on('page-favicon-updated', (_e, favicons) => {
+      if (this.held) return
       this.faviconUrl = favicons[0] ?? null
       this.host.changed(this)
     })
@@ -233,7 +263,7 @@ export class Tab {
     })
     wc.on('did-fail-load', (_e, code, description, failedUrl, isMainFrame) => {
       // -3 is ERR_ABORTED (e.g. stop button, downloads, redirects) — not a failure to surface.
-      if (!isMainFrame || code === -3) return
+      if (!isMainFrame || code === -3 || this.held) return
       this.title = 'Can’t open page'
       void wc.loadURL(errorPage(failedUrl, description || `Error ${code}`))
     })
@@ -301,15 +331,31 @@ export class Tab {
 
   /** Session-restored tabs only load once first activated. */
   ensureLoaded(): void {
-    if (this.pendingUrl && !this.crashed) {
-      const url = this.pendingUrl
-      this.pendingUrl = null
-      void this.wc.loadURL(url)
+    if (!this.pendingUrl || this.crashed) return
+    if (this.held) {
+      if (!this.showingHeldNote) {
+        this.showingHeldNote = true
+        void this.wc.loadURL(heldPage(this.pendingUrl))
+      }
+      return
     }
+    const url = this.pendingUrl
+    this.pendingUrl = null
+    void this.wc.loadURL(url)
+  }
+
+  /** Stop standing in for the page: whatever loads next is the real thing. */
+  private release(): void {
+    if (!this.held) return
+    this.held = false
+    this.showingHeldNote = false
+    this.pendingUrl = null
   }
 
   navigate(url: string): void {
     if (!isAllowedPageUrl(url)) return
+    this.held = false
+    this.showingHeldNote = false
     this.pendingUrl = null
     this.crashed = false
     void this.wc.loadURL(url)
@@ -334,6 +380,9 @@ export class Tab {
       return
     }
     if (this.pendingUrl) {
+      // Reload on a held tab means "open it after all".
+      this.held = false
+      this.showingHeldNote = false
       this.ensureLoaded()
       return
     }

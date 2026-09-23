@@ -2,7 +2,7 @@ import { useUi } from '@/state/ui'
 import { AppsIcon } from './icons'
 
 /**
- * The way in to Aura Apps, in the sidebar above Settings.
+ * The way in to Aura Apps, at the very foot of the right-hand bar.
  *
  * It was reachable only from a menu and the command palette, which made the
  * whole feature invisible: pinned apps appear once something is switched on, so
@@ -18,11 +18,11 @@ export function AppsButton(): React.JSX.Element {
       title="Aura Apps"
       aria-label="Aura Apps"
       onClick={toggle}
-      className="no-drag flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-(--surface-hover)"
+      className="no-drag flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-(--surface-hover)"
       style={{ color: open ? 'var(--accent)' : 'var(--ink-2)' }}
       data-testid="apps-button"
     >
-      <AppsIcon size={15} />
+      <AppsIcon size={16} />
     </button>
   )
 }

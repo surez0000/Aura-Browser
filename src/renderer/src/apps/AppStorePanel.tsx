@@ -13,7 +13,7 @@ import { AppIcon, AppsIcon } from './icons'
  *
  * The catalogue is first-party, so this is a list of switches rather than a
  * download page — an app runs inside the browser chrome, which is privileged,
- * and third-party code belongs in extensions where the page sandbox holds.
+ * so only code that ships with Aura ever runs there.
  * Apps still being built are listed but cannot be switched on, so the shape of
  * what is coming is visible without pretending it is here.
  */

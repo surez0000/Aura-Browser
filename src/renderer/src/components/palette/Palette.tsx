@@ -179,9 +179,6 @@ export function Palette(): React.JSX.Element {
       case 'history:open':
         ui.toggleHistory()
         break
-      case 'extensions:open':
-        ui.toggleExtensions()
-        break
       case 'apps:store':
         ui.toggleAppStore()
         break

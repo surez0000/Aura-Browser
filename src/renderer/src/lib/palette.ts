@@ -89,11 +89,6 @@ export function buildActions(ctx: {
       hint: '⌘\\',
     },
     {
-      id: 'extensions:open',
-      title: 'Extensions…',
-      keywords: 'add-ons plugins chrome web store',
-    },
-    {
       id: 'history:open',
       title: 'Show Full History',
       keywords: 'browsing visited clear delete',

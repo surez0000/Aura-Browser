@@ -80,7 +80,6 @@ export function installMenu(ctx: MenuContext): void {
         { type: 'separator' },
         rendererItem('settings:toggle'),
         rendererItem('apps:store'),
-        rendererItem('extensions:open'),
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },

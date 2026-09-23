@@ -2,9 +2,9 @@
  * Aura Apps — small pieces of the browser you switch on in the App Store.
  *
  * The catalogue is first-party and ships with Aura: an app runs inside the
- * browser chrome, which is privileged, so unlike a Chrome extension there is no
- * sandbox between it and your tabs. Third-party code belongs in extensions,
- * which already run in the page. This list is what an app *is* to both sides;
+ * browser chrome, which is privileged — there is no sandbox between it and
+ * your tabs — so only code that ships with Aura runs there. This list is what
+ * an app *is* to both sides;
  * the main process owns which of them are on (kv "apps").
  */
 export type AuraAppId = 'notes' | 'reminders' | 'timesheet'

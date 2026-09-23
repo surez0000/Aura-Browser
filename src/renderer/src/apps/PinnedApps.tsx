@@ -4,10 +4,9 @@ import { useUi } from '@/state/ui'
 import { AppIcon } from './icons'
 
 /**
- * Pinned Aura Apps in the sidebar, beside Downloads and Settings — the two
- * things that were already there, so an app you switched on lands where the
- * rest of the browser's own tools live. Nothing shows until an app is both
- * enabled and pinned, so the rail stays empty for anyone who wants no apps.
+ * Pinned Aura Apps, at the foot of the right-hand bar.
+ * Nothing shows until an app is both enabled and pinned, so the bar stays
+ * empty for anyone who wants no apps.
  */
 export function PinnedApps({
   vertical = false,
@@ -30,12 +29,12 @@ export function PinnedApps({
           title={`${app.name} — ${app.tagline}`}
           aria-label={app.name}
           onClick={() => openApp(app.id)}
-          className="no-drag flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-(--surface-hover)"
+          className="no-drag flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-(--surface-hover)"
           style={{ color: 'var(--ink-2)' }}
           data-testid="pinned-app"
           data-app={app.id}
         >
-          <AppIcon id={app.id} size={15} />
+          <AppIcon id={app.id} size={16} />
         </button>
       ))}
     </div>

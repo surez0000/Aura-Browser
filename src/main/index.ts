@@ -16,7 +16,8 @@ import { ArchiveStore } from './services/db/archive'
 import { DownloadsService } from './services/downloads'
 import { PermissionService } from './services/permissions'
 import { DisplayCaptureService } from './services/display-capture'
-import { ExtensionService } from './services/extensions'
+import { guardWebStore } from './services/web-store'
+import { LaunchGuard } from './services/launch-guard'
 import { UpdaterService } from './services/updater'
 import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
 import { TabManager } from './tabs/tab-manager'
@@ -103,6 +104,10 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function bootstrap(): void {
+  // Written before anything can crash, removed only by a clean quit: if it is
+  // still there next time, the last run crashed (see restoreSession).
+  const launch = new LaunchGuard(app.getPath('userData'))
+  app.on('will-quit', () => launch.clear())
   const db = openDb(join(app.getPath('userData'), 'data', 'aurora.db'))
   const kv = new KvStore(db)
   const history = new HistoryStore(db)
@@ -120,6 +125,8 @@ function bootstrap(): void {
   }
   // The show-on-hover sidebar was replaced by the compact rail.
   if ((settings.sidebarMode as string) === 'hover') settings.sidebarMode = 'compact'
+  // Extension support is gone, and the store-installs switch with it.
+  delete (settings as unknown as Record<string, unknown>).webStoreInstalls
 
   // The theme setting drives prefers-color-scheme in every renderer via
   // nativeTheme — one pipe for system/light/dark. Set before window creation
@@ -146,9 +153,6 @@ function bootstrap(): void {
   const permissions = new PermissionService(kv, (request) =>
     pushToChrome('permissions:request', request),
   )
-  const extensions = new ExtensionService(kv, (list) => pushToChrome('extensions:changed', list), {
-    webStoreInstalls: () => settings.webStoreInstalls,
-  })
   const displayCapture = new DisplayCaptureService(
     (request) => pushToChrome('displayCapture:request', request),
     (id) => pushToChrome('displayCapture:close', { id }),
@@ -186,7 +190,7 @@ function bootstrap(): void {
       downloads.attach(ses)
       permissions.attach(ses, { persistDecisions: persist })
       displayCapture.attach(ses)
-      void extensions.attach(ses)
+      guardWebStore(ses)
     },
   })
   manager = m
@@ -253,7 +257,6 @@ function bootstrap(): void {
     permissions,
     displayCapture,
     miniWindows,
-    extensions,
     updater,
     apps,
     notes,
@@ -293,7 +296,7 @@ function bootstrap(): void {
   // instantly, and no WebContentsView is created while automation harnesses
   // (Playwright's CDP handshake) are still attaching to the fresh process.
   w.webContents.once('did-finish-load', () => {
-    restoreSession(kv, m)
+    restoreSession(kv, m, launch.lastRunEndedUncleanly)
     m.autoArchive(settings.todayArchiveHours)
     updater.start()
     // The apps' clock starts once the chrome can hear it, so launch catch-up
@@ -325,10 +328,15 @@ function migrateLegacyUserData(): void {
   }
 }
 
-function restoreSession(kv: KvStore, m: TabManager): void {
+/**
+ * After a crash, the pages that would open by themselves (the active Space's
+ * tabs on screen) are held back behind a note instead: if one of them is what
+ * crashed Aura, it must not do it again on every launch.
+ */
+function restoreSession(kv: KvStore, m: TabManager, afterCrash: boolean): void {
   const upgraded = upgradeSession(kv.get('session'))
   if (upgraded) {
-    m.restore(mergeLegacyFavorites(upgraded, kv.get('favorites')))
+    m.restore(mergeLegacyFavorites(upgraded, kv.get('favorites')), { holdPages: afterCrash })
   } else {
     m.ensureDefaultSpace()
   }

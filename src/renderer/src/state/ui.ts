@@ -36,7 +36,6 @@ export interface UiState {
 
   settingsOpen: boolean
   historyOpen: boolean
-  extensionsOpen: boolean
   appStoreOpen: boolean
   notesOpen: boolean
   /** A note something asked to open; the panel selects it until you pick another. */
@@ -79,8 +78,6 @@ export interface UiState {
   toggleSettings(): void
   toggleHistory(): void
   closeHistory(): void
-  toggleExtensions(): void
-  closeExtensions(): void
   toggleAppStore(): void
   closeAppStore(): void
   toggleNotes(): void
@@ -124,7 +121,6 @@ export const useUi = create<UiState>()((set) => ({
 
   settingsOpen: false,
   historyOpen: false,
-  extensionsOpen: false,
   appStoreOpen: false,
   notesOpen: false,
   notesRequestedId: null,
@@ -158,8 +154,6 @@ export const useUi = create<UiState>()((set) => ({
   closeSettings: () => set({ settingsOpen: false }),
   toggleHistory: () => set((s) => ({ historyOpen: !s.historyOpen })),
   closeHistory: () => set({ historyOpen: false }),
-  toggleExtensions: () => set((s) => ({ extensionsOpen: !s.extensionsOpen })),
-  closeExtensions: () => set({ extensionsOpen: false }),
   toggleAppStore: () => set((s) => ({ appStoreOpen: !s.appStoreOpen, settingsOpen: false })),
   closeAppStore: () => set({ appStoreOpen: false }),
   toggleNotes: () => set((s) => ({ notesOpen: !s.notesOpen, settingsOpen: false })),

@@ -6,9 +6,9 @@ import { holdOverlay, releaseOverlay } from '@/lib/overlay'
 /**
  * The shell every full panel shares: a scrim over the page, a dialog card, and
  * the overlay hold that swaps the live page for a snapshot while it is up
- * (ADR-0003). History, Extensions, the App Store and each app's panel differ
- * only in their header and body, so the shell lives here rather than four
- * times over.
+ * (ADR-0003). History, the App Store and each app's panel differ only in
+ * their header and body, so the shell lives here rather than several times
+ * over.
  *
  * Closing is deliberately three ways — Escape, the scrim, the close button —
  * because a dialog over a page has no other way out.

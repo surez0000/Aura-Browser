@@ -8,7 +8,6 @@ import { LoadingBar } from '@/components/LoadingBar'
 import { PeekCard } from '@/components/PeekCard'
 import { ScreenSharePicker } from '@/components/ScreenSharePicker'
 import { HistoryPanel } from '@/components/HistoryPanel'
-import { ExtensionsPanel } from '@/components/ExtensionsPanel'
 import { SettingsPanel } from '@/components/sidebar/SettingsFlyout'
 import { DownloadsPanel } from '@/components/sidebar/DownloadsFlyout'
 import { AppStorePanel } from '@/apps/AppStorePanel'
@@ -21,6 +20,7 @@ import { BackdropTexture } from '@/components/BackdropTexture'
 import { auroraPalette, hue2Of, hueOf } from '@/theme/aurora'
 import { toCss } from '@/theme/contrast'
 import { TopBar } from '@/components/TopBar'
+import { RightBar } from '@/components/RightBar'
 import {
   selectBackdropTexture,
   selectSidebarMode,
@@ -89,11 +89,12 @@ export default function App(): React.JSX.Element {
           <PaneArea />
         </div>
       </main>
+      {/* Aura's apps, down the right — every layout. */}
+      <RightBar />
       <PeekCard />
       <Palette />
       <ScreenSharePicker />
       <HistoryPanel />
-      <ExtensionsPanel />
       <SettingsPanel />
       <DownloadsPanel />
       <AppStorePanel />

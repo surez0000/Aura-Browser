@@ -108,12 +108,6 @@ export const KEYMAP: readonly KeyCommand[] = [
     rendererCommand: 'space:edit',
   },
   {
-    id: 'extensions:open',
-    label: 'Extensions…',
-    scope: 'renderer',
-    rendererCommand: 'extensions:open',
-  },
-  {
     id: 'apps:store',
     label: 'Aura Apps…',
     scope: 'renderer',

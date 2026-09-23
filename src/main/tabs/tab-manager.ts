@@ -1117,7 +1117,13 @@ export class TabManager {
     return { version: 3, activeSpaceId, spaces }
   }
 
-  restore(snapshot: SessionSnapshotV3): void {
+  /**
+   * `holdPages` (after a crash): the tabs that open by themselves at launch
+   * show a note with a link back instead of loading. Only those — a tab the
+   * user picks afterwards loads as it always would.
+   */
+  restore(snapshot: SessionSnapshotV3, opts: { holdPages?: boolean } = {}): void {
+    const restored: Tab[] = []
     for (const s of snapshot.spaces) {
       const space = this.createSpace({
         id: s.id,
@@ -1142,6 +1148,7 @@ export class TabManager {
           }),
         )
       }
+      restored.push(...created)
       const activeTab = created[Math.min(Math.max(0, s.activeIndex), created.length - 1)]
       space.activeTabId = activeTab?.id ?? null
       const panes = (s.paneIndices ?? [])
@@ -1154,12 +1161,14 @@ export class TabManager {
       this.normalisePanes(space)
     }
     this.ensureDefaultSpace()
+    if (opts.holdPages) for (const tab of restored) tab.held = true
     const target = this.getSpace(snapshot.activeSpaceId) ?? this.spaces[0]
     if (target) {
       // Force activation logic even though activeSpaceId may already match.
       this.activeSpaceId = ''
       this.activateSpace(target.id)
     }
+    for (const tab of restored) if (!tab.showingHeldNote) tab.held = false
   }
 
   // ---- state fan-out ---------------------------------------------------------

@@ -6,7 +6,9 @@ import { useUi } from '@/state/ui'
 
 /**
  * The dot rail at the sidebar's foot: click to switch, drop a dragged tab on a
- * dot to move it to that space, "+" to create a space.
+ * dot to move it to that space, "+" to create a space. Across the full sidebar
+ * it is a row of its own and wraps rather than overflowing, however many
+ * Spaces there are.
  */
 export function SpaceSwitcher({
   vertical = false,
@@ -18,8 +20,8 @@ export function SpaceSwitcher({
 
   return (
     <div
-      className={`no-drag flex min-w-0 items-center justify-center gap-2 ${
-        vertical ? 'flex-col py-1' : 'flex-1'
+      className={`no-drag flex min-w-0 shrink-0 items-center justify-center gap-2 ${
+        vertical ? 'flex-col py-1' : 'flex-wrap'
       }`}
       data-testid="space-switcher"
     >

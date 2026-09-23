@@ -54,7 +54,6 @@
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
-    "electron-chrome-web-store": "^0.13.0",
     "electron-updater": "^6.8.9",
     "zod": "^4.6.2"
   },
@@ -72,8 +71,7 @@
       "package.json"
     ],
     "asarUnpack": [
-      "**/*.node",
-      "**/node_modules/electron-chrome-web-store/**"
+      "**/*.node"
     ],
     "publish": {
       "provider": "github",

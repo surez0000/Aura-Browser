@@ -1,4 +1,4 @@
-/** The on/off switch used by the App Store and the extensions manager. */
+/** The on/off switch used by the App Store. */
 export function Switch({
   on,
   onChange,

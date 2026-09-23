@@ -19,8 +19,6 @@ import { DownloadsButton } from './DownloadsFlyout'
 import { SettingsButton } from './SettingsFlyout'
 import { UpdateCard, UpdateRailButton } from '@/components/UpdateNotice'
 import { WindowControls } from './WindowControls'
-import { PinnedApps } from '@/apps/PinnedApps'
-import { AppsButton } from '@/apps/AppsButton'
 
 export const SIDEBAR_WIDTH = 264
 /** Compact rail: wide enough for a 36 px target plus the panel's padding. */
@@ -203,11 +201,13 @@ export function Sidebar(): React.JSX.Element {
               </span>
             </button>
 
-            <div className="flex h-8 shrink-0 items-center gap-2">
+            {/* The Space dots get a row of their own. Sharing one with the tools,
+                three pinned apps left them room for about one dot, and the
+                rest spilled under Downloads and the first app. */}
+            <SpaceSwitcher />
+            <div className="flex h-8 shrink-0 items-center gap-1" data-testid="sidebar-footer">
               <DownloadsButton />
-              <SpaceSwitcher />
-              <PinnedApps />
-              <AppsButton />
+              <div className="flex-1" />
               <SettingsButton />
             </div>
           </>
@@ -292,8 +292,6 @@ function CompactRail(): React.JSX.Element {
         <SpaceSwitcher vertical />
         <div className="flex flex-col items-center">
           <DownloadsButton />
-          <PinnedApps vertical />
-          <AppsButton />
           <SettingsButton />
         </div>
       </div>
@@ -331,8 +329,6 @@ function SpaceRail(): React.JSX.Element {
         <SpaceSwitcher vertical />
         <div className="flex flex-col items-center">
           <DownloadsButton />
-          <PinnedApps vertical />
-          <AppsButton />
           <SettingsButton />
         </div>
       </div>

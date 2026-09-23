@@ -6,7 +6,7 @@ built with React, TypeScript, and design tokens.
 
 > Phases (a)–(d) are complete and shipping: shell, tab engine, sidebar,
 > command palette, Spaces as isolated profiles, incognito, split view, Peek,
-> the mini window, Chrome extensions, screen sharing, history manager,
+> the mini window, screen sharing, history manager,
 > find-in-page, downloads, in-chrome permission prompts, session restore, the
 > Aurora Glass theme (per-Space WebGL palettes, light/dark/system, WCAG AA
 > proven in CI), Settings, and an in-app updater. Phase (e) is done but for
@@ -83,17 +83,16 @@ Key decisions (full rationale in [docs/adr/](docs/adr/)):
 - `sandbox: true`, `contextIsolation: true`, `nodeIntegration: false` for every
   renderer, page and chrome alike.
 - The chrome renderer can only load the bundled UI. Page renderers get no
-  preload at all, unless you turn on installing extensions from the Chrome Web
-  Store — that integration registers one on the session, which is why it is off
-  by default and says so in the extensions manager.
+  preload at all.
+- Aura doesn't run Chrome extensions (removed in 1.1.3: Electron supports only
+  part of the extension API). Chrome Web Store pages open read-only, with their
+  scripts switched off — the store's private install API crashes Electron.
 - Every IPC channel is allowlisted in [src/shared/ipc-contract.ts](src/shared/ipc-contract.ts)
   and zod-validated in the main process; only the chrome window may invoke.
 - Every Space is its own storage partition — cookies, logins, site data, and
   cache never cross Spaces, like Chrome profiles (ADR-0004). Incognito is
   in-memory. Deleting a Space deletes its data.
-- Site permissions are deny-by-default with a per-request prompt. Adding an
-  extension asks first and lists what it will be able to do; extensions run in
-  every Space but their storage stays per-Space. Screen
+- Site permissions are deny-by-default with a per-request prompt. Screen
   sharing shows a picker first: a page only ever receives the one screen or
   window chosen there.
 - No telemetry. Default search is DuckDuckGo (changeable in Settings). Nothing
@@ -114,26 +113,16 @@ build          app icon: logo.png (source) + icon.png (rendered) for electron-bu
 scripts        build helpers (icon renderer)
 ```
 
-## Extensions
-
-Chrome extensions load on Electron's own extension support: content scripts,
-declarative request blocking, storage and messaging all work; toolbar popups
-and the `chrome.tabs` surface do not. Open the manager from the app menu, the
-command palette, or **Extensions…**, then add one from a folder, or turn on
-store installs and add it from the Chrome Web Store. `AURORA_LOAD_EXTENSION`
-takes comma-separated folders for a single run, like Chrome's
-`--load-extension`.
-
 ## Aura Apps
 
 Beyond browsing, Aura carries small apps you switch on in the **App Store** —
 the app menu, the command palette, or **Aura Apps…**. Nothing is on by default.
-Switching an app on pins it to the sidebar beside Downloads and Settings, and
-unpinning leaves it on but out of the way.
+Switching an app on pins it to the bar down the right of the window, above the
+App Store button, and unpinning leaves it on but out of the way.
 
 The catalogue is first-party and ships with the browser: an app runs inside the
-browser chrome, which is privileged, so third-party code stays in extensions
-where the page sandbox holds. App data is global — one set across every Space.
+browser chrome, which is privileged, so only code that ships with Aura runs
+there. App data is global — one set across every Space.
 
 - **Notes** — a board of coloured stickies. ⌘E starts one about the page you
   are on, with the cursor already in it; nothing is stored until you type.
