@@ -5,6 +5,53 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [1.1.3] — 2026-09-23
+
+### Added
+
+- **A bar down the right of the window for Aura's apps.** Notes, Reminders, the
+  Timesheet and the App Store sit at its foot, in every layout, which leaves the
+  sidebar's footer to the Space dots, Downloads and Settings.
+
+### Removed
+
+- **Chrome extensions.** Electron runs only part of the extension API — no
+  toolbar buttons or popups, no `browsingData`, no context menus — so most
+  extensions either half-worked or couldn't work at all, and installing from
+  the Chrome Web Store crashed the browser. Rather than something that looks
+  like Chrome's extensions but isn't, Aura no longer runs them: the Extensions
+  panel, store installs and loading from a folder are gone. Extensions you had
+  installed stay in your profile folder but no longer load.
+
+### Changed
+
+- **Stickies are real paper now, in both themes.** Pale sheets with dark ink —
+  a sticky doesn't turn dark at night, and the deep "night" paper read as
+  coloured glass. The grain is pressed into the sheet, there's a glue strip
+  along the top, each note leans a little (the same way every time) and
+  straightens when you reach for it, and the time and page sit in a small mono
+  line. Plain is now cream, like an ordinary notepad. Every paper and every
+  line of writing on it is checked against WCAG AA.
+
+### Fixed
+
+- **Opening a Chrome Web Store page crashed Aura — and then every launch did
+  too.** Electron hands the store's pages Chrome's private install API, and one
+  call every extension page makes as it loads reaches a Safe Browsing service
+  Electron doesn't have. Store pages now open read-only, with their scripts
+  switched off, so they can't take the browser down.
+- **After a crash, Aura no longer reopens the page that was on screen by
+  itself.** The tab keeps its place and title and shows a note with a link back
+  instead, so no page can stop Aura from opening — or from updating.
+- **With two pinned stickies, both stacked in the first column** and the rest of
+  the row stayed empty. The board is a grid now, which also reads newest-first
+  in the right order.
+- **The Space dots slid under the sidebar's buttons** once apps were pinned, or
+  with more than four Spaces: they shared one row with Downloads, the apps and
+  Settings, and overflowed both ways when it ran out of room. They have a row of
+  their own now, above the buttons, and wrap onto a second line rather than
+  overflowing, however many Spaces you have.
+
 ## [1.1.2] — 2026-09-22
 
 ### Added
