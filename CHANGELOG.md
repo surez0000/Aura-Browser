@@ -5,6 +5,15 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [1.1.4] — 2026-10-09
+
+### Added
+
+- **The Timesheet copies as plain text too.** A **Text** button sits beside
+  Markdown and CSV and copies the day the way you'd type it into a mail or a
+  chat box: the total, a numbered list of what the time went on, then a
+  numbered timeline — no table pipes, no asterisks, no quoted columns.
+
 ## [1.1.3] — 2026-09-23
 
 ### Added
