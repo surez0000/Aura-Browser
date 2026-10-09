@@ -13,11 +13,13 @@ import {
   INTERVAL_CHOICES,
   dayToCsv,
   dayToMarkdown,
+  dayToText,
   formatDuration,
   nextPromptAt,
   startOfDay,
   summariseDay,
   withinWorkingHours,
+  type DaySummary,
   type TimesheetConfig,
   type TimesheetEntry,
 } from '@shared/schedule'
@@ -30,6 +32,24 @@ import { AppIcon } from '../icons'
 
 const DAY = 86_400_000
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+
+/** What the day copies as: plain numbered text for a mail or chat box, or a format a tool reads. */
+const EXPORTS = [
+  {
+    kind: 'text',
+    label: 'Text',
+    title: 'Copy as plain text with numbered lists',
+    format: dayToText,
+  },
+  { kind: 'md', label: 'Markdown', title: 'Copy as Markdown', format: dayToMarkdown },
+  { kind: 'csv', label: 'CSV', title: 'Copy as CSV', format: dayToCsv },
+] as const satisfies readonly {
+  kind: string
+  label: string
+  title: string
+  format: (summary: DaySummary) => string
+}[]
+type ExportKind = (typeof EXPORTS)[number]['kind']
 
 function clock(at: number): string {
   return new Date(at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
@@ -71,7 +91,7 @@ function TimesheetDialog(): React.JSX.Element {
   })
   const entries = loaded.entries
   const [showConfig, setShowConfig] = useState(false)
-  const [copied, setCopied] = useState<'md' | 'csv' | null>(null)
+  const [copied, setCopied] = useState<ExportKind | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -92,9 +112,9 @@ function TimesheetDialog(): React.JSX.Element {
   )
   const maxTotal = summary?.totals[0]?.duration ?? 0
 
-  const copy = async (kind: 'md' | 'csv'): Promise<void> => {
+  const copy = async ({ kind, format }: (typeof EXPORTS)[number]): Promise<void> => {
     if (!summary) return
-    await navigator.clipboard.writeText(kind === 'md' ? dayToMarkdown(summary) : dayToCsv(summary))
+    await navigator.clipboard.writeText(format(summary))
     setCopied(kind)
     setTimeout(() => setCopied(null), 1400)
   }
@@ -145,28 +165,21 @@ function TimesheetDialog(): React.JSX.Element {
             </IconButton>
           </div>
           <div className="ml-auto flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => void copy('md')}
-              disabled={!summary || summary.blocks.length === 0}
-              className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] hover:bg-(--surface-hover) disabled:cursor-default disabled:opacity-40"
-              style={{ color: 'var(--ink-2)' }}
-              data-testid="timesheet-copy-md"
-            >
-              {copied === 'md' ? <Check size={13} /> : <Copy size={13} />}
-              Markdown
-            </button>
-            <button
-              type="button"
-              onClick={() => void copy('csv')}
-              disabled={!summary || summary.blocks.length === 0}
-              className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] hover:bg-(--surface-hover) disabled:cursor-default disabled:opacity-40"
-              style={{ color: 'var(--ink-2)' }}
-              data-testid="timesheet-copy-csv"
-            >
-              {copied === 'csv' ? <Check size={13} /> : <Copy size={13} />}
-              CSV
-            </button>
+            {EXPORTS.map((e) => (
+              <button
+                key={e.kind}
+                type="button"
+                onClick={() => void copy(e)}
+                disabled={!summary || summary.blocks.length === 0}
+                className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] hover:bg-(--surface-hover) disabled:cursor-default disabled:opacity-40"
+                style={{ color: 'var(--ink-2)' }}
+                title={e.title}
+                data-testid={`timesheet-copy-${e.kind}`}
+              >
+                {copied === e.kind ? <Check size={13} /> : <Copy size={13} />}
+                {e.label}
+              </button>
+            ))}
             <IconButton
               label="Schedule and question"
               onClick={() => setShowConfig((v) => !v)}

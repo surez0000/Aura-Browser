@@ -200,6 +200,21 @@ export function dayToMarkdown(summary: DaySummary): string {
   return lines.join('\n')
 }
 
+/** The day as plain text for a mail or chat box: numbered totals, then the timeline. */
+export function dayToText(summary: DaySummary): string {
+  const lines = [`${summary.date} — ${formatDuration(summary.totalDuration)}`, '']
+  summary.totals.forEach((t, i) =>
+    lines.push(`${i + 1}. ${t.answer} — ${formatDuration(t.duration)}`),
+  )
+  if (summary.blocks.length > 0) {
+    lines.push('', 'Timeline')
+    summary.blocks.forEach((b, i) =>
+      lines.push(`${i + 1}. ${clock(b.start)}–${clock(b.end)}  ${b.answer}`),
+    )
+  }
+  return lines.join('\n')
+}
+
 export function dayToCsv(summary: DaySummary): string {
   const esc = (s: string): string => `"${s.replace(/"/g, '""')}"`
   const lines = ['date,from,to,minutes,doing,page']

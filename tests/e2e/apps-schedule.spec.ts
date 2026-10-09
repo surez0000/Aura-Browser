@@ -139,6 +139,14 @@ test('the timesheet asks its question, takes the answer in place, and reads the 
     await expect(chrome.getByTestId('timesheet-entry')).toHaveCount(1)
     await expect(chrome.getByTestId('timesheet-next-question')).toContainText('Next question at')
 
+    // Plain text copies with numbered lists, ready for a mail or chat box.
+    await chrome.getByTestId('timesheet-copy-text').click()
+    await expect
+      .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+      .toMatch(
+        /^\d{4}-\d{2}-\d{2} — .+\n\n1\. Reviewing the spec — .+\n\nTimeline\n1\. \d{2}:\d{2}–\d{2}:\d{2} {2}Reviewing the spec$/,
+      )
+
     await chrome.getByTestId('timesheet-settings').click()
     await expect(chrome.getByTestId('timesheet-question')).toHaveValue('What are you on?')
     await expect(

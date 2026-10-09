@@ -4,6 +4,7 @@ import {
   bucketOf,
   dayToCsv,
   dayToMarkdown,
+  dayToText,
   dueNow,
   formatDuration,
   nextOccurrence,
@@ -162,6 +163,30 @@ describe('day summary', () => {
     const csv = dayToCsv(s)
     expect(csv.split('\n')[0]).toBe('date,from,to,minutes,doing,page')
     expect(csv).toContain('2026-09-23,09:00,09:30,30,"Spec ""review""","https://example.com/spec"')
+  })
+
+  it('exports plain text with numbered lists', () => {
+    const s = summariseDay(
+      [
+        entry(1, wed(9), 'Spec review'),
+        entry(2, wed(10), 'Standup'),
+        entry(3, wed(10, 30), 'Spec review'),
+      ],
+      wed(12),
+      wed(11),
+      DEFAULT_TIMESHEET,
+    )
+    expect(dayToText(s).split('\n')).toEqual([
+      '2026-09-23 — 1h 30m',
+      '',
+      '1. Spec review — 1h',
+      '2. Standup — 30m',
+      '',
+      'Timeline',
+      '1. 09:00–09:30  Spec review',
+      '2. 10:00–10:30  Standup',
+      '3. 10:30–11:00  Spec review',
+    ])
   })
 
   it('formats durations the way people say them', () => {
