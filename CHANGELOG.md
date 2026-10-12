@@ -5,6 +5,37 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [1.1.5] — 2026-10-12
+
+### Added
+
+- **Aura Grammar Checker, a new Aura App.** It corrects grammar, spelling and
+  punctuation with your own AI key: Google Gemini, OpenAI, Anthropic, or any
+  OpenAI-compatible server, Ollama and LM Studio included. It stays off on
+  every site until you allow it from its button in the right bar or the page's
+  right-click menu. Then a small gold mark sits in the corner of the text box
+  you are typing in; click it, or press ⌥⌘G, and the box's text (or just your
+  selection) is checked. The result arrives in a card you can edit. Every
+  change is highlighted, a click on one shows what it was and puts it back,
+  **Recheck** checks your own edits, and **Replace** puts the text in the box
+  with an Undo. Nothing is sent before you click, the key stays encrypted in
+  the system keychain, and it never runs in private Spaces or in password,
+  payment or code fields.
+- **Downloads say so when they start.** A popover beside the Downloads button
+  follows a download from start to finish (progress, size, time left) and
+  offers **Open** and **Show in Finder** when it lands. It floats above the
+  page without freezing it, and the button gives a little drop as a download
+  begins. On a Mac the Dock's Downloads stack bounces when a file arrives.
+- **The Timesheet copies a whole week.** A **Day | Week** switch sits beside
+  the copy buttons. Week copies Monday to Sunday, the week's totals and then
+  each day's, as plain text, Markdown or CSV.
+
+### Fixed
+
+- Quitting while the Timesheet was reading its day could, with a debugger
+  attached (the test harness does this), raise a "database connection is
+  busy" error. The session save at quit now waits for the read instead.
+
 ## [1.1.4] — 2026-10-09
 
 ### Added
