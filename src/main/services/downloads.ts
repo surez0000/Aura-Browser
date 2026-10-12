@@ -4,6 +4,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { basename, extname, join } from 'node:path'
 import type { DownloadInfo, DownloadState } from '@shared/models'
 import type { AuroraDb } from './db/index'
+import { isE2E } from '../env'
 
 const PUSH_LIMIT = 30
 
@@ -82,6 +83,11 @@ export class DownloadsService {
       this.live.delete(info.id)
       this.history = [info, ...this.history.filter((d) => d.id !== info.id)].slice(0, PUSH_LIMIT)
       this.persistAndPush(info)
+      // The Dock's Downloads stack bounces, as it does for every Mac browser
+      // (only when the file landed inside ~/Downloads).
+      if (info.state === 'completed' && process.platform === 'darwin') {
+        app.dock?.downloadFinished(info.savePath)
+      }
     })
   }
 
@@ -112,9 +118,12 @@ export class DownloadsService {
     }
   }
 
+  /**
+   * ~/Downloads, except under the e2e harness, whose runs keep their files in
+   * the throwaway profile. A custom profile folder alone (a dev run) still
+   * downloads where a person would look.
+   */
   static defaultDirectory(): string {
-    return process.env.AURORA_USER_DATA_DIR
-      ? join(app.getPath('userData'), 'downloads')
-      : app.getPath('downloads')
+    return isE2E ? join(app.getPath('userData'), 'downloads') : app.getPath('downloads')
   }
 }

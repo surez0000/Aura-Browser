@@ -14,6 +14,8 @@ import { AppStorePanel } from '@/apps/AppStorePanel'
 import { NotesPanel } from '@/apps/notes/NotesPanel'
 import { RemindersPanel } from '@/apps/reminders/RemindersPanel'
 import { TimesheetPanel } from '@/apps/timesheet/TimesheetPanel'
+import { GrammarPopover } from '@/apps/grammar/GrammarPopover'
+import { GrammarSetup } from '@/apps/grammar/GrammarSetup'
 import { AppPrompts } from '@/apps/AppPrompts'
 import { AuroraBackdrop } from '@/components/AuroraBackdrop'
 import { BackdropTexture } from '@/components/BackdropTexture'
@@ -101,6 +103,8 @@ export default function App(): React.JSX.Element {
       <NotesPanel />
       <RemindersPanel />
       <TimesheetPanel />
+      <GrammarPopover />
+      <GrammarSetup />
     </div>
   )
 }

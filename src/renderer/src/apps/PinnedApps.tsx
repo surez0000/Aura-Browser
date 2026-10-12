@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useApps } from '@/state/apps'
+import { useGrammar, useGrammarOnHere } from '@/state/grammar'
 import { useUi } from '@/state/ui'
 import { AppIcon } from './icons'
 
@@ -14,6 +15,7 @@ export function PinnedApps({
   const apps = useApps((s) => s.apps)
   const pinned = useMemo(() => apps.filter((a) => a.enabled && a.pinned), [apps])
   const openApp = useAppOpener()
+  const grammarHere = useGrammarOnHere()
 
   if (pinned.length === 0) return null
 
@@ -33,8 +35,19 @@ export function PinnedApps({
           style={{ color: 'var(--ink-2)' }}
           data-testid="pinned-app"
           data-app={app.id}
+          data-on-here={(app.id === 'grammar' && grammarHere) || undefined}
         >
-          <AppIcon id={app.id} size={16} />
+          <span className="relative flex">
+            <AppIcon id={app.id} size={16} />
+            {/* The grammar checker is on for the page on screen. */}
+            {app.id === 'grammar' && grammarHere && (
+              <span
+                className="absolute -top-1 -right-1.5 h-1.5 w-1.5 rounded-full"
+                style={{ background: 'var(--accent)' }}
+                aria-hidden
+              />
+            )}
+          </span>
         </button>
       ))}
     </div>
@@ -46,9 +59,16 @@ function useAppOpener(): (id: string) => void {
   const toggleNotes = useUi((s) => s.toggleNotes)
   const toggleReminders = useUi((s) => s.toggleReminders)
   const toggleTimesheet = useUi((s) => s.toggleTimesheet)
+  const toggleGrammar = useUi((s) => s.toggleGrammar)
+  const openGrammarSetup = useUi((s) => s.openGrammarSetup)
   return (id: string) => {
     if (id === 'notes') toggleNotes()
     else if (id === 'reminders') toggleReminders()
     else if (id === 'timesheet') toggleTimesheet()
+    // Before setup there is nothing to switch, so setup is what opens.
+    else if (id === 'grammar') {
+      if (useGrammar.getState().info?.ready) toggleGrammar()
+      else openGrammarSetup()
+    }
   }
 }

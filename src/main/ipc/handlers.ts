@@ -13,7 +13,9 @@ import type { NotesStore } from '../services/db/notes'
 import type { RemindersStore } from '../services/db/reminders'
 import type { TimesheetStore } from '../services/db/timesheet'
 import type { AppScheduler } from '../apps/scheduler'
-import { startOfDay } from '@shared/schedule'
+import type { GrammarService } from '../apps/grammar'
+import type { DownloadBubble } from '../windows/download-bubble'
+import { startOfDay, weekBounds } from '@shared/schedule'
 import { handleInvoke } from './router'
 
 interface HandlerContext {
@@ -33,6 +35,8 @@ interface HandlerContext {
   timesheet: TimesheetStore
   timesheetChanged: () => void
   scheduler: AppScheduler
+  grammar: GrammarService
+  downloadBubble: DownloadBubble
   getSettings: () => AuroraSettings
   setSettings: (patch: Partial<AuroraSettings>) => AuroraSettings
   win: BrowserWindow
@@ -154,6 +158,18 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
     return note
   })
 
+  handleInvoke('ui:setDownloadAnchor', (req) => ctx.downloadBubble.setAnchor(req.anchor))
+  handleInvoke('downloadBubble:get', () => ctx.downloadBubble.state())
+  handleInvoke('downloadBubble:resize', (req) => ctx.downloadBubble.resize(req.height))
+  handleInvoke('downloadBubble:hover', (req) => ctx.downloadBubble.hover(req.inside))
+  handleInvoke('downloadBubble:dismiss', () => ctx.downloadBubble.dismiss())
+  handleInvoke('downloadBubble:showAll', () => ctx.downloadBubble.showAll())
+
+  handleInvoke('grammar:get', () => ctx.grammar.info())
+  handleInvoke('grammar:test', (req) => ctx.grammar.test(req))
+  handleInvoke('grammar:save', (req) => ctx.grammar.save(req))
+  handleInvoke('grammar:setSite', (req) => ctx.grammar.setSite(req.site, req.allowed))
+
   handleInvoke('apps:getTimesheetConfig', () => ctx.apps.timesheetConfig())
   handleInvoke('apps:setTimesheetConfig', (req) => {
     const cfg = ctx.apps.setTimesheetConfig(req)
@@ -213,6 +229,10 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
   handleInvoke('timesheet:day', (req) => {
     const from = startOfDay(req.day)
     return ctx.timesheet.between(from, from + 86_400_000)
+  })
+  handleInvoke('timesheet:week', (req) => {
+    const { from, to } = weekBounds(req.day)
+    return ctx.timesheet.between(from, to)
   })
   handleInvoke('timesheet:deleteEntry', (req) => {
     ctx.timesheet.remove(req.id)

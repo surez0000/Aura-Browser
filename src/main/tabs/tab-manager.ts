@@ -33,6 +33,16 @@ interface TabManagerDeps {
   /** Wire per-session services (downloads, permissions) — once per partition. */
   attachSession: (ses: Session, opts: { persist: boolean }) => void
   pushFindResult: (result: FindResult) => void
+  /** Page views were (re)attached: anything floating above them re-raises. */
+  viewsChanged?: () => void
+  /** A chrome overlay took over the page area, or gave it back. */
+  overlayChanged?: (shown: boolean) => void
+  /** Hooks for Aura's apps that work inside pages (the grammar checker). */
+  pages?: {
+    domReady(tab: Tab): void
+    menuItems(tab: Tab, params: Electron.ContextMenuParams): MenuItemConstructorOptions[]
+    key(tab: Tab, input: Electron.Input): boolean
+  }
 }
 
 interface SpaceRecord {
@@ -113,6 +123,9 @@ export class TabManager {
     focused: (tab) => {
       if (this.activeSpace()?.panes.includes(tab.id)) this.focusPane(tab.id)
     },
+    domReady: (tab) => this.deps.pages?.domReady(tab),
+    pageMenuItems: (tab, params) => this.deps.pages?.menuItems(tab, params) ?? [],
+    pageKey: (tab, input) => this.deps.pages?.key(tab, input) ?? false,
   }
 
   constructor(
@@ -308,6 +321,11 @@ export class TabManager {
   active(): Tab | null {
     const space = this.activeSpace()
     return space?.activeTabId ? (this.getTab(space.activeTabId) ?? null) : null
+  }
+
+  /** Every page with a live view: the tabs, and the Peek if one is open. */
+  livePages(): Tab[] {
+    return this.peekTab ? [...this.tabs, this.peekTab] : [...this.tabs]
   }
 
   count(): number {
@@ -935,8 +953,11 @@ export class TabManager {
     if (!shown) {
       this.overlayShown = false
       this.syncAttachments()
+      this.deps.overlayChanged?.(false)
       return { snapshots: [] }
     }
+    // Native views float over chrome HTML, so anything floating steps aside now.
+    this.deps.overlayChanged?.(true)
     if (phase === 'detach') {
       // Second step of a two-phase swap; ignored if released in between.
       if (this.overlayShown) this.detach()
@@ -1016,6 +1037,7 @@ export class TabManager {
       this.getTab(focused)?.wc.focus()
     }
     this.syncPeek()
+    this.deps.viewsChanged?.()
   }
 
   /** Remove a single view from the window (a pane closing, crashing, moving). */

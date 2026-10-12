@@ -8,6 +8,8 @@ import { openDb } from './services/db'
 import { NotesStore } from './services/db/notes'
 import { AppRegistry } from './apps/registry'
 import { AppScheduler } from './apps/scheduler'
+import { GrammarService } from './apps/grammar'
+import { isE2E } from './env'
 import { RemindersStore } from './services/db/reminders'
 import { TimesheetStore } from './services/db/timesheet'
 import { KvStore } from './services/db/kv'
@@ -24,6 +26,7 @@ import { TabManager } from './tabs/tab-manager'
 import { DEFAULT_PARTITION } from './tabs/partition-names'
 import { TRAFFIC_LIGHTS, createChromeWindow, type WindowPlacement } from './windows/chrome-window'
 import { MiniWindowService } from './windows/mini-window'
+import { DownloadBubble } from './windows/download-bubble'
 import { registerIpcHandlers } from './ipc/handlers'
 import { addTrustedWebContents, pushTo, pushToChrome, setTrustedWebContents } from './ipc/router'
 import { installMenu } from './menu'
@@ -85,7 +88,7 @@ if (!app.requestSingleInstanceLock()) {
 
   let flushedForQuit = false
   app.on('before-quit', (event) => {
-    manager?.saveSessionNow()
+    saveSessionForQuit()
     if (flushedForQuit || !manager) return
     // Give every Space's cookie jar and storage a chance to hit disk, then quit
     // for real. Still bounded, so a stuck flush can never keep the app alive,
@@ -147,9 +150,12 @@ function bootstrap(): void {
     win?.setBackgroundColor(WINDOW_BG[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'])
   })
 
-  const downloads = new DownloadsService(db, DownloadsService.defaultDirectory(), (list) =>
-    pushToChrome('downloads:changed', list),
-  )
+  // Created once the window exists; downloads cannot start before that.
+  let downloadBubble: DownloadBubble | null = null
+  const downloads = new DownloadsService(db, DownloadsService.defaultDirectory(), (list) => {
+    pushToChrome('downloads:changed', list)
+    downloadBubble?.downloadsChanged(list)
+  })
   const permissions = new PermissionService(kv, (request) =>
     pushToChrome('permissions:request', request),
   )
@@ -175,7 +181,11 @@ function bootstrap(): void {
     archive,
     saveSession: (snapshot) => kv.set('session', snapshot),
     requestUrlEdit: () => pushToChrome('ui:command', { id: 'url:focus' }),
+    viewsChanged: () => downloadBubble?.raise(),
+    overlayChanged: (shown) => downloadBubble?.setOverlay(shown),
     stateEmitted: (snapshot) => {
+      // The popover wears the active Space's accent.
+      downloadBubble?.refresh()
       // The Spaces menu lists the real Spaces, so rebuild it when that list —
       // or which one is active — changes. Tab churn must not rebuild it.
       const signature = `${snapshot.activeSpaceId}|${snapshot.spaces.map((s) => `${s.id}:${s.name}`).join(',')}`
@@ -184,6 +194,12 @@ function bootstrap(): void {
       rebuildMenu()
     },
     pushFindResult: (result) => pushToChrome('find:result', result),
+    // Created below, once the app registry exists; pages load after that.
+    pages: {
+      domReady: (tab) => grammar?.pageReady(tab),
+      menuItems: (tab, params) => grammar?.menuItems(tab, params) ?? [],
+      key: (tab, input) => grammar?.handleKey(tab, input) ?? false,
+    },
     // Every Space is its own storage partition (ADR-0004); each session gets
     // download tracking and deny-by-default permissions the first time it is used.
     attachSession: (ses, { persist }) => {
@@ -194,6 +210,21 @@ function bootstrap(): void {
     },
   })
   manager = m
+  const bubble = new DownloadBubble({
+    win: w,
+    initial: downloads.list(),
+    trust: (wc) => addTrustedWebContents(wc),
+    push: (wc, state) => pushTo(wc, 'downloadBubble:state', state),
+    space: () => {
+      const space = m.activeSpace()
+      return space
+        ? { accentHue: space.accentHue, accentHue2: space.accentHue2, incognito: space.incognito }
+        : null
+    },
+    openDownloads: () => pushToChrome('ui:command', { id: 'downloads:toggle' }),
+    refocus: () => m.focusActive(),
+  })
+  downloadBubble = bubble
   // The chrome renderer itself lives on the default session — harden it too.
   m.prepareSession(DEFAULT_PARTITION, true)
 
@@ -222,7 +253,25 @@ function bootstrap(): void {
   // behind Chromium's capture-stack start-up.
   displayCapture.warmUp()
 
-  const apps = new AppRegistry(kv, (list) => pushToChrome('apps:changed', list))
+  let grammar: GrammarService | null = null
+  const apps = new AppRegistry(kv, (list) => {
+    pushToChrome('apps:changed', list)
+    // Switching the grammar checker on or off adds or removes it from pages.
+    grammar?.sync()
+  })
+  grammar = new GrammarService({
+    kv,
+    apps,
+    pages: () => m.livePages(),
+    changed: (info) => pushToChrome('grammar:changed', info),
+    openSettings: () => {
+      pushToChrome('ui:command', { id: 'grammar:open' })
+      if (win && !win.isDestroyed()) win.focus()
+    },
+    // The harness must never meet a keychain prompt, and needs to reach into the card.
+    plainKeys: isE2E,
+    shadow: isE2E ? 'open' : 'closed',
+  })
 
   // One clock for every app: reminders and the timesheet question. It only
   // does anything for apps that are switched on, and says so in two places —
@@ -266,6 +315,8 @@ function bootstrap(): void {
     timesheet,
     timesheetChanged: () => pushToChrome('timesheet:changed', {}),
     scheduler,
+    grammar,
+    downloadBubble: bubble,
     getSettings: () => settings,
     setSettings: (patch) => {
       settings = { ...settings, ...patch }
@@ -313,6 +364,28 @@ function bootstrap(): void {
   w.on('closed', () => {
     win = null
   })
+}
+
+/**
+ * The quit-time save must never throw. A debugger can run `app.quit()` in the
+ * middle of other JavaScript — the e2e harness does exactly that through the
+ * inspector — and if that lands while a query is stepping rows (the Timesheet
+ * panel reading its day), SQLite refuses the write as "busy". The query
+ * finishes within the same task, so save again right after it; the second
+ * `before-quit`, after the storage flush, saves once more regardless.
+ */
+function saveSessionForQuit(): void {
+  try {
+    manager?.saveSessionNow()
+  } catch {
+    setImmediate(() => {
+      try {
+        manager?.saveSessionNow()
+      } catch {
+        // The post-flush before-quit saves again.
+      }
+    })
+  }
 }
 
 function migrateLegacyUserData(): void {

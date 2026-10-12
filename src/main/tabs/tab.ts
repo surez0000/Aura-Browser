@@ -21,6 +21,12 @@ export interface TabHost {
   openInSpace(url: string, spaceId: string): void
   /** The page took keyboard focus (a click landed in it). */
   focused(tab: Tab): void
+  /** A new document in this tab finished parsing. */
+  domReady(tab: Tab): void
+  /** Extra page context-menu items from Aura's apps. */
+  pageMenuItems(tab: Tab, params: Electron.ContextMenuParams): MenuItemConstructorOptions[]
+  /** A key went down while the page had focus; true swallows it. */
+  pageKey(tab: Tab, input: Electron.Input): boolean
 }
 
 /**
@@ -223,6 +229,10 @@ export class Tab {
     wc.on('dom-ready', () => {
       this.domReady = true
       this.host.changed(this)
+      this.host.domReady(this)
+    })
+    wc.on('before-input-event', (event, input) => {
+      if (this.host.pageKey(this, input)) event.preventDefault()
     })
     wc.on('did-stop-loading', () => {
       this.isLoading = false
@@ -311,6 +321,8 @@ export class Tab {
     } else if (params.selectionText.trim()) {
       template.push({ label: 'Copy', click: () => wc.copy() }, { type: 'separator' })
     }
+    const extra = this.host.pageMenuItems(this, params)
+    if (extra.length > 0) template.push(...extra, { type: 'separator' })
     template.push(
       {
         label: 'Back',

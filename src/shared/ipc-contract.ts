@@ -1,10 +1,13 @@
 import type { AuraAppId } from './apps'
+import type { GrammarInfo, GrammarSetup, GrammarTestResult } from './grammar'
 import type { ReminderEntry, RepeatRule, TimesheetConfig, TimesheetEntry } from './schedule'
 import type {
   AppInfo,
   ArchivedTabRow,
   AuroraSettings,
   DisplayCaptureRequestInfo,
+  DownloadAnchor,
+  DownloadBubbleState,
   DownloadInfo,
   HistoryEntry,
   MiniWindowInfo,
@@ -45,6 +48,7 @@ export type RendererCommandId =
   | 'reminders:open'
   | 'reminders:new'
   | 'timesheet:open'
+  | 'grammar:open'
 
 /** invoke(channel, req) -> Promise<res> */
 export interface InvokeMap {
@@ -119,6 +123,14 @@ export interface InvokeMap {
     req: { id: string; action: 'open' | 'showInFolder' | 'cancel' }
     res: void
   }
+  /** The chrome reports where the Downloads button is; null while it has none. */
+  'ui:setDownloadAnchor': { req: { anchor: DownloadAnchor | null }; res: void }
+  /** The download popover's own renderer: what to show, its size, the pointer, and its buttons. */
+  'downloadBubble:get': { req: Record<string, never>; res: DownloadBubbleState | null }
+  'downloadBubble:resize': { req: { height: number }; res: void }
+  'downloadBubble:hover': { req: { inside: boolean }; res: void }
+  'downloadBubble:dismiss': { req: Record<string, never>; res: void }
+  'downloadBubble:showAll': { req: Record<string, never>; res: void }
 
   'settings:get': { req: Record<string, never>; res: AuroraSettings }
   'settings:set': { req: Partial<AuroraSettings>; res: AuroraSettings }
@@ -181,7 +193,15 @@ export interface InvokeMap {
   'timesheet:skip': { req: { id: number }; res: TimesheetEntry | null }
   /** Every question asked on the local day that contains `day`. */
   'timesheet:day': { req: { day: number }; res: TimesheetEntry[] }
+  /** Every question asked in the Monday–Sunday week that contains `day`. */
+  'timesheet:week': { req: { day: number }; res: TimesheetEntry[] }
   'timesheet:deleteEntry': { req: { id: number }; res: void }
+
+  /** Aura Grammar Checker: settings, a test call, and the sites it may run on. */
+  'grammar:get': { req: Record<string, never>; res: GrammarInfo }
+  'grammar:test': { req: GrammarSetup; res: GrammarTestResult }
+  'grammar:save': { req: GrammarSetup; res: GrammarInfo }
+  'grammar:setSite': { req: { site: string; allowed: boolean }; res: GrammarInfo }
 
   /**
    * Where each on-screen pane should sit, in window coordinates (DIP). One
@@ -248,6 +268,8 @@ export interface PushMap {
   /** The picker must close: the requesting page went away. */
   'displayCapture:close': { id: string }
   'downloads:changed': DownloadInfo[]
+  /** Pushed only to the download popover. */
+  'downloadBubble:state': DownloadBubbleState
   'settings:changed': AuroraSettings
   'updates:state': UpdateState
   /** Pushed only to the mini window it describes. */
@@ -261,6 +283,7 @@ export interface PushMap {
   /** The timesheet question, freshly asked. */
   'timesheet:prompt': { entry: TimesheetEntry; question: string; lastAnswer: string | null }
   'timesheet:changed': Record<string, never>
+  'grammar:changed': GrammarInfo
 }
 
 export const INVOKE_CHANNELS = [
@@ -301,6 +324,12 @@ export const INVOKE_CHANNELS = [
   'displayCapture:openSystemSettings',
   'downloads:list',
   'downloads:action',
+  'ui:setDownloadAnchor',
+  'downloadBubble:get',
+  'downloadBubble:resize',
+  'downloadBubble:hover',
+  'downloadBubble:dismiss',
+  'downloadBubble:showAll',
   'settings:get',
   'settings:set',
   'updates:get',
@@ -330,7 +359,12 @@ export const INVOKE_CHANNELS = [
   'timesheet:answer',
   'timesheet:skip',
   'timesheet:day',
+  'timesheet:week',
   'timesheet:deleteEntry',
+  'grammar:get',
+  'grammar:test',
+  'grammar:save',
+  'grammar:setSite',
   'ui:setPaneBounds',
   'tabs:split',
   'tabs:toggleSplit',
@@ -358,6 +392,7 @@ export const PUSH_CHANNELS = [
   'displayCapture:request',
   'displayCapture:close',
   'downloads:changed',
+  'downloadBubble:state',
   'settings:changed',
   'updates:state',
   'mini:state',
@@ -367,6 +402,7 @@ export const PUSH_CHANNELS = [
   'reminders:due',
   'timesheet:prompt',
   'timesheet:changed',
+  'grammar:changed',
 ] as const satisfies ReadonlyArray<keyof PushMap>
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

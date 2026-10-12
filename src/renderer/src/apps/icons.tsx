@@ -1,10 +1,11 @@
-import { BellRing, LayoutGrid, StickyNote, Timer } from 'lucide-react'
+import { BellRing, LayoutGrid, SpellCheck, StickyNote, Timer } from 'lucide-react'
 import type { AuraAppId } from '@shared/apps'
 
 /** One icon per app — the rail button, the Store row and the panel header. */
 export function AppIcon({ id, size = 16 }: { id: AuraAppId; size?: number }): React.JSX.Element {
   if (id === 'notes') return <StickyNote size={size} />
   if (id === 'reminders') return <BellRing size={size} />
+  if (id === 'grammar') return <SpellCheck size={size} />
   return <Timer size={size} />
 }
 

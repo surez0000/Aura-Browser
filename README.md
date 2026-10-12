@@ -7,11 +7,12 @@ built with React, TypeScript, and design tokens.
 > Phases (a)–(d) are complete and shipping: shell, tab engine, sidebar,
 > command palette, Spaces as isolated profiles, incognito, split view, Peek,
 > the mini window, screen sharing, history manager,
-> find-in-page, downloads, in-chrome permission prompts, session restore, the
+> find-in-page, downloads (with a popover by the Downloads button), in-chrome
+> permission prompts, session restore, the
 > Aurora Glass theme (per-Space WebGL palettes, light/dark/system, WCAG AA
 > proven in CI), Settings, and an in-app updater. Phase (e) is done but for
 > first-run onboarding, and phase (f) — **Aura Apps**: Notes, Reminders,
-> Timesheet — is complete. See
+> Timesheet, Aura Grammar Checker — is complete. See
 > [docs/PHASES.md](docs/PHASES.md) for the roadmap,
 > [docs/DESIGN-SPEC.md](docs/DESIGN-SPEC.md) for the design system, and
 > [docs/RELEASING.md](docs/RELEASING.md) for versioning and releases.
@@ -84,6 +85,11 @@ Key decisions (full rationale in [docs/adr/](docs/adr/)):
   renderer, page and chrome alike.
 - The chrome renderer can only load the bundled UI. Page renderers get no
   preload at all.
+- Aura Grammar Checker puts its script only into pages on sites you allowed,
+  never in a private Space, in an isolated world with a closed shadow root.
+  It can hand text over and nothing else; the API key stays in the main
+  process (encrypted with the system keychain), and provider requests go out
+  from an in-memory session with no Space's cookies.
 - Aura doesn't run Chrome extensions (removed in 1.1.3: Electron supports only
   part of the extension API). Chrome Web Store pages open read-only, with their
   scripts switched off — the store's private install API crashes Electron.
@@ -136,7 +142,20 @@ there. App data is global — one set across every Space.
 - **Timesheet** — one question, yours to word, on your interval inside your
   working hours. Answer it in the bar (the page's title is suggested; Enter
   takes it), or **Same as last** in one click. The day view totals your
-  answers by activity, draws the timeline, and copies out as Markdown or CSV.
+  answers by activity, draws the timeline, and copies the day, or its whole
+  Monday-to-Sunday week, as plain text, Markdown or CSV.
+- **Aura Grammar Checker** — corrects grammar, spelling and punctuation with
+  your own AI key: Google Gemini, OpenAI, Anthropic, or any OpenAI-compatible
+  address (Ollama or LM Studio keep text on your computer). It is off on every
+  site until you allow it from its right-bar button or the page's right-click
+  menu. Then a small gold mark sits in the corner of the text box you are
+  typing in; click it, or press ⌥⌘G, and the box's text (or your selection,
+  up to 4,000 characters) is checked. Nothing is sent before that click. The
+  corrected text arrives in a card you can edit, with every change
+  highlighted; click a highlight to put your original back, **Recheck** your
+  edits, then **Replace** (with Undo) or **Copy**. There is no prompt box: it
+  only checks. Password, payment and code fields never show the mark, nor do
+  fields marked `data-gramm="false"`.
 
 ## Peek and the mini window
 
@@ -153,8 +172,8 @@ storage, so you stay signed in, but no tab and no Space state until you press
 ⌘D toggle favorite · ⌘E new sticky · ⇧⌘E remind me about this page ·
 ⇧⌘N incognito · ⌘W close tab · ⇧⌘T reopen closed · ⌘R / ⇧⌘R reload ·
 ⌘[ / ⌘] back/forward · ⌃Tab / ⌃⇧Tab next/previous tab · ⌘1–9 pick tab ·
-⌃1–9 switch space · ⌘+/−/0 zoom · ⌘, settings · ⌥⌘I DevTools. (Ctrl on
-Windows/Linux.)
+⌃1–9 switch space · ⌘+/−/0 zoom · ⌘, settings · ⌥⌘G check grammar ·
+⌥⌘I DevTools. (Ctrl on Windows/Linux.)
 
 ## Constraints honored
 

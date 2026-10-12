@@ -34,7 +34,7 @@ afterEach(() => {
 describe('app registry', () => {
   it('lists the catalogue with everything off to begin with', () => {
     const list = apps.list()
-    expect(list.map((a) => a.id)).toEqual(['notes', 'reminders', 'timesheet'])
+    expect(list.map((a) => a.id)).toEqual(['notes', 'reminders', 'timesheet', 'grammar'])
     expect(list.every((a) => !a.enabled)).toBe(true)
   })
 

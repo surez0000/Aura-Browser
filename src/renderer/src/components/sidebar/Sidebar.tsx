@@ -206,7 +206,7 @@ export function Sidebar(): React.JSX.Element {
                 rest spilled under Downloads and the first app. */}
             <SpaceSwitcher />
             <div className="flex h-8 shrink-0 items-center gap-1" data-testid="sidebar-footer">
-              <DownloadsButton />
+              <DownloadsButton popover="above" />
               <div className="flex-1" />
               <SettingsButton />
             </div>
@@ -291,7 +291,7 @@ function CompactRail(): React.JSX.Element {
         <UpdateRailButton />
         <SpaceSwitcher vertical />
         <div className="flex flex-col items-center">
-          <DownloadsButton />
+          <DownloadsButton popover="beside" />
           <SettingsButton />
         </div>
       </div>
@@ -328,7 +328,7 @@ function SpaceRail(): React.JSX.Element {
         <UpdateRailButton />
         <SpaceSwitcher vertical />
         <div className="flex flex-col items-center">
-          <DownloadsButton />
+          <DownloadsButton popover="beside" />
           <SettingsButton />
         </div>
       </div>

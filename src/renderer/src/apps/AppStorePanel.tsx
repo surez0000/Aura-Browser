@@ -5,6 +5,7 @@ import { invoke } from '@/lib/ipc'
 import { Panel } from '@/components/Panel'
 import { Switch } from '@/components/Switch'
 import { useApps } from '@/state/apps'
+import { useGrammar } from '@/state/grammar'
 import { useUi } from '@/state/ui'
 import { AppIcon, AppsIcon } from './icons'
 
@@ -24,6 +25,8 @@ export function AppStorePanel(): React.JSX.Element {
 
 function AppStoreDialog(): React.JSX.Element {
   const close = useUi((s) => s.closeAppStore)
+  const openGrammarSetup = useUi((s) => s.openGrammarSetup)
+  const grammarReady = useGrammar((s) => s.info?.ready ?? false)
   const apps = useApps((s) => s.apps)
   const [available, upcoming] = useMemo(
     () => [apps.filter((a) => a.available), apps.filter((a) => !a.available)],
@@ -60,6 +63,17 @@ function AppStoreDialog(): React.JSX.Element {
               <p className="mt-1 text-[12px] leading-relaxed" style={{ color: 'var(--ink-3)' }}>
                 {app.description}
               </p>
+              {app.id === 'grammar' && app.enabled && !grammarReady && (
+                <button
+                  type="button"
+                  onClick={openGrammarSetup}
+                  className="mt-1.5 cursor-pointer text-[12px] font-medium"
+                  style={{ color: 'var(--accent)' }}
+                  data-testid="app-setup"
+                >
+                  Finish setup
+                </button>
+              )}
             </div>
             {app.enabled && (
               <button
@@ -78,7 +92,11 @@ function AppStoreDialog(): React.JSX.Element {
             <Switch
               on={app.enabled}
               label={app.enabled ? `Turn off ${app.name}` : `Turn on ${app.name}`}
-              onChange={(enabled) => void invoke('apps:setEnabled', { id: app.id, enabled })}
+              onChange={(enabled) => {
+                void invoke('apps:setEnabled', { id: app.id, enabled })
+                // Switching it on with nothing set up goes straight to setup.
+                if (app.id === 'grammar' && enabled && !grammarReady) openGrammarSetup()
+              }}
               testId="app-toggle"
             />
           </div>

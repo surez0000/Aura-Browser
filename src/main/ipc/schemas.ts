@@ -3,6 +3,7 @@ import { SEARCH_ENGINE_IDS } from '@shared/search'
 import { BACKDROP_TEXTURES, TAB_BAR_POSITIONS } from '@shared/models'
 import { STICKY_COLORS } from '@shared/sticky'
 import { REPEAT_RULES } from '@shared/schedule'
+import { GRAMMAR_PROVIDERS } from '@shared/grammar'
 import type { InvokeChannel } from '@shared/ipc-contract'
 
 const id = z.string().min(1).max(64)
@@ -10,7 +11,15 @@ const url = z.string().min(1).max(8192)
 const tabIdOnly = z.object({ tabId: id }).strict()
 const optionalTab = z.object({ tabId: id.optional() }).strict()
 const empty = z.object({}).strict()
-const appId = z.enum(['notes', 'reminders', 'timesheet'])
+const appId = z.enum(['notes', 'reminders', 'timesheet', 'grammar'])
+const grammarSetup = z
+  .object({
+    provider: z.enum(GRAMMAR_PROVIDERS),
+    model: z.string().max(200),
+    baseUrl: z.string().max(2048),
+    apiKey: z.string().max(1000).optional(),
+  })
+  .strict()
 const noteId = z.number().int().positive()
 /** A note is a note, not a file: enough room to write, bounded all the same. */
 const NOTE_MAX = 100_000
@@ -130,6 +139,25 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
 
   'downloads:list': empty,
   'downloads:action': z.object({ id, action: z.enum(['open', 'showInFolder', 'cancel']) }).strict(),
+  'ui:setDownloadAnchor': z
+    .object({
+      anchor: z
+        .object({
+          x: z.number().finite(),
+          y: z.number().finite(),
+          width: z.number().finite().nonnegative(),
+          height: z.number().finite().nonnegative(),
+          placement: z.enum(['above', 'beside']),
+        })
+        .strict()
+        .nullable(),
+    })
+    .strict(),
+  'downloadBubble:get': empty,
+  'downloadBubble:resize': z.object({ height: z.number().finite().min(0).max(2000) }).strict(),
+  'downloadBubble:hover': z.object({ inside: z.boolean() }).strict(),
+  'downloadBubble:dismiss': empty,
+  'downloadBubble:showAll': empty,
 
   'settings:get': empty,
   'settings:set': z
@@ -199,7 +227,12 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
   'timesheet:answer': z.object({ id: rowId, answer: z.string().min(1).max(500) }).strict(),
   'timesheet:skip': z.object({ id: rowId }).strict(),
   'timesheet:day': z.object({ day: when }).strict(),
+  'timesheet:week': z.object({ day: when }).strict(),
   'timesheet:deleteEntry': z.object({ id: rowId }).strict(),
+  'grammar:get': empty,
+  'grammar:test': grammarSetup,
+  'grammar:save': grammarSetup,
+  'grammar:setSite': z.object({ site: z.string().min(1).max(260), allowed: z.boolean() }).strict(),
 
   'ui:setPaneBounds': z
     .object({

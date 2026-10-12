@@ -10,8 +10,14 @@ import {
   nextOccurrence,
   nextPromptAt,
   quickTimes,
+  startOfWeek,
   stillRaised,
   summariseDay,
+  summariseWeek,
+  weekBounds,
+  weekToCsv,
+  weekToMarkdown,
+  weekToText,
   withinWorkingHours,
   type ReminderEntry,
   type TimesheetEntry,
@@ -193,6 +199,87 @@ describe('day summary', () => {
     expect(formatDuration(25 * MINUTE)).toBe('25m')
     expect(formatDuration(60 * MINUTE)).toBe('1h')
     expect(formatDuration(95 * MINUTE)).toBe('1h 35m')
+  })
+})
+
+describe('week summary', () => {
+  /** A local moment in the week of Monday 2026-09-21 (offset 0 = Monday). */
+  const at = (offset: number, h: number, m = 0): number =>
+    new Date(2026, 8, 21 + offset, h, m, 0, 0).getTime()
+  const entry = (id: number, askedAt: number, answer: string): TimesheetEntry => ({
+    id,
+    askedAt,
+    answeredAt: askedAt + MINUTE,
+    answer,
+    tabTitle: null,
+    tabUrl: null,
+    skipped: false,
+  })
+  const entries = [
+    entry(1, at(0, 9), 'Spec review'),
+    entry(2, at(0, 9, 30), 'Standup'),
+    entry(3, at(2, 14), 'spec review'),
+    entry(4, at(6, 10), 'Weekend fix'),
+    // The next Monday belongs to the next week.
+    entry(5, at(7, 9), 'Next week'),
+  ]
+  const now = at(9, 12)
+
+  it('runs Monday to Sunday, whatever day it is asked about', () => {
+    expect(startOfWeek(at(2, 15))).toBe(at(0, 0))
+    expect(startOfWeek(at(6, 23))).toBe(at(0, 0))
+    expect(startOfWeek(at(0, 0))).toBe(at(0, 0))
+    expect(weekBounds(at(3, 12))).toEqual({ from: at(0, 0), to: at(7, 0) })
+  })
+
+  it('keeps only the days with answers, and adds the week up across them', () => {
+    const w = summariseWeek(entries, at(2, 12), now, DEFAULT_TIMESHEET)
+    expect(w.from).toBe('2026-09-21')
+    expect(w.to).toBe('2026-09-27')
+    expect(w.days.map((d) => `${d.weekday} ${d.date}`)).toEqual([
+      'Monday 2026-09-21',
+      'Wednesday 2026-09-23',
+      'Sunday 2026-09-27',
+    ])
+    // Case and spacing do not split an activity across days either.
+    expect(w.totals[0]).toEqual({ answer: 'Spec review', duration: 60 * MINUTE, count: 2 })
+    expect(w.totals.map((t) => t.answer)).not.toContain('Next week')
+    expect(w.totalDuration).toBe(w.days.reduce((sum, d) => sum + d.totalDuration, 0))
+  })
+
+  it('copies as numbered plain text: the week, then each day', () => {
+    const lines = weekToText(summariseWeek(entries, at(0, 9), now, DEFAULT_TIMESHEET)).split('\n')
+    expect(lines[0]).toBe('Week 2026-09-21 to 2026-09-27 — 2h')
+    expect(lines.slice(1, 6)).toEqual([
+      '',
+      'Totals',
+      '1. Spec review — 1h',
+      '2. Standup — 30m',
+      '3. Weekend fix — 30m',
+    ])
+    expect(lines).toContain('Monday 2026-09-21 — 1h')
+    expect(lines).toContain('Sunday 2026-09-27 — 30m')
+  })
+
+  it('copies as Markdown with a section per day', () => {
+    const md = weekToMarkdown(summariseWeek(entries, at(0, 9), now, DEFAULT_TIMESHEET))
+    expect(md.startsWith('## Week 2026-09-21 to 2026-09-27')).toBe(true)
+    expect(md).toContain('### Wednesday 2026-09-23 — 30m')
+    expect(md).toContain('- **Spec review** — 1h')
+  })
+
+  it('copies as CSV with every block of every day under one header', () => {
+    const csv = weekToCsv(summariseWeek(entries, at(0, 9), now, DEFAULT_TIMESHEET)).split('\n')
+    expect(csv[0]).toBe('date,from,to,minutes,doing,page')
+    expect(csv).toHaveLength(1 + 4)
+    expect(csv.filter((l) => l.startsWith('date'))).toHaveLength(1)
+    expect(csv[4]).toContain('2026-09-27')
+  })
+
+  it('says so plainly for an empty week', () => {
+    const w = summariseWeek([], at(0, 9), now, DEFAULT_TIMESHEET)
+    expect(w.days).toEqual([])
+    expect(weekToText(w)).toBe('Week 2026-09-21 to 2026-09-27 — 0m')
   })
 })
 

@@ -233,6 +233,119 @@ export function dayToCsv(summary: DaySummary): string {
   return lines.join('\n')
 }
 
+/** The Monday that starts the week holding `at`, at local midnight. */
+export function startOfWeek(at: number): number {
+  const d = new Date(startOfDay(at))
+  // getDay(): Sunday is 0, so Sunday belongs to the week that began six days before.
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  return d.getTime()
+}
+
+/** Midnight at the start of each of the seven days, Monday first (DST-safe). */
+export function daysOfWeek(at: number): number[] {
+  const start = new Date(startOfWeek(at))
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start)
+    d.setDate(start.getDate() + i)
+    return d.getTime()
+  })
+}
+
+/** The week holding `at`, as [Monday 00:00, next Monday 00:00). */
+export function weekBounds(at: number): { from: number; to: number } {
+  const days = daysOfWeek(at)
+  const end = new Date(days[6] as number)
+  end.setDate(end.getDate() + 1)
+  return { from: days[0] as number, to: end.getTime() }
+}
+
+export interface WeekSummary {
+  /** Monday and Sunday, as dates. */
+  from: string
+  to: string
+  /** Only the days something was answered, Monday first. */
+  days: Array<DaySummary & { weekday: string }>
+  /** Answers across the week, longest first. */
+  totals: Array<{ answer: string; duration: number; count: number }>
+  totalDuration: number
+}
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+/** A week of answers: each day summarised as on its own, then added up. */
+export function summariseWeek(
+  entries: TimesheetEntry[],
+  at: number,
+  now: number,
+  cfg: TimesheetConfig,
+): WeekSummary {
+  const dayStarts = daysOfWeek(at)
+  const days = dayStarts
+    .map((start) => ({
+      ...summariseDay(entries, start, now, cfg),
+      weekday: WEEKDAYS[new Date(start).getDay()] as string,
+    }))
+    .filter((d) => d.blocks.length > 0)
+
+  const byAnswer = new Map<string, { answer: string; duration: number; count: number }>()
+  for (const day of days) {
+    for (const t of day.totals) {
+      const key = t.answer.trim().toLowerCase()
+      const cur = byAnswer.get(key)
+      byAnswer.set(key, {
+        answer: cur?.answer ?? t.answer,
+        duration: (cur?.duration ?? 0) + t.duration,
+        count: (cur?.count ?? 0) + t.count,
+      })
+    }
+  }
+  return {
+    from: dateKey(dayStarts[0] as number),
+    to: dateKey(dayStarts[6] as number),
+    days,
+    totals: [...byAnswer.values()].sort((a, b) => b.duration - a.duration),
+    totalDuration: days.reduce((sum, d) => sum + d.totalDuration, 0),
+  }
+}
+
+/** The week as plain text: the week's totals, then each day's, all numbered. */
+export function weekToText(week: WeekSummary): string {
+  const lines = [`Week ${week.from} to ${week.to} — ${formatDuration(week.totalDuration)}`]
+  if (week.totals.length > 0) {
+    lines.push('', 'Totals')
+    week.totals.forEach((t, i) =>
+      lines.push(`${i + 1}. ${t.answer} — ${formatDuration(t.duration)}`),
+    )
+  }
+  for (const day of week.days) {
+    lines.push('', `${day.weekday} ${day.date} — ${formatDuration(day.totalDuration)}`)
+    day.totals.forEach((t, i) =>
+      lines.push(`${i + 1}. ${t.answer} — ${formatDuration(t.duration)}`),
+    )
+  }
+  return lines.join('\n')
+}
+
+/** The week as Markdown: totals, then a section per day. */
+export function weekToMarkdown(week: WeekSummary): string {
+  const lines = [`## Week ${week.from} to ${week.to} — ${formatDuration(week.totalDuration)}`]
+  if (week.totals.length > 0) {
+    lines.push('')
+    for (const t of week.totals) lines.push(`- **${t.answer}** — ${formatDuration(t.duration)}`)
+  }
+  for (const day of week.days) {
+    lines.push('', `### ${day.weekday} ${day.date} — ${formatDuration(day.totalDuration)}`, '')
+    for (const t of day.totals) lines.push(`- **${t.answer}** — ${formatDuration(t.duration)}`)
+  }
+  return lines.join('\n')
+}
+
+/** Every block of the week, one row each — the day CSV's columns, all days. */
+export function weekToCsv(week: WeekSummary): string {
+  const rows = week.days.flatMap((day) => dayToCsv(day).split('\n').slice(1))
+  return ['date,from,to,minutes,doing,page', ...rows].join('\n')
+}
+
 // ─── Reminders ────────────────────────────────────────────────────────────────
 
 export const REPEAT_RULES = ['none', 'daily', 'weekdays', 'weekly'] as const

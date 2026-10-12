@@ -7,7 +7,7 @@
  * an app *is* to both sides;
  * the main process owns which of them are on (kv "apps").
  */
-export type AuraAppId = 'notes' | 'reminders' | 'timesheet'
+export type AuraAppId = 'notes' | 'reminders' | 'timesheet' | 'grammar'
 
 export interface AuraAppMeta {
   id: AuraAppId
@@ -43,6 +43,14 @@ export const AURA_APPS: readonly AuraAppMeta[] = [
     tagline: 'Answer one question through the day, read it back at the end',
     description:
       'Aura asks what you are working on, on your own schedule and only inside your working hours. At the end of the day you get every answer, the time each one covered, and a summary you can copy straight into a timesheet.',
+    available: true,
+  },
+  {
+    id: 'grammar',
+    name: 'Aura Grammar Checker',
+    tagline: 'Fix the grammar in any text box with one click',
+    description:
+      'Uses your own AI key. It stays off on every site until you allow it, and nothing is sent until you click the mark in a text box. You can edit the result and check it again before it goes in.',
     available: true,
   },
 ] as const

@@ -4,6 +4,7 @@ import { matchCombo } from '@shared/keymap'
 import type { SidebarMode } from '@shared/models'
 import { invoke, on, isMac } from '@/lib/ipc'
 import { useApps, isAppEnabled } from './apps'
+import { useGrammar } from './grammar'
 import { useReminders } from './reminders'
 import { useTimesheet } from './timesheet'
 import { useSettings } from './settings'
@@ -111,6 +112,14 @@ export function runRendererCommand(id: RendererCommandId): void {
     case 'timesheet:open':
       if (isAppEnabled(useApps.getState().apps, 'timesheet')) ui.toggleTimesheet()
       break
+    case 'grammar:open':
+      if (!isAppEnabled(useApps.getState().apps, 'grammar')) break
+      if (useGrammar.getState().info?.ready) {
+        if (!ui.grammarOpen) ui.toggleGrammar()
+      } else {
+        ui.openGrammarSetup()
+      }
+      break
   }
 }
 
@@ -130,6 +139,7 @@ export function useIpcSync(): void {
     void invoke('settings:get', {}).then(settings.apply)
     void invoke('updates:get', {}).then(ui.setUpdateState)
     void invoke('apps:list', {}).then(useApps.getState().setApps)
+    void invoke('grammar:get', {}).then(useGrammar.getState().setInfo)
     void invoke('reminders:list', {}).then(useReminders.getState().setReminders)
     void invoke('apps:getTimesheetConfig', {}).then(useTimesheet.getState().setConfig)
     // A question asked before this window was ready is still waiting.
@@ -146,6 +156,7 @@ export function useIpcSync(): void {
       on('settings:changed', (next) => useSettings.getState().apply(next)),
       on('updates:state', (state) => useUi.getState().setUpdateState(state)),
       on('apps:changed', (apps) => useApps.getState().setApps(apps)),
+      on('grammar:changed', (info) => useGrammar.getState().setInfo(info)),
       on('reminders:changed', (list) => useReminders.getState().setReminders(list)),
       on('reminders:due', (reminder) => useReminders.getState().raise(reminder)),
       on('timesheet:prompt', (prompt) => useTimesheet.getState().setPrompt(prompt)),

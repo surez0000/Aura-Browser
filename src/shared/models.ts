@@ -171,6 +171,27 @@ export interface DownloadInfo {
   startedAt: number
 }
 
+/**
+ * Where the Downloads button sits in the chrome (window coordinates, DIP) and
+ * which way the download popover opens from it: above it in the full
+ * sidebar, beside it from the narrow rail.
+ */
+export interface DownloadAnchor {
+  x: number
+  y: number
+  width: number
+  height: number
+  placement: 'above' | 'beside'
+}
+
+/** What the download popover shows: the downloads it is about, newest first. */
+export interface DownloadBubbleState {
+  items: DownloadInfo[]
+  placement: 'above' | 'beside'
+  /** The active Space's colours, so the popover wears the same accent. */
+  space: { accentHue: number; accentHue2: number | null; incognito: boolean } | null
+}
+
 /** One screen or window offered by the screen-share picker. */
 export interface DisplayCaptureSource {
   id: string

@@ -147,6 +147,21 @@ test('the timesheet asks its question, takes the answer in place, and reads the 
         /^\d{4}-\d{2}-\d{2} — .+\n\n1\. Reviewing the spec — .+\n\nTimeline\n1\. \d{2}:\d{2}–\d{2}:\d{2} {2}Reviewing the spec$/,
       )
 
+    // The whole week copies too: its totals, then each day that had answers.
+    await chrome.getByTestId('timesheet-scope-week').click()
+    await expect(chrome.getByTestId('timesheet-week-range')).toBeVisible()
+    await chrome.getByTestId('timesheet-copy-text').click()
+    await expect
+      .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+      .toMatch(
+        /^Week \d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2} — .+\n\nTotals\n1\. Reviewing the spec — .+\n\n(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) \d{4}-\d{2}-\d{2} — .+\n1\. Reviewing the spec — .+$/,
+      )
+    await chrome.getByTestId('timesheet-copy-csv').click()
+    await expect
+      .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+      .toMatch(/^date,from,to,minutes,doing,page\n\d{4}-\d{2}-\d{2},.*"Reviewing the spec"/)
+    await chrome.getByTestId('timesheet-scope-day').click()
+
     await chrome.getByTestId('timesheet-settings').click()
     await expect(chrome.getByTestId('timesheet-question')).toHaveValue('What are you on?')
     await expect(

@@ -1,17 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Download, FolderOpen, X } from 'lucide-react'
 import { holdOverlay, releaseOverlay } from '@/lib/overlay'
 import { invoke } from '@/lib/ipc'
-import { overallProgress } from '@/lib/downloads'
+import { formatBytes, overallProgress } from '@/lib/downloads'
 import { useUi } from '@/state/ui'
 import type { DownloadInfo } from '@shared/models'
-
-function formatBytes(bytes: number): string {
-  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`
-  if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${bytes} B`
-}
 
 function stateLabel(d: DownloadInfo): string {
   switch (d.state) {
@@ -35,11 +29,47 @@ const RING = 2 * Math.PI * 11
  * fills as the bytes arrive, and it gives one pulse when a download lands —
  * the count badge alone gave no sense that anything was happening.
  */
-export function DownloadsButton(): React.JSX.Element {
+export function DownloadsButton({
+  popover,
+}: {
+  /** Which way the download popover opens from this button. */
+  popover: 'above' | 'beside'
+}): React.JSX.Element {
   const downloads = useUi((s) => s.downloads)
   const toggle = useUi((s) => s.toggleDownloads)
   const progress = overallProgress(downloads)
   const completed = downloads.filter((d) => d.state === 'completed').length
+  const pulse = useUi((s) => s.downloadPulse)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+
+  // The download popover is a native view placed by main beside this button,
+  // so main needs to know where the button is, now and after every resize.
+  useLayoutEffect(() => {
+    const el = buttonRef.current
+    if (!el) return
+    let frame = 0
+    const send = (): void => {
+      frame = 0
+      const r = el.getBoundingClientRect()
+      void invoke('ui:setDownloadAnchor', {
+        anchor: { x: r.x, y: r.y, width: r.width, height: r.height, placement: popover },
+      })
+    }
+    const schedule = (): void => {
+      if (!frame) frame = requestAnimationFrame(send)
+    }
+    const observer = new ResizeObserver(schedule)
+    observer.observe(el)
+    observer.observe(document.body)
+    window.addEventListener('resize', schedule)
+    send()
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', schedule)
+      if (frame) cancelAnimationFrame(frame)
+      void invoke('ui:setDownloadAnchor', { anchor: null })
+    }
+  }, [popover])
 
   // Pulse on the transition into "one more finished", not on every render.
   const [justFinished, setJustFinished] = useState(false)
@@ -55,8 +85,21 @@ export function DownloadsButton(): React.JSX.Element {
     return undefined
   }, [completed])
 
+  // A drop into the tray when a download starts: the page that asked for it
+  // stays on screen, so this is the moment the eye needs pulling here.
+  const [justStarted, setJustStarted] = useState(false)
+  const lastPulse = useRef(pulse)
+  useEffect(() => {
+    if (pulse === lastPulse.current) return undefined
+    lastPulse.current = pulse
+    setJustStarted(true)
+    const timer = setTimeout(() => setJustStarted(false), 900)
+    return () => clearTimeout(timer)
+  }, [pulse])
+
   return (
     <button
+      ref={buttonRef}
       type="button"
       title="Downloads (⌘J)"
       aria-label={progress === null ? 'Downloads' : `Downloads, ${Math.round(progress * 100)}%`}
@@ -88,21 +131,36 @@ export function DownloadsButton(): React.JSX.Element {
           />
         </svg>
       )}
+      {justStarted && (
+        <motion.span
+          className="pointer-events-none absolute inset-0 rounded-lg"
+          style={{ boxShadow: '0 0 0 2px var(--accent)' }}
+          initial={{ opacity: 0.9, scale: 0.8 }}
+          animate={{ opacity: 0, scale: 1.6 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          aria-hidden
+          data-testid="downloads-started"
+        />
+      )}
       <motion.span
         className="relative flex items-center justify-center"
         animate={
-          justFinished
-            ? { y: [0, 3, -2, 0], scale: [1, 0.9, 1.08, 1] }
-            : progress !== null
-              ? { y: [0, 1.5, 0] }
-              : { y: 0, scale: 1 }
+          justStarted
+            ? { y: [-9, 2, -1, 0], opacity: [0, 1, 1, 1], scale: [0.8, 1.12, 0.96, 1] }
+            : justFinished
+              ? { y: [0, 3, -2, 0], scale: [1, 0.9, 1.08, 1] }
+              : progress !== null
+                ? { y: [0, 1.5, 0] }
+                : { y: 0, scale: 1 }
         }
         transition={
-          justFinished
-            ? { duration: 0.5 }
-            : progress !== null
-              ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' }
-              : { duration: 0.2 }
+          justStarted
+            ? { duration: 0.6, ease: 'easeOut' }
+            : justFinished
+              ? { duration: 0.5 }
+              : progress !== null
+                ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' }
+                : { duration: 0.2 }
         }
       >
         <Download size={15} />
@@ -128,6 +186,8 @@ function DownloadsDialog(): React.JSX.Element {
 
   useEffect(() => {
     void holdOverlay('downloads')
+    // The full list is open: the popover has nothing left to say.
+    void invoke('downloadBubble:dismiss', {})
     return () => releaseOverlay('downloads')
   }, [])
 

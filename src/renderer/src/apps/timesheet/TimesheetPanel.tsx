@@ -17,9 +17,15 @@ import {
   formatDuration,
   nextPromptAt,
   startOfDay,
+  startOfWeek,
   summariseDay,
+  summariseWeek,
+  weekToCsv,
+  weekToMarkdown,
+  weekToText,
   withinWorkingHours,
   type DaySummary,
+  type WeekSummary,
   type TimesheetConfig,
   type TimesheetEntry,
 } from '@shared/schedule'
@@ -33,22 +39,44 @@ import { AppIcon } from '../icons'
 const DAY = 86_400_000
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
-/** What the day copies as: plain numbered text for a mail or chat box, or a format a tool reads. */
+/**
+ * What the day — or its whole week — copies as: plain numbered text for a
+ * mail or chat box, or a format a tool reads.
+ */
 const EXPORTS = [
   {
     kind: 'text',
     label: 'Text',
-    title: 'Copy as plain text with numbered lists',
+    title: 'as plain text with numbered lists',
     format: dayToText,
+    week: weekToText,
   },
-  { kind: 'md', label: 'Markdown', title: 'Copy as Markdown', format: dayToMarkdown },
-  { kind: 'csv', label: 'CSV', title: 'Copy as CSV', format: dayToCsv },
+  {
+    kind: 'md',
+    label: 'Markdown',
+    title: 'as Markdown',
+    format: dayToMarkdown,
+    week: weekToMarkdown,
+  },
+  { kind: 'csv', label: 'CSV', title: 'as CSV', format: dayToCsv, week: weekToCsv },
 ] as const satisfies readonly {
   kind: string
   label: string
   title: string
   format: (summary: DaySummary) => string
+  week: (summary: WeekSummary) => string
 }[]
+type Scope = 'day' | 'week'
+
+/** "6 Oct – 12 Oct": the Monday to Sunday holding `day`. */
+function weekRange(day: number): string {
+  const start = startOfWeek(day)
+  const end = new Date(start)
+  end.setDate(end.getDate() + 6)
+  const fmt = (at: number): string =>
+    new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+  return `${fmt(start)} – ${fmt(end.getTime())}`
+}
 type ExportKind = (typeof EXPORTS)[number]['kind']
 
 function clock(at: number): string {
@@ -92,6 +120,26 @@ function TimesheetDialog(): React.JSX.Element {
   const entries = loaded.entries
   const [showConfig, setShowConfig] = useState(false)
   const [copied, setCopied] = useState<ExportKind | null>(null)
+  // What the copy buttons take: the day on screen, or its whole week.
+  const [scope, setScope] = useState<Scope>('day')
+  const weekStart = startOfWeek(day)
+  const [week, setWeek] = useState<{ start: number; entries: TimesheetEntry[]; at: number } | null>(
+    null,
+  )
+
+  useEffect(() => {
+    if (scope !== 'week') return undefined
+    let cancelled = false
+    const timer = setTimeout(() => {
+      void invoke('timesheet:week', { day: weekStart }).then((rows) => {
+        if (!cancelled) setWeek({ start: weekStart, entries: rows, at: Date.now() })
+      })
+    }, 0)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [scope, weekStart, changed])
 
   useEffect(() => {
     let cancelled = false
@@ -111,11 +159,25 @@ function TimesheetDialog(): React.JSX.Element {
     [loaded, day, config],
   )
   const maxTotal = summary?.totals[0]?.duration ?? 0
+  const weekSummary = useMemo(
+    () =>
+      config && week && week.start === weekStart
+        ? summariseWeek(week.entries, weekStart, week.at, config)
+        : null,
+    [config, week, weekStart],
+  )
+  // "Copy today", "Copy yesterday", "Copy Monday, 6 October".
+  const dayName = day >= today - DAY ? dayTitle(day, today).toLowerCase() : dayTitle(day, today)
+  const canCopy =
+    scope === 'day'
+      ? !!summary && summary.blocks.length > 0
+      : !!weekSummary && weekSummary.days.length > 0
 
-  const copy = async ({ kind, format }: (typeof EXPORTS)[number]): Promise<void> => {
-    if (!summary) return
-    await navigator.clipboard.writeText(format(summary))
-    setCopied(kind)
+  const copy = async (e: (typeof EXPORTS)[number]): Promise<void> => {
+    const text = scope === 'day' ? summary && e.format(summary) : weekSummary && e.week(weekSummary)
+    if (!text) return
+    await navigator.clipboard.writeText(text)
+    setCopied(e.kind)
     setTimeout(() => setCopied(null), 1400)
   }
 
@@ -165,15 +227,54 @@ function TimesheetDialog(): React.JSX.Element {
             </IconButton>
           </div>
           <div className="ml-auto flex items-center gap-1">
+            {scope === 'week' && (
+              <span
+                className="mr-1 text-[11.5px] whitespace-nowrap"
+                style={{ color: 'var(--ink-3)' }}
+                data-testid="timesheet-week-range"
+              >
+                {weekRange(day)}
+              </span>
+            )}
+            <div
+              className="mr-1 flex items-center rounded-lg p-0.5"
+              style={{ background: 'var(--surface-glass)' }}
+              role="radiogroup"
+              aria-label="What to copy"
+              data-testid="timesheet-scope"
+            >
+              {(['day', 'week'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  role="radio"
+                  aria-checked={scope === s}
+                  onClick={() => setScope(s)}
+                  className="cursor-pointer rounded-md px-2 py-1 text-[12px] transition-colors"
+                  style={{
+                    background: scope === s ? 'var(--surface-selected)' : 'transparent',
+                    color: scope === s ? 'var(--ink-1)' : 'var(--ink-3)',
+                  }}
+                  title={s === 'day' ? `Copy ${dayName}` : `Copy the whole week, ${weekRange(day)}`}
+                  data-testid={`timesheet-scope-${s}`}
+                >
+                  {s === 'day' ? 'Day' : 'Week'}
+                </button>
+              ))}
+            </div>
             {EXPORTS.map((e) => (
               <button
                 key={e.kind}
                 type="button"
                 onClick={() => void copy(e)}
-                disabled={!summary || summary.blocks.length === 0}
+                disabled={!canCopy}
                 className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] hover:bg-(--surface-hover) disabled:cursor-default disabled:opacity-40"
                 style={{ color: 'var(--ink-2)' }}
-                title={e.title}
+                title={
+                  scope === 'day'
+                    ? `Copy ${dayName} ${e.title}`
+                    : `Copy the week of ${weekRange(day)} ${e.title}`
+                }
                 data-testid={`timesheet-copy-${e.kind}`}
               >
                 {copied === e.kind ? <Check size={13} /> : <Copy size={13} />}

@@ -33,6 +33,8 @@ export interface UiState {
 
   downloadsOpen: boolean
   downloads: DownloadInfo[]
+  /** Bumped when a download starts: the Downloads button's cue to animate. */
+  downloadPulse: number
 
   settingsOpen: boolean
   historyOpen: boolean
@@ -50,6 +52,10 @@ export interface UiState {
   /** "Remind me about this page": the composer opens with the page attached. */
   remindersCompose: { url: string | null; pageTitle: string | null; seq: number } | null
   timesheetOpen: boolean
+  /** The grammar checker's popover beside the right bar. */
+  grammarOpen: boolean
+  /** Its setup dialog: provider, key, first site. */
+  grammarSetupOpen: boolean
   updateState: UpdateState | null
   /** Version whose prominent notice was hidden with "Later" (until next launch). */
   updateNoticeDismissed: string | null
@@ -90,6 +96,10 @@ export interface UiState {
   clearReminderCompose(): void
   toggleTimesheet(): void
   closeTimesheet(): void
+  toggleGrammar(): void
+  closeGrammar(): void
+  openGrammarSetup(): void
+  closeGrammarSetup(): void
   composeNote(page: { url: string | null; pageTitle: string | null }): void
   clearCompose(): void
   closeSettings(): void
@@ -118,6 +128,7 @@ export const useUi = create<UiState>()((set) => ({
 
   downloadsOpen: false,
   downloads: [],
+  downloadPulse: 0,
 
   settingsOpen: false,
   historyOpen: false,
@@ -128,6 +139,8 @@ export const useUi = create<UiState>()((set) => ({
   remindersOpen: false,
   remindersCompose: null,
   timesheetOpen: false,
+  grammarOpen: false,
+  grammarSetupOpen: false,
   updateState: null,
   updateNoticeDismissed: null,
 
@@ -148,7 +161,17 @@ export const useUi = create<UiState>()((set) => ({
 
   toggleDownloads: () => set((s) => ({ downloadsOpen: !s.downloadsOpen, settingsOpen: false })),
   closeDownloads: () => set({ downloadsOpen: false }),
-  setDownloads: (downloads) => set({ downloads }),
+  setDownloads: (downloads) =>
+    set((s) => {
+      // A new download is one this list has not seen that is still running:
+      // history loaded at launch is already finished, so it never pops up.
+      const known = new Set(s.downloads.map((d) => d.id))
+      const started = downloads
+        .filter((d) => !known.has(d.id) && d.state === 'progressing')
+        .map((d) => d.id)
+      if (started.length === 0) return { downloads }
+      return { downloads, downloadPulse: s.downloadPulse + 1 }
+    }),
 
   toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen, downloadsOpen: false })),
   closeSettings: () => set({ settingsOpen: false }),
@@ -177,6 +200,11 @@ export const useUi = create<UiState>()((set) => ({
   clearReminderCompose: () => set({ remindersCompose: null }),
   toggleTimesheet: () => set((s) => ({ timesheetOpen: !s.timesheetOpen, settingsOpen: false })),
   closeTimesheet: () => set({ timesheetOpen: false }),
+  toggleGrammar: () => set((s) => ({ grammarOpen: !s.grammarOpen, settingsOpen: false })),
+  closeGrammar: () => set({ grammarOpen: false }),
+  openGrammarSetup: () =>
+    set({ grammarSetupOpen: true, grammarOpen: false, appStoreOpen: false, settingsOpen: false }),
+  closeGrammarSetup: () => set({ grammarSetupOpen: false }),
   setUpdateState: (updateState) => set({ updateState }),
   dismissUpdateNotice: (updateNoticeDismissed) => set({ updateNoticeDismissed }),
 

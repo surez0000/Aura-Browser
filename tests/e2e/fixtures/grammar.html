@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Grammar Fixture</title>
+    <style>
+      body {
+        font: 15px sans-serif;
+        padding: 24px;
+        margin: 0;
+      }
+      textarea,
+      [contenteditable] {
+        display: block;
+        width: 520px;
+        min-height: 120px;
+        margin: 0 0 16px;
+        padding: 8px;
+        border: 1px solid #bbb;
+        font: inherit;
+      }
+      input {
+        display: block;
+        width: 360px;
+        margin: 0 0 12px;
+        padding: 6px;
+        font: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="ta" aria-label="Message"></textarea>
+    <div id="ce" contenteditable="true" aria-label="Rich text"></div>
+    <input id="pw" type="password" aria-label="Password" />
+    <input id="one" type="text" aria-label="Subject" />
+    <textarea id="optout" data-gramm="false" aria-label="Opted out"></textarea>
+  </body>
+</html>

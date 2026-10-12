@@ -165,6 +165,10 @@ export class MiniWindowService {
       otherSpaces: () => [],
       openInSpace: (linkUrl) => this.deps.openInMain(linkUrl, {}),
       focused: () => undefined,
+      // A quick read is not where you write: the apps stay out of it.
+      domReady: () => undefined,
+      pageMenuItems: () => [],
+      pageKey: () => false,
     }
 
     const mini = new MiniWindow(url, host, {

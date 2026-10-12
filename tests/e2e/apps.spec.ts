@@ -26,8 +26,8 @@ test('an app is off until the Store switches it on, and then it is pinned', asyn
     const notes = chrome.locator('[data-testid="app-row"][data-app="notes"]')
     await expect(notes).toHaveCount(1)
     await expect(notes).not.toHaveAttribute('data-enabled', 'true')
-    // All three apps are real now: each is a switch, none is "coming next".
-    await expect(chrome.getByTestId('app-row')).toHaveCount(3)
+    // Every app is real now: each is a switch, none is "coming next".
+    await expect(chrome.getByTestId('app-row')).toHaveCount(4)
     await expect(chrome.getByTestId('app-row-upcoming')).toHaveCount(0)
 
     await notes.getByTestId('app-toggle').click()
@@ -140,7 +140,7 @@ test('the sidebar footer and the right bar keep every control clear of the other
     // The most either has to carry: every app pinned, and more Spaces than
     // would ever fit in one row. The dots used to share a row with the
     // buttons, squeezed into whatever width was left, and spilled under them.
-    for (const id of ['notes', 'reminders', 'timesheet']) {
+    for (const id of ['notes', 'reminders', 'timesheet', 'grammar']) {
       await chrome.evaluate(
         `window.aurora.invoke('apps:setEnabled', { id: '${id}', enabled: true })`,
       )
@@ -150,7 +150,7 @@ test('the sidebar footer and the right bar keep every control clear of the other
         `window.aurora.invoke('spaces:create', { name: 'Space ${i}', accentHue: ${i * 45} })`,
       )
     }
-    await expect(chrome.getByTestId('pinned-app')).toHaveCount(3)
+    await expect(chrome.getByTestId('pinned-app')).toHaveCount(4)
     await expect(chrome.getByTestId('space-dot')).toHaveCount(8)
 
     // Space dots, Downloads and Settings in the sidebar; the apps at the foot
@@ -170,7 +170,7 @@ test('the sidebar footer and the right bar keep every control clear of the other
       })
     })()`)) as { id: string; l: number; t: number; r: number; b: number; inside: boolean }[]
 
-    expect(boxes).toHaveLength(8 + 1 + 1 + 1 + 3 + 1)
+    expect(boxes).toHaveLength(8 + 1 + 1 + 1 + 4 + 1)
     for (const box of boxes) expect(box, `${box.id} inside its bar`).toMatchObject({ inside: true })
     const clashes: string[] = []
     boxes.forEach((a, i) =>
