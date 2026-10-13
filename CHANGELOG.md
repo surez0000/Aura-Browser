@@ -5,6 +5,14 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [1.1.7] — 2026-10-13
+
+### Fixed
+
+- The sign-in popup test no longer trips over a popup that is still closing,
+  which made it fail now and then on Windows. Tests only: the app itself is
+  the same as 1.1.6.
+
 ## [1.1.6] — 2026-10-13
 
 ### Fixed
