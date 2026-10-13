@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Sign-in Fixture</title>
+<!-- The page a site's "Sign in with …" button lives on. -->
+<button id="signin" style="font: 20px sans-serif; margin: 40px">Sign in with Fixture</button>
+<button id="signin-stay" style="font: 20px sans-serif; margin: 40px">
+  Open a popup that stays
+</button>
+<script>
+  window.addEventListener('message', (event) => {
+    if (event.data === 'signed-in') document.title = 'Signed In'
+  })
+  document.getElementById('signin').addEventListener('click', () => {
+    window.open('/signin-provider.html', 'fixture-signin', 'width=480,height=600')
+  })
+  document.getElementById('signin-stay').addEventListener('click', () => {
+    window.open('/signin-provider.html?stay', 'fixture-stay', 'width=480,height=600')
+  })
+</script>

@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Provider Fixture</title>
+<!-- Stands in for the identity provider (accounts.google.com). -->
+<p style="font: 20px sans-serif; margin: 40px">Choose an account</p>
+<script>
+  if (!location.search.includes('stay')) {
+    setTimeout(() => (location.href = '/signin-callback.html'), 300)
+  }
+</script>

@@ -2,6 +2,7 @@ import { app, Menu, type BrowserWindow, type MenuItemConstructorOptions } from '
 import type { RendererCommandId } from '@shared/ipc-contract'
 import { KEYMAP, type KeyCommand } from '@shared/keymap'
 import type { TabManager } from './tabs/tab-manager'
+import { isPopupWindow } from './windows/popup-window'
 import { isDev } from './env'
 
 interface MenuContext {
@@ -24,6 +25,17 @@ export function installMenu(ctx: MenuContext): void {
     const k = mustKey(id)
     return { label: k.label, accelerator: k.accelerator, click }
   }
+
+  // A sign-in popup has no tabs: page commands pressed in one act on it, not
+  // on the tab behind it in the main window.
+  const pageItem = (
+    id: string,
+    inTab: () => void,
+    inPopup: (popup: BrowserWindow) => void,
+  ): MenuItemConstructorOptions => ({
+    ...mainItem(id, inTab),
+    click: (_item, focused) => (isPopupWindow(focused) ? inPopup(focused) : inTab()),
+  })
 
   // Renderer-scope shortcuts: shown in the menu, but on Windows/Linux the
   // accelerator is not registered (registerAccelerator: false) — the chrome's
@@ -109,9 +121,13 @@ export function installMenu(ctx: MenuContext): void {
         { type: 'separator' },
         mainItem('favorite:toggle', () => m.toggleFavoriteForActiveTab()),
         { type: 'separator' },
-        mainItem('tab:close', () => {
-          if (m.closeActive() === 'empty' && m.count() === 0) ctx.getWindow()?.close()
-        }),
+        pageItem(
+          'tab:close',
+          () => {
+            if (m.closeActive() === 'empty' && m.count() === 0) ctx.getWindow()?.close()
+          },
+          (popup) => popup.close(),
+        ),
         mainItem('tab:reopen', () => m.reopenClosed()),
       ],
     },
@@ -119,8 +135,16 @@ export function installMenu(ctx: MenuContext): void {
     {
       label: 'View',
       submenu: [
-        mainItem('nav:reload', () => m.getTab(undefined)?.reload()),
-        mainItem('nav:hardReload', () => m.getTab(undefined)?.reload(true)),
+        pageItem(
+          'nav:reload',
+          () => m.getTab(undefined)?.reload(),
+          (popup) => popup.webContents.reload(),
+        ),
+        pageItem(
+          'nav:hardReload',
+          () => m.getTab(undefined)?.reload(true),
+          (popup) => popup.webContents.reloadIgnoringCache(),
+        ),
         { type: 'separator' },
         rendererItem('find:open'),
         rendererItem('find:next'),
@@ -160,8 +184,16 @@ export function installMenu(ctx: MenuContext): void {
     {
       label: 'History',
       submenu: [
-        mainItem('nav:back', () => m.getTab(undefined)?.goBack()),
-        mainItem('nav:forward', () => m.getTab(undefined)?.goForward()),
+        pageItem(
+          'nav:back',
+          () => m.getTab(undefined)?.goBack(),
+          (popup) => popup.webContents.navigationHistory.goBack(),
+        ),
+        pageItem(
+          'nav:forward',
+          () => m.getTab(undefined)?.goForward(),
+          (popup) => popup.webContents.navigationHistory.goForward(),
+        ),
         { type: 'separator' },
         rendererItem('history:open'),
       ],

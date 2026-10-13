@@ -42,6 +42,12 @@ if (process.env.AURORA_FORCE_REDUCED_MOTION === '1') {
   app.commandLine.appendSwitch('force-prefers-reduced-motion')
 }
 app.setName('Aura Browser')
+// Sites see the Chrome this is. Google turns sign-in away ("This browser or
+// app may not be secure") from user agents that name Electron, and other
+// sites sniff the same tokens, so drop Electron's and the app's own.
+app.userAgentFallback = app.userAgentFallback
+  .replace(/ Electron\/\S+/, '')
+  .replace(/ [^\s/]+\/\S+(?= Chrome\/)/, '')
 // The app was called "Aurora" before its first release: carry that profile over.
 if (!process.env.AURORA_USER_DATA_DIR) migrateLegacyUserData()
 app.setAboutPanelOptions({ applicationName: 'Aura Browser', applicationVersion: app.getVersion() })

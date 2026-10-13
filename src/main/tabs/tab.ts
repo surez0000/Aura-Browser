@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { FindResult, SecurityState, TabInfo, TabKind } from '@shared/models'
 
 import { INCOGNITO_PARTITION } from './partition-names'
+import { adoptPopup, popupWindowOptions } from '../windows/popup-window'
 
 export { INCOGNITO_PARTITION }
 
@@ -27,6 +28,8 @@ export interface TabHost {
   pageMenuItems(tab: Tab, params: Electron.ContextMenuParams): MenuItemConstructorOptions[]
   /** A key went down while the page had focus; true swallows it. */
   pageKey(tab: Tab, input: Electron.Input): boolean
+  /** The page closed itself (`window.close()`); its view is gone for good. */
+  pageClosed(tab: Tab): void
 }
 
 /**
@@ -146,6 +149,12 @@ export interface TabOptions {
 export class Tab {
   readonly id: string = randomUUID()
   readonly view: WebContentsView
+  /**
+   * Held here rather than read from the view: once the page closes itself
+   * the view lets go of it, and a destroyed WebContents still answers
+   * isDestroyed() where `undefined` would throw.
+   */
+  readonly wc: Electron.WebContents
   readonly incognito: boolean
   readonly partition: string
 
@@ -169,6 +178,8 @@ export class Tab {
    */
   held = false
   showingHeldNote = false
+  /** Set when Aura closes the page, so only a page closing itself is reported. */
+  private closing = false
 
   constructor(
     private readonly host: TabHost,
@@ -186,6 +197,7 @@ export class Tab {
         ...(this.partition ? { partition: this.partition } : {}),
       },
     })
+    this.wc = this.view.webContents
     this.view.setBackgroundColor('#ffffff')
     this.title = opts.title ?? ''
     this.faviconUrl = opts.faviconUrl ?? null
@@ -201,21 +213,34 @@ export class Tab {
     }
   }
 
-  get wc(): Electron.WebContents {
-    return this.view.webContents
+  private readonly openWindow = ({
+    url,
+    disposition,
+    features,
+  }: Electron.HandlerDetails): Electron.WindowOpenHandlerResponse => {
+    if (!isAllowedPageUrl(url)) return { action: 'deny' }
+    if (disposition === 'new-window') {
+      // A scripted window.open *with* features is a real popup (sign-in
+      // flows): it opens as a window and keeps its opener — see popup-window.
+      if (features) return { action: 'allow', overrideBrowserWindowOptions: popupWindowOptions() }
+      // Shift-clicking a link asks Chromium for a new window and carries no
+      // window features — that is the Peek gesture.
+      this.host.peek(this, url)
+    } else {
+      this.host.openUrl(this, url, disposition !== 'background-tab')
+    }
+    return { action: 'deny' }
   }
 
   private wire(): void {
     const wc = this.wc
 
-    wc.setWindowOpenHandler(({ url, disposition, features }) => {
-      if (!isAllowedPageUrl(url)) return { action: 'deny' }
-      // Shift-clicking a link asks Chromium for a new window and carries no
-      // window features — that is the Peek gesture. A scripted window.open
-      // *with* features is a real popup (sign-in flows), so it gets a tab.
-      if (disposition === 'new-window' && !features) this.host.peek(this, url)
-      else this.host.openUrl(this, url, disposition !== 'background-tab')
-      return { action: 'deny' }
+    wc.setWindowOpenHandler(this.openWindow)
+    wc.on('did-create-window', (popup) => adoptPopup(popup, this.openWindow))
+    // Sign-in pages end with window.close(), popup or not. The WebContents is
+    // destroyed and the view goes blank, so the tab has to go with it.
+    wc.once('destroyed', () => {
+      if (!this.closing) this.host.pageClosed(this)
     })
 
     // Clicking inside a pane focuses it: the chrome cannot see clicks on a
@@ -475,6 +500,7 @@ export class Tab {
   }
 
   destroy(): void {
-    this.wc.close()
+    this.closing = true
+    if (!this.wc.isDestroyed()) this.wc.close()
   }
 }

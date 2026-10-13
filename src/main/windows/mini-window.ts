@@ -169,6 +169,8 @@ export class MiniWindowService {
       domReady: () => undefined,
       pageMenuItems: () => [],
       pageKey: () => false,
+      // A page that closes itself takes its one-page window with it.
+      pageClosed: (tab) => this.find((w) => w.owns(tab))?.close(),
     }
 
     const mini = new MiniWindow(url, host, {

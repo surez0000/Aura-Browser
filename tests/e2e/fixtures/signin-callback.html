@@ -1,0 +1,8 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Callback Fixture</title>
+<!-- The site's own finish page: tell the opener, then close, as real flows do. -->
+<script>
+  if (window.opener) window.opener.postMessage('signed-in', '*')
+  window.close()
+</script>

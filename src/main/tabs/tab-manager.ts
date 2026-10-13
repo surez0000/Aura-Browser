@@ -89,6 +89,8 @@ export class TabManager {
   private peekBounds: Rectangle | null = null
   private peekAttached = false
   private overlayShown = false
+  /** The window is going away: its pages are torn down, not closed by the user. */
+  private windowClosing = false
   private readonly closedStack: Array<{ url: string; spaceId: string; kind: TabKind }> = []
   private emitScheduled = false
   private readonly preparedPartitions = new Set<string>()
@@ -126,12 +128,23 @@ export class TabManager {
     domReady: (tab) => this.deps.pages?.domReady(tab),
     pageMenuItems: (tab, params) => this.deps.pages?.menuItems(tab, params) ?? [],
     pageKey: (tab, input) => this.deps.pages?.key(tab, input) ?? false,
+    pageClosed: (tab) => {
+      // Teardown destroys every page too. Dropping those tabs would save an
+      // empty session over the real one on the way out.
+      if (this.windowClosing || this.win.isDestroyed()) return
+      if (tab === this.peekTab) this.closePeek()
+      else this.close(tab.id)
+    },
   }
 
   constructor(
     private readonly win: BrowserWindow,
     private readonly deps: TabManagerDeps,
-  ) {}
+  ) {
+    win.on('close', () => {
+      this.windowClosing = true
+    })
+  }
 
   // ---- spaces ------------------------------------------------------------
 
