@@ -5,6 +5,24 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [1.1.6] — 2026-10-13
+
+### Fixed
+
+- **Sign in with Google works, and so do Apple, Microsoft and the rest.** The
+  sign-in popup a site opens is now a real popup window, as in Chrome, rather
+  than a tab. A tab had no way back to the page that asked, so the sign-in
+  finished at Google and the site never heard about it. The popup's title bar
+  names the site you are signing in to, it opens above the window it came
+  from (full screen included), and ⌘W, ⌘R, Back and Forward pressed in it act
+  on the popup, not on the tab behind it.
+- **A page that closes itself takes its tab with it.** Sign-in pages end by
+  closing themselves, which left a blank tab behind, and pressing Reload on it
+  raised "A JavaScript error occurred in the main process".
+- **Sites see Aura Browser as Chrome.** The user agent no longer names
+  Electron or Aura Browser itself; Google turns sign-in away ("This browser or
+  app may not be secure") from browsers that do.
+
 ## [1.1.5] — 2026-10-12
 
 ### Added
