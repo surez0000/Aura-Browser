@@ -13,8 +13,10 @@ import { createTabViaPalette, launchAurora, pageFor, startFixtureServer } from '
 function popupUrls(app: ElectronApplication): Promise<string[]> {
   return app.evaluate(({ BrowserWindow }) => {
     const [main] = BrowserWindow.getAllWindows().sort((a, b) => a.id - b.id)
+    // A closing window can still be listed after its page is gone (Windows
+    // takes a moment longer), and reading that page throws.
     return BrowserWindow.getAllWindows()
-      .filter((w) => w !== main && !w.isDestroyed())
+      .filter((w) => w !== main && !w.isDestroyed() && !w.webContents.isDestroyed())
       .map((w) => w.webContents.getURL())
   })
 }
@@ -64,7 +66,10 @@ test('a popup names its site, and Close Tab inside it closes only the popup', as
       .poll(() =>
         app.evaluate(({ BrowserWindow }) =>
           BrowserWindow.getAllWindows()
-            .find((w) => w.webContents.getURL().includes('signin-provider'))
+            .find(
+              (w) =>
+                !w.webContents.isDestroyed() && w.webContents.getURL().includes('signin-provider'),
+            )
             ?.getTitle(),
         ),
       )
@@ -72,8 +77,8 @@ test('a popup names its site, and Close Tab inside it closes only the popup', as
 
     // ⌘W with the popup focused: the menu hands the click the focused window.
     const clicked = await app.evaluate(({ BrowserWindow, Menu }) => {
-      const popup = BrowserWindow.getAllWindows().find((w) =>
-        w.webContents.getURL().includes('signin-provider'),
+      const popup = BrowserWindow.getAllWindows().find(
+        (w) => !w.webContents.isDestroyed() && w.webContents.getURL().includes('signin-provider'),
       )
       const file = Menu.getApplicationMenu()?.items.find((item) => item.label === 'File')
       const close = file?.submenu?.items.find((item) => item.label === 'Close Tab')
