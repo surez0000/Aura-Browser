@@ -60,6 +60,7 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
   handleInvoke('tabs:back', (req) => manager.getTab(req.tabId)?.goBack())
   handleInvoke('tabs:forward', (req) => manager.getTab(req.tabId)?.goForward())
   handleInvoke('tabs:reload', (req) => manager.getTab(req.tabId)?.reload(req.hard ?? false))
+  handleInvoke('tabs:proceedUnsafe', (req) => manager.getTab(req.tabId)?.proceed())
   handleInvoke('tabs:stop', (req) => manager.getTab(req.tabId)?.stop())
   handleInvoke('tabs:reopenClosed', () => manager.reopenClosed())
   handleInvoke('tabs:zoom', (req) => manager.zoom(req.tabId, req.direction))
@@ -234,6 +235,18 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
     const { from, to } = weekBounds(req.day)
     return ctx.timesheet.between(from, to)
   })
+  handleInvoke('timesheet:log', (req) => {
+    const now = Date.now()
+    const tab = manager.active()
+    const entry = ctx.timesheet.log(
+      req.answer,
+      now - req.minutesAgo * 60_000,
+      { title: tab?.title || null, url: tab?.url || null },
+      now,
+    )
+    ctx.timesheetChanged()
+    return entry
+  })
   handleInvoke('timesheet:deleteEntry', (req) => {
     ctx.timesheet.remove(req.id)
     ctx.timesheetChanged()
@@ -257,9 +270,17 @@ export function registerIpcHandlers(ctx: HandlerContext): void {
     (_req, event) => ctx.miniWindows.forSender(event.sender)?.state() ?? null,
   )
   handleInvoke('mini:back', (_req, event) => ctx.miniWindows.forSender(event.sender)?.goBack())
+  handleInvoke('mini:reload', (_req, event) => ctx.miniWindows.forSender(event.sender)?.reload())
+  handleInvoke('mini:proceedUnsafe', (_req, event) =>
+    ctx.miniWindows.forSender(event.sender)?.proceed(),
+  )
   handleInvoke('mini:close', (_req, event) => ctx.miniWindows.forSender(event.sender)?.close())
   handleInvoke('mini:promote', (_req, event) => ctx.miniWindows.promote(event.sender))
   handleInvoke('ui:overlay', (req) => manager.setOverlayShown(req.shown, req.phase))
+  handleInvoke('ui:focus', (req) => {
+    if (req.target === 'page') manager.focusActive()
+    else if (!win.isDestroyed()) win.webContents.focus()
+  })
 
   handleInvoke('window:control', (req) => {
     switch (req.action) {

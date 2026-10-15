@@ -9,6 +9,7 @@ import { holdOverlay, releaseOverlay } from '@/lib/overlay'
 import { selectSearchEngine, useSettings } from '@/state/settings'
 import {
   captureNoteForActiveTab,
+  logWorkNow,
   remindAboutActiveTab,
   setSidebarMode,
   toggleSidebarMode,
@@ -196,6 +197,9 @@ export function Palette(): React.JSX.Element {
         break
       case 'timesheet:open':
         ui.toggleTimesheet()
+        break
+      case 'timesheet:log':
+        logWorkNow()
         break
       case 'split:toggle':
         void invoke('tabs:toggleSplit', {})

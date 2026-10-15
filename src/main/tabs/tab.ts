@@ -1,8 +1,10 @@
 import { WebContentsView, clipboard, type MenuItemConstructorOptions } from 'electron'
 import { randomUUID } from 'node:crypto'
 import type { FindResult, SecurityState, TabInfo, TabKind } from '@shared/models'
+import { classifyLoadError, hostOf, httpLoadError, type LoadError } from '@shared/net-errors'
 
 import { INCOGNITO_PARTITION } from './partition-names'
+import { certificates } from '../services/certificates'
 import { adoptPopup, popupWindowOptions } from '../windows/popup-window'
 
 export { INCOGNITO_PARTITION }
@@ -92,6 +94,16 @@ const CLEAR_FIND_SCRIPT = `(() => {
   CSS.highlights.delete('aurora-find-active');
 })()`
 
+/**
+ * An HTTP error response that came with nothing to show, which is when Chrome
+ * shows its own page. Asked in an isolated world, so the page cannot answer.
+ */
+const EMPTY_PAGE_WORLD = 1932
+const EMPTY_PAGE_SCRIPT = `(() => {
+  const body = document.body;
+  return !body || (body.childElementCount === 0 && !(body.textContent || '').trim());
+})()`
+
 export function isAllowedPageUrl(url: string): boolean {
   return (
     url.startsWith('https://') ||
@@ -117,13 +129,6 @@ function notePage(title: string, body: string): string {
 main{text-align:center;max-width:32rem;padding:2rem}h1{font-size:1.1rem;font-weight:600}p{color:rgba(255,255,255,.55);font-size:.85rem;word-break:break-all}a{color:#a9b8ff}</style></head>
 <body><main>${body}</main></body></html>`
   return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
-}
-
-function errorPage(url: string, description: string): string {
-  return notePage(
-    'Can’t open page',
-    `<h1>Aura Browser can’t open this page</h1><p>${esc(url)}</p><p>${esc(description)}</p>`,
-  )
 }
 
 /** In place of a page that was on screen when Aura crashed (see `held`). */
@@ -178,6 +183,14 @@ export class Tab {
    */
   held = false
   showingHeldNote = false
+  /**
+   * The page did not load. The chrome draws Chrome's error page for it in place
+   * of the view, the address stays the one asked for, and Reload tries again;
+   * the next page that does load clears it.
+   */
+  loadError: LoadError | null = null
+  /** The main document's HTTP status, for spotting an empty error response. */
+  private httpStatus = 0
   /** Set when Aura closes the page, so only a page closing itself is reported. */
   private closing = false
 
@@ -265,13 +278,29 @@ export class Tab {
     })
     // The held note's link is the way back to the real page.
     wc.on('will-navigate', () => this.release())
-    wc.on('did-navigate', (_e, url) => {
+    wc.on('did-navigate', (_e, url, httpResponseCode) => {
       if (this.held) return
+      this.loadError = null
+      this.httpStatus = httpResponseCode
       this.url = url
       this.pendingUrl = null
-      this.security = securityFor(url)
+      this.security = this.securityOf(url)
       this.host.recordVisit(this, url)
       this.host.changed(this)
+    })
+    wc.on('did-finish-load', () => {
+      // Chromium's own (blank) error document finishes loading too: not a page.
+      if (this.held || this.loadError || this.httpStatus < 400) return
+      const { url, httpStatus } = this
+      void wc
+        .executeJavaScriptInIsolatedWorld(EMPTY_PAGE_WORLD, [{ code: EMPTY_PAGE_SCRIPT }])
+        .then((empty) => {
+          // Still the same page, and still nothing else said about it.
+          if (empty === true && this.url === url && !this.loadError) {
+            this.fail(httpLoadError(httpStatus, url))
+          }
+        })
+        .catch(() => undefined)
     })
     wc.on('did-navigate-in-page', (_e, url, isMainFrame) => {
       if (!isMainFrame || this.held) return
@@ -280,13 +309,13 @@ export class Tab {
       this.host.changed(this)
     })
     wc.on('page-title-updated', (_e, title) => {
-      if (this.held) return
+      if (this.held || this.loadError) return
       this.title = title
       this.host.updateTitle(this, this.url, title)
       this.host.changed(this)
     })
     wc.on('page-favicon-updated', (_e, favicons) => {
-      if (this.held) return
+      if (this.held || this.loadError) return
       this.faviconUrl = favicons[0] ?? null
       this.host.changed(this)
     })
@@ -299,8 +328,9 @@ export class Tab {
     wc.on('did-fail-load', (_e, code, description, failedUrl, isMainFrame) => {
       // -3 is ERR_ABORTED (e.g. stop button, downloads, redirects) — not a failure to surface.
       if (!isMainFrame || code === -3 || this.held) return
-      this.title = 'Can’t open page'
-      void wc.loadURL(errorPage(failedUrl, description || `Error ${code}`))
+      // Chromium has already committed its (blank) error page at this address,
+      // so Back, Forward and Reload behave as they do in Chrome.
+      this.fail(classifyLoadError(code, description, failedUrl))
     })
     wc.on('context-menu', (_e, params) => this.showContextMenu(params))
   }
@@ -379,6 +409,34 @@ export class Tab {
     const url = this.pendingUrl
     this.pendingUrl = null
     void this.wc.loadURL(url)
+  }
+
+  private fail(error: LoadError): void {
+    this.loadError = error
+    this.httpStatus = 0
+    this.url = error.url
+    this.pendingUrl = null
+    this.title = hostOf(error.url) || error.url
+    this.faviconUrl = null
+    this.security = error.kind === 'certificate' ? 'dangerous' : securityFor(error.url)
+    this.host.changed(this)
+  }
+
+  /** Secure, unless it is only reachable because its certificate was accepted by hand. */
+  private securityOf(url: string): SecurityState {
+    const state = securityFor(url)
+    return state === 'secure' && certificates.isAccepted(this.wc.session, url) ? 'dangerous' : state
+  }
+
+  /**
+   * "Proceed to host (unsafe)" on a certificate error: accept the certificate
+   * this page was refused and load it again. Chrome's rule, Chrome's scope —
+   * this site, this Space, until Aura quits.
+   */
+  proceed(): void {
+    const error = this.loadError
+    if (!error?.canProceed || this.wc.isDestroyed()) return
+    if (certificates.accept(this.wc, error.url)) this.wc.reload()
   }
 
   /** Stop standing in for the page: whatever loads next is the real thing. */
@@ -494,6 +552,7 @@ export class Tab {
       canGoBack: !this.crashed && this.wc.navigationHistory.canGoBack(),
       canGoForward: !this.crashed && this.wc.navigationHistory.canGoForward(),
       crashed: this.crashed,
+      loadError: this.loadError,
       security: this.security,
       zoomPercent: this.zoomPercent(),
     }

@@ -1,14 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, Lock, Search, Star, TriangleAlert } from 'lucide-react'
+import type { SecurityState } from '@shared/models'
 import { invoke } from '@/lib/ipc'
 import { displayLabel, fullLabel, normalizeInput } from '@/lib/url'
 import { useSettings } from '@/state/settings'
 import { useTabs, selectActiveTab, selectActiveSpace } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 
-function SecurityIcon({ state }: { state: 'secure' | 'insecure' | 'neutral' }): React.JSX.Element {
+function SecurityIcon({ state }: { state: SecurityState }): React.JSX.Element {
   if (state === 'secure') return <Lock size={13} style={{ color: 'var(--ink-2)' }} />
   if (state === 'insecure') return <TriangleAlert size={13} style={{ color: 'var(--danger)' }} />
+  if (state === 'dangerous') {
+    // Chrome's red "Not secure": https, but on a certificate you were warned about.
+    return (
+      <span
+        className="flex shrink-0 items-center gap-1 text-[11.5px] font-medium"
+        style={{ color: 'var(--danger)' }}
+        title="Not secure: this site’s certificate isn’t trusted"
+        data-testid="url-not-secure"
+      >
+        <TriangleAlert size={13} />
+        Not secure
+      </span>
+    )
+  }
   return <Search size={13} style={{ color: 'var(--ink-3)' }} />
 }
 

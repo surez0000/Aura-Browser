@@ -34,6 +34,16 @@ export function captureNoteForActiveTab(): void {
   })
 }
 
+/**
+ * Log unplanned work now. The day view, when it is open, has its own line for
+ * it; otherwise a bar opens above the page, the way the question does.
+ */
+export function logWorkNow(): void {
+  const timesheet = useTimesheet.getState()
+  if (useUi.getState().timesheetOpen) timesheet.focusLog()
+  else timesheet.openLog()
+}
+
 /** Open Reminders with the page on screen already attached. */
 export function remindAboutActiveTab(): void {
   const { tabs, activeTabId } = useTabs.getState()
@@ -111,6 +121,9 @@ export function runRendererCommand(id: RendererCommandId): void {
       break
     case 'timesheet:open':
       if (isAppEnabled(useApps.getState().apps, 'timesheet')) ui.toggleTimesheet()
+      break
+    case 'timesheet:log':
+      if (isAppEnabled(useApps.getState().apps, 'timesheet')) logWorkNow()
       break
     case 'grammar:open':
       if (!isAppEnabled(useApps.getState().apps, 'grammar')) break

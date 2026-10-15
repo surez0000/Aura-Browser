@@ -150,11 +150,19 @@ export function buildActions(ctx: {
     )
   }
   if (ctx.enabledApps?.includes('timesheet')) {
-    actions.push({
-      id: 'timesheet:open',
-      title: 'Timesheet',
-      keywords: 'day log hours work summary what did i do',
-    })
+    actions.push(
+      {
+        id: 'timesheet:log',
+        title: 'Log Work Now…',
+        keywords: 'unplanned interruption timesheet track log time',
+        hint: '⇧⌘L',
+      },
+      {
+        id: 'timesheet:open',
+        title: 'Timesheet',
+        keywords: 'day log hours work summary what did i do',
+      },
+    )
   }
 
   const activeSpace = ctx.spaces.find((s) => s.id === ctx.activeSpaceId)

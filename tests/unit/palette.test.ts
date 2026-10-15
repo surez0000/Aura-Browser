@@ -28,6 +28,7 @@ function tab(id: string, title: string, url: string, spaceId = 's1'): TabInfo {
     canGoBack: false,
     canGoForward: false,
     crashed: false,
+    loadError: null,
     security: 'secure',
     zoomPercent: 100,
   }

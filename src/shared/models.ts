@@ -1,9 +1,11 @@
 import type { SearchEngineId } from './search'
 import type { ThemeMode } from './theme'
 import type { AuraAppId } from './apps'
+import type { LoadError } from './net-errors'
 
 /** Security indication shown on the URL pill. */
-export type SecurityState = 'secure' | 'insecure' | 'neutral'
+/** `dangerous`: https whose certificate was accepted by hand after a warning. */
+export type SecurityState = 'secure' | 'insecure' | 'dangerous' | 'neutral'
 
 /** Sidebar section a tab lives in. */
 export type TabKind = 'pinned' | 'today'
@@ -48,6 +50,8 @@ export interface TabInfo {
   canGoBack: boolean
   canGoForward: boolean
   crashed: boolean
+  /** The page did not load; the chrome shows why, in place of the page. */
+  loadError: LoadError | null
   security: SecurityState
   zoomPercent: number
 }
@@ -83,6 +87,7 @@ export interface MiniWindowInfo {
   title: string
   isLoading: boolean
   canGoBack: boolean
+  loadError: LoadError | null
 }
 
 export interface PeekInfo {
@@ -90,6 +95,7 @@ export interface PeekInfo {
   url: string
   title: string
   isLoading: boolean
+  loadError: LoadError | null
 }
 
 /** Persisted session (kv key "session"), phase (b) schema; upgraded on load. */

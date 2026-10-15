@@ -8,16 +8,19 @@ import { useReminders } from '@/state/reminders'
 import { useTabs, selectActiveTab } from '@/state/tabs'
 import { useTimesheet, type TimesheetPrompt } from '@/state/timesheet'
 import { AppIcon } from './icons'
+import { LogWork } from './timesheet/LogWork'
 
 /**
  * What the apps have to say, said above the page — the page shrinks under
  * the bar the way it does for a permission prompt, so nothing floats over the
  * native view and nothing takes the focus you were using. A reminder whose
- * time has come; the timesheet's question. Several stack.
+ * time has come; the timesheet's question. Several stack. The one exception
+ * to the focus rule is the bar you open yourself, for unplanned work.
  */
 export function AppPrompts(): React.JSX.Element {
   const due = useReminders((s) => s.due)
   const prompt = useTimesheet((s) => s.prompt)
+  const logging = useTimesheet((s) => s.logging)
 
   return (
     <AnimatePresence initial={false}>
@@ -41,6 +44,17 @@ export function AppPrompts(): React.JSX.Element {
           transition={{ type: 'spring', stiffness: 500, damping: 34 }}
         >
           <TimesheetBar prompt={prompt} />
+        </motion.div>
+      )}
+      {logging && (
+        <motion.div
+          key="timesheet-log"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6, transition: { duration: 0.12 } }}
+          transition={{ type: 'spring', stiffness: 500, damping: 34 }}
+        >
+          <LogWork variant="bar" />
         </motion.div>
       )}
     </AnimatePresence>

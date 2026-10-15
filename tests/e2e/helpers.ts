@@ -118,6 +118,12 @@ export async function startFixtureServer(): Promise<FixtureServer> {
       )
       return
     }
+    // An error status with nothing in it: where Chrome shows its own page.
+    if (name === 'empty-404') {
+      res.writeHead(404)
+      res.end()
+      return
+    }
     // Slow page: lets tests observe loading state for ~1.5 s.
     if (name === 'slow.html') {
       setTimeout(() => {

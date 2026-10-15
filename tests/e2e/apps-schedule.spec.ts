@@ -4,9 +4,10 @@ import {
   createTabViaPalette,
   launchAurora,
   modifierKey,
+  pageFor,
   startFixtureServer,
 } from './helpers'
-import type { Page } from 'playwright'
+import type { ElectronApplication, Page } from 'playwright'
 
 /** The scheduler ticks every half minute; under test it ticks every 300 ms. */
 const FAST = { env: { AURORA_SCHEDULER_TICK_MS: '300' } }
@@ -172,6 +173,118 @@ test('the timesheet asks its question, takes the answer in place, and reads the 
     await chrome.getByTestId('timesheet-prev').click()
     await expect(chrome.getByTestId('timesheet-day')).toHaveText('Yesterday')
     await expect(chrome.getByTestId('timesheet-body')).toContainText('Nothing was asked that day')
+  } finally {
+    await app.close()
+    await server.close()
+  }
+})
+
+/** Click a menu item exactly as its shortcut would (⇧⌘L and friends). */
+async function clickMenu(app: ElectronApplication, top: string, label: string): Promise<void> {
+  const ok = await app.evaluate(
+    ({ Menu, BrowserWindow }, [top, label]) => {
+      const item = Menu.getApplicationMenu()
+        ?.items.find((i) => i.label === top)
+        ?.submenu?.items.find((i) => i.label === label)
+      item?.click(undefined, BrowserWindow.getAllWindows().sort((a, b) => a.id - b.id)[0])
+      return !!item
+    },
+    [top, label],
+  )
+  expect(ok, `${top} > ${label} should exist`).toBe(true)
+}
+
+test('unplanned work is logged between questions, from a bar or the day view', async () => {
+  const server = await startFixtureServer()
+  const { app, chrome } = await launchAurora(undefined, FAST)
+  try {
+    await createTabViaPalette(chrome, `${server.url}/a.html`)
+    await expect(chrome.getByTestId('tab-title').filter({ hasText: 'Fixture A' })).toBeVisible()
+    await chrome.evaluate(
+      `window.aurora.invoke('apps:setTimesheetConfig', { question: 'What are you on?', days: [0,1,2,3,4,5,6], startHour: 0, endHour: 24, intervalMinutes: 30 })`,
+    )
+
+    // Off: the shortcut does nothing.
+    await clickMenu(app, 'View', 'Log Work Now…')
+    await chrome.waitForTimeout(300)
+    await expect(chrome.getByTestId('timesheet-log-bar')).toHaveCount(0)
+
+    await enable(chrome, 'timesheet')
+    const question = chrome.getByTestId('timesheet-bar')
+    await expect(question).toBeVisible()
+    await question.getByTestId('timesheet-bar-input').fill('Reviewing the spec')
+    await question.getByTestId('timesheet-bar-input').press('Enter')
+    await expect(question).toHaveCount(0)
+
+    // Reading the page, something comes up: ⇧⌘L opens a bar that takes the
+    // keyboard from the page, so typing lands in it.
+    const page = await pageFor(app, '/a.html', 10_000)
+    expect(page, 'the fixture page should be reachable').not.toBeNull()
+    await page?.mouse.click(200, 200)
+    await clickMenu(app, 'View', 'Log Work Now…')
+    const bar = chrome.getByTestId('timesheet-log-bar')
+    await expect(bar).toBeVisible()
+    await expect(bar.getByTestId('timesheet-log-input')).toBeFocused()
+    await expect(bar.getByTestId('timesheet-log-input')).toHaveAttribute('placeholder', /Fixture A/)
+    if (process.platform === 'darwin') {
+      await expect
+        .poll(() =>
+          app.evaluate(({ webContents, BrowserWindow }) => {
+            const main = BrowserWindow.getAllWindows().sort((a, b) => a.id - b.id)[0]
+            return webContents.getFocusedWebContents() === main?.webContents
+          }),
+        )
+        .toBe(true)
+    }
+
+    // It began a quarter of an hour ago, before there was a moment to log it.
+    await bar.getByTestId('timesheet-log-input').fill('P1 customer bug')
+    await bar.getByTestId('timesheet-log-start-15').click()
+    await expect(bar.getByTestId('timesheet-log-start-15')).toHaveAttribute('aria-checked', 'true')
+    await bar.getByTestId('timesheet-log-submit').click()
+    await expect(chrome.getByTestId('timesheet-log-bar')).toHaveCount(0)
+    // Logging is not a question: no new one arrives.
+    await chrome.waitForTimeout(900)
+    await expect(chrome.getByTestId('timesheet-bar')).toHaveCount(0)
+
+    // Escape lets it go without logging anything.
+    await clickMenu(app, 'View', 'Log Work Now…')
+    await expect(bar).toBeVisible()
+    await bar.getByTestId('timesheet-log-input').fill('Not this')
+    await bar.getByTestId('timesheet-log-input').press('Escape')
+    await expect(chrome.getByTestId('timesheet-log-bar')).toHaveCount(0)
+
+    // The day view: marked as unplanned, first in the day since it began
+    // before the question, and timed alongside the answers.
+    await chrome.locator('[data-testid="pinned-app"][data-app="timesheet"]').click()
+    await expect(chrome.getByTestId('timesheet-panel')).toBeVisible()
+    const entries = chrome.getByTestId('timesheet-entry')
+    await expect(entries).toHaveCount(2)
+    await expect(entries.nth(0)).toContainText('P1 customer bug')
+    await expect(entries.nth(0).getByTestId('timesheet-entry-unplanned')).toBeVisible()
+    await expect(entries.nth(1).getByTestId('timesheet-entry-unplanned')).toHaveCount(0)
+    await expect(chrome.getByTestId('timesheet-totals')).toContainText('P1 customer bug')
+    await expect(chrome.getByTestId('timesheet-body')).not.toContainText('Not this')
+
+    // The day view's own line logs another and stays for the next one.
+    const line = chrome.getByTestId('timesheet-log')
+    await line.getByTestId('timesheet-log-input').fill('Call with Ops')
+    await line.getByTestId('timesheet-log-input').press('Enter')
+    await expect(line.getByTestId('timesheet-log-submit')).toHaveText('Logged')
+    await expect(line.getByTestId('timesheet-log-input')).toHaveValue('')
+    await expect(entries).toHaveCount(3)
+    await expect(entries.nth(2)).toContainText('Call with Ops')
+
+    // ⇧⌘L with the day view open puts the caret in that line, not a bar.
+    await chrome.getByTestId('timesheet-stats').click()
+    await expect(line.getByTestId('timesheet-log-input')).not.toBeFocused()
+    await clickMenu(app, 'View', 'Log Work Now…')
+    await expect(line.getByTestId('timesheet-log-input')).toBeFocused()
+    await expect(chrome.getByTestId('timesheet-log-bar')).toHaveCount(0)
+
+    // Only today takes new work.
+    await chrome.getByTestId('timesheet-prev').click()
+    await expect(chrome.getByTestId('timesheet-log')).toHaveCount(0)
   } finally {
     await app.close()
     await server.close()

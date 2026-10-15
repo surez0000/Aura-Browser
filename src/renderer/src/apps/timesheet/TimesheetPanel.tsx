@@ -35,6 +35,7 @@ import { Panel } from '@/components/Panel'
 import { useTimesheet } from '@/state/timesheet'
 import { useUi } from '@/state/ui'
 import { AppIcon } from '../icons'
+import { LogWork } from './LogWork'
 
 const DAY = 86_400_000
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -183,8 +184,9 @@ function TimesheetDialog(): React.JSX.Element {
 
   const nextAt = useMemo(() => {
     if (!config || day !== today) return null
+    // Unplanned work is not a question asked: the schedule keeps its own time.
     const lastAsked = loaded.entries.reduce<number | null>(
-      (m, e) => (m === null || e.askedAt > m ? e.askedAt : m),
+      (m, e) => (!e.unplanned && (m === null || e.askedAt > m) ? e.askedAt : m),
       null,
     )
     return nextPromptAt(loaded.at, lastAsked, config)
@@ -307,6 +309,8 @@ function TimesheetDialog(): React.JSX.Element {
           )}
         </AnimatePresence>
 
+        {day === today && <LogWork variant="panel" />}
+
         {summary &&
         summary.blocks.length === 0 &&
         summary.skipped === 0 &&
@@ -406,6 +410,19 @@ function TimesheetDialog(): React.JSX.Element {
                               style={{ color: 'var(--ink-3)' }}
                             >
                               {block && <span>{formatDuration(block.duration)}</span>}
+                              {e.unplanned && (
+                                <span
+                                  className="rounded-full px-1.5 py-px text-[10.5px] font-medium"
+                                  style={{
+                                    color: 'var(--accent)',
+                                    border: '1px solid var(--accent)',
+                                  }}
+                                  title="Logged by hand between questions"
+                                  data-testid="timesheet-entry-unplanned"
+                                >
+                                  Unplanned
+                                </span>
+                              )}
                               {e.tabUrl && (
                                 <button
                                   type="button"

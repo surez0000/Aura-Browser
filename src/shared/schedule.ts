@@ -28,6 +28,9 @@ export const DEFAULT_TIMESHEET: TimesheetConfig = {
 
 export const INTERVAL_CHOICES = [15, 30, 45, 60, 90, 120] as const
 
+/** How long ago unplanned work began, in minutes: the "Started" choices. */
+export const UNPLANNED_STARTS = [0, 5, 15, 30] as const
+
 const MINUTE = 60_000
 const DAY = 86_400_000
 
@@ -76,6 +79,11 @@ export interface TimesheetEntry {
   tabTitle: string | null
   tabUrl: string | null
   skipped: boolean
+  /**
+   * Logged by hand between questions rather than asked. It splits the time like
+   * any answer, but the schedule ignores it: the next question still comes on time.
+   */
+  unplanned: boolean
 }
 
 export interface DayBlock {

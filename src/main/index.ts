@@ -19,6 +19,7 @@ import { DownloadsService } from './services/downloads'
 import { PermissionService } from './services/permissions'
 import { DisplayCaptureService } from './services/display-capture'
 import { guardWebStore } from './services/web-store'
+import { certificates } from './services/certificates'
 import { LaunchGuard } from './services/launch-guard'
 import { UpdaterService } from './services/updater'
 import { mergeLegacyFavorites, upgradeSession } from './services/session-store'
@@ -113,6 +114,8 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function bootstrap(): void {
+  // Untrusted certificates are refused and explained, with Chrome's way through.
+  certificates.install(app)
   // Written before anything can crash, removed only by a clean quit: if it is
   // still there next time, the last run crashed (see restoreSession).
   const launch = new LaunchGuard(app.getPath('userData'))

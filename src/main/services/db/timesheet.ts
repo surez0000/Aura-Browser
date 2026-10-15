@@ -1,17 +1,18 @@
 import type { AuroraDb } from './index'
 import type { TimesheetEntry } from '@shared/schedule'
 
-type Raw = Omit<TimesheetEntry, 'skipped'> & { skipped: number }
+type Raw = Omit<TimesheetEntry, 'skipped' | 'unplanned'> & { skipped: number; unplanned: number }
 
 function hydrate(row: Raw): TimesheetEntry {
-  return { ...row, skipped: row.skipped === 1 }
+  return { ...row, skipped: row.skipped === 1, unplanned: row.unplanned === 1 }
 }
 
 const COLUMNS = `id, asked_at AS askedAt, answered_at AS answeredAt, answer,
-                 tab_title AS tabTitle, tab_url AS tabUrl, skipped`
+                 tab_title AS tabTitle, tab_url AS tabUrl, skipped, unplanned`
 
 export class TimesheetStore {
   private readonly askStmt
+  private readonly logStmt
   private readonly getStmt
   private readonly pendingStmt
   private readonly lastAskedStmt
@@ -25,12 +26,20 @@ export class TimesheetStore {
     this.askStmt = db.prepare(
       `INSERT INTO timesheet_entries (asked_at, tab_title, tab_url) VALUES (?, ?, ?)`,
     )
+    this.logStmt = db.prepare(
+      `INSERT INTO timesheet_entries (asked_at, answered_at, answer, tab_title, tab_url, unplanned)
+       VALUES (?, ?, ?, ?, ?, 1)`,
+    )
     this.getStmt = db.prepare(`SELECT ${COLUMNS} FROM timesheet_entries WHERE id = ?`)
     this.pendingStmt = db.prepare(
       `SELECT ${COLUMNS} FROM timesheet_entries
-       WHERE answered_at IS NULL AND skipped = 0 ORDER BY asked_at DESC LIMIT 1`,
+       WHERE answered_at IS NULL AND skipped = 0 AND unplanned = 0
+       ORDER BY asked_at DESC LIMIT 1`,
     )
-    this.lastAskedStmt = db.prepare('SELECT MAX(asked_at) AS at FROM timesheet_entries')
+    // Unplanned work is not a question asked: the schedule keeps its own time.
+    this.lastAskedStmt = db.prepare(
+      'SELECT MAX(asked_at) AS at FROM timesheet_entries WHERE unplanned = 0',
+    )
     this.answerStmt = db.prepare(
       'UPDATE timesheet_entries SET answer = ?, answered_at = ?, skipped = 0 WHERE id = ?',
     )
@@ -51,6 +60,20 @@ export class TimesheetStore {
   /** The question, asked. Unanswered until `answer` or `skip`. */
   ask(at: number, tab: { title: string | null; url: string | null }): TimesheetEntry {
     const info = this.askStmt.run(at, tab.title, tab.url)
+    return this.get(Number(info.lastInsertRowid))!
+  }
+
+  /**
+   * Unplanned work, logged between questions: answered as it is written, and
+   * timed from when it began, which may be a little before now.
+   */
+  log(
+    answer: string,
+    startedAt: number,
+    tab: { title: string | null; url: string | null },
+    at = Date.now(),
+  ): TimesheetEntry {
+    const info = this.logStmt.run(startedAt, at, answer.trim(), tab.title, tab.url)
     return this.get(Number(info.lastInsertRowid))!
   }
 

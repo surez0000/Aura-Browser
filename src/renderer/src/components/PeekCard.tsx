@@ -4,6 +4,7 @@ import { ExternalLink, Loader2, X } from 'lucide-react'
 import { invoke } from '@/lib/ipc'
 import { displayLabel } from '@/lib/url'
 import { useTabs } from '@/state/tabs'
+import { LoadErrorPage } from './LoadErrorPage'
 
 /**
  * Peek: a link previewed in a floating card, without spending a tab.
@@ -131,7 +132,17 @@ function PeekFrame(): React.JSX.Element {
             <X size={15} />
           </button>
         </div>
-        <div ref={bodyRef} className="mx-px mb-px min-h-0 flex-1 rounded-b-[11px]" />
+        <div ref={bodyRef} className="relative mx-px mb-px min-h-0 flex-1 rounded-b-[11px]">
+          {peek?.loadError && (
+            <LoadErrorPage
+              compact
+              error={peek.loadError}
+              onReload={() => void invoke('tabs:reload', { tabId: peek.tabId })}
+              onBack={close}
+              onProceed={() => void invoke('tabs:proceedUnsafe', { tabId: peek.tabId })}
+            />
+          )}
+        </div>
       </motion.div>
     </motion.div>
   )

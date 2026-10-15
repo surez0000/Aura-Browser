@@ -79,6 +79,9 @@ const MIGRATIONS: readonly string[] = [
      skipped INTEGER NOT NULL DEFAULT 0
    );
    CREATE INDEX idx_timesheet_asked ON timesheet_entries (asked_at DESC);`,
+  // v6 — unplanned work, logged between questions. It is timed like an answer
+  // but never counts as a question asked, so it leaves the schedule alone.
+  `ALTER TABLE timesheet_entries ADD COLUMN unplanned INTEGER NOT NULL DEFAULT 0;`,
 ]
 
 export type AuroraDb = Database.Database

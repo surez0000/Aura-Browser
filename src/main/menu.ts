@@ -165,6 +165,7 @@ export function installMenu(ctx: MenuContext): void {
         rendererItem('reminders:open'),
         rendererItem('reminders:new'),
         rendererItem('timesheet:open'),
+        rendererItem('timesheet:log'),
         ...(process.platform === 'darwin'
           ? []
           : [rendererItem('settings:toggle'), rendererItem('apps:store')]),

@@ -58,6 +58,7 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
   'tabs:back': optionalTab,
   'tabs:forward': optionalTab,
   'tabs:reload': z.object({ tabId: id.optional(), hard: z.boolean().optional() }).strict(),
+  'tabs:proceedUnsafe': z.object({ tabId: id }).strict(),
   'tabs:stop': optionalTab,
   'tabs:reopenClosed': empty,
   'tabs:zoom': z
@@ -229,6 +230,12 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
   'timesheet:day': z.object({ day: when }).strict(),
   'timesheet:week': z.object({ day: when }).strict(),
   'timesheet:deleteEntry': z.object({ id: rowId }).strict(),
+  'timesheet:log': z
+    .object({
+      answer: z.string().trim().min(1).max(500),
+      minutesAgo: z.number().int().min(0).max(240),
+    })
+    .strict(),
   'grammar:get': empty,
   'grammar:test': grammarSetup,
   'grammar:save': grammarSetup,
@@ -289,9 +296,12 @@ export const invokeSchemas: Record<InvokeChannel, ZodType> = {
     .strict(),
   'mini:get': empty,
   'mini:back': empty,
+  'mini:reload': empty,
+  'mini:proceedUnsafe': empty,
   'mini:close': empty,
   'mini:promote': empty,
   'peek:promote': empty,
+  'ui:focus': z.object({ target: z.enum(['chrome', 'page']) }).strict(),
   'ui:overlay': z
     .object({ shown: z.boolean(), phase: z.enum(['capture', 'detach']).optional() })
     .strict(),

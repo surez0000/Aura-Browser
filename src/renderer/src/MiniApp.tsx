@@ -4,6 +4,7 @@ import type { MiniWindowInfo } from '@shared/models'
 import { invoke, isMac, on } from '@/lib/ipc'
 import { displayLabel } from '@/lib/url'
 import { WindowControls } from '@/components/sidebar/WindowControls'
+import { LoadErrorPage } from '@/components/LoadErrorPage'
 import { auroraPalette } from '@/theme/aurora'
 import { toCss } from '@/theme/contrast'
 import { useUi } from '@/state/ui'
@@ -134,7 +135,20 @@ export default function MiniApp(): React.JSX.Element {
           <WindowControls />
         )}
       </div>
-      <div ref={bodyRef} className="card mx-2 mb-2 min-h-0 flex-1" data-testid="mini-page" />
+      <div ref={bodyRef} className="card relative mx-2 mb-2 min-h-0 flex-1" data-testid="mini-page">
+        {state?.loadError && (
+          <LoadErrorPage
+            compact
+            error={state.loadError}
+            onReload={() => void invoke('mini:reload', {})}
+            onBack={() => {
+              if (state.canGoBack) void invoke('mini:back', {})
+              else void invoke('mini:close', {})
+            }}
+            onProceed={() => void invoke('mini:proceedUnsafe', {})}
+          />
+        )}
+      </div>
     </div>
   )
 }

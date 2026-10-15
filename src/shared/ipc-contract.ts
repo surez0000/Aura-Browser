@@ -48,6 +48,7 @@ export type RendererCommandId =
   | 'reminders:open'
   | 'reminders:new'
   | 'timesheet:open'
+  | 'timesheet:log'
   | 'grammar:open'
 
 /** invoke(channel, req) -> Promise<res> */
@@ -64,6 +65,8 @@ export interface InvokeMap {
   'tabs:back': { req: { tabId?: string }; res: void }
   'tabs:forward': { req: { tabId?: string }; res: void }
   'tabs:reload': { req: { tabId?: string; hard?: boolean }; res: void }
+  /** "Proceed (unsafe)" on a certificate error: accept it for this site and load. */
+  'tabs:proceedUnsafe': { req: { tabId: string }; res: void }
   'tabs:stop': { req: { tabId?: string }; res: void }
   'tabs:reopenClosed': { req: Record<string, never>; res: void }
   'tabs:zoom': { req: { tabId?: string; direction: 'in' | 'out' | 'reset' }; res: number }
@@ -196,6 +199,8 @@ export interface InvokeMap {
   /** Every question asked in the Monday–Sunday week that contains `day`. */
   'timesheet:week': { req: { day: number }; res: TimesheetEntry[] }
   'timesheet:deleteEntry': { req: { id: number }; res: void }
+  /** Unplanned work, logged between questions; it began `minutesAgo` before now. */
+  'timesheet:log': { req: { answer: string; minutesAgo: number }; res: TimesheetEntry }
 
   /** Aura Grammar Checker: settings, a test call, and the sites it may run on. */
   'grammar:get': { req: Record<string, never>; res: GrammarInfo }
@@ -238,6 +243,8 @@ export interface InvokeMap {
   /** Current state, fetched on mount: a push can land before the renderer subscribes. */
   'mini:get': { req: Record<string, never>; res: MiniWindowInfo | null }
   'mini:back': { req: Record<string, never>; res: void }
+  'mini:reload': { req: Record<string, never>; res: void }
+  'mini:proceedUnsafe': { req: Record<string, never>; res: void }
   'mini:close': { req: Record<string, never>; res: void }
   /** Move the page into the main window as a real tab. */
   'mini:promote': { req: Record<string, never>; res: void }
@@ -254,6 +261,12 @@ export interface InvokeMap {
     req: { shown: boolean; phase?: 'capture' | 'detach' }
     res: { snapshots: Array<{ tabId: string; dataUrl: string }> }
   }
+  /**
+   * Hand the keyboard to the chrome (a field it just opened for typing) or back
+   * to the page on screen. The chrome focusing its own input is not enough while
+   * a page view holds the keyboard.
+   */
+  'ui:focus': { req: { target: 'chrome' | 'page' }; res: void }
   'window:control': { req: { action: 'minimize' | 'maximize' | 'close' }; res: void }
   'state:get': { req: Record<string, never>; res: TabsSnapshot }
 }
@@ -295,6 +308,7 @@ export const INVOKE_CHANNELS = [
   'tabs:back',
   'tabs:forward',
   'tabs:reload',
+  'tabs:proceedUnsafe',
   'tabs:stop',
   'tabs:reopenClosed',
   'tabs:zoom',
@@ -361,6 +375,7 @@ export const INVOKE_CHANNELS = [
   'timesheet:day',
   'timesheet:week',
   'timesheet:deleteEntry',
+  'timesheet:log',
   'grammar:get',
   'grammar:test',
   'grammar:save',
@@ -376,10 +391,13 @@ export const INVOKE_CHANNELS = [
   'mini:setBounds',
   'mini:get',
   'mini:back',
+  'mini:reload',
+  'mini:proceedUnsafe',
   'mini:close',
   'mini:promote',
   'peek:promote',
   'ui:overlay',
+  'ui:focus',
   'window:control',
   'state:get',
 ] as const satisfies ReadonlyArray<keyof InvokeMap>

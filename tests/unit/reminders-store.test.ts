@@ -106,6 +106,33 @@ describe('timesheet store', () => {
     expect(t.lastAnswer()).toBeNull()
   })
 
+  it('logs unplanned work answered at once, timed from its start, without moving the schedule', () => {
+    const t = new TimesheetStore(db)
+    const q = t.ask(wed(9), { title: null, url: null })
+    t.answer(q.id, 'Spec review', wed(9, 1))
+    const u = t.log(
+      ' P1 customer bug ',
+      wed(9, 10),
+      { title: 'Ticket', url: 'https://t.dev/1' },
+      wed(9, 25),
+    )
+    expect(u).toMatchObject({
+      askedAt: wed(9, 10),
+      answeredAt: wed(9, 25),
+      answer: 'P1 customer bug',
+      tabTitle: 'Ticket',
+      unplanned: true,
+      skipped: false,
+    })
+    expect(t.get(q.id)?.unplanned).toBe(false)
+    // The next question is still timed from 9:00, and nothing is waiting.
+    expect(t.lastAskedAt()).toBe(wed(9))
+    expect(t.pending()).toBeNull()
+    // "Same as last" offers it at the next question: it is what you were doing.
+    expect(t.lastAnswer()).toBe('P1 customer bug')
+    expect(t.between(wed(0), wed(0) + 86_400_000).map((e) => e.id)).toEqual([q.id, u.id])
+  })
+
   it('returns a day in order', () => {
     const t = new TimesheetStore(db)
     t.ask(wed(10), { title: null, url: null })

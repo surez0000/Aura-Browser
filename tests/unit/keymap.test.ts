@@ -38,6 +38,8 @@ describe('keymap', () => {
     expect(matchCombo('t', false)).toBe('tab:new')
     expect(matchCombo('g', false)).toBe('find:next')
     expect(matchCombo('g', true)).toBe('find:prev')
+    expect(matchCombo('l', false)).toBe('url:focus')
+    expect(matchCombo('l', true)).toBe('timesheet:log')
     expect(matchCombo('t', true)).toBeNull()
     expect(matchCombo('x', false)).toBeNull()
   })

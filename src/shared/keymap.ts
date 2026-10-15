@@ -146,6 +146,13 @@ export const KEYMAP: readonly KeyCommand[] = [
     rendererCommand: 'timesheet:open',
   },
   {
+    id: 'timesheet:log',
+    label: 'Log Work Now…',
+    accelerator: 'CommandOrControl+Shift+L',
+    scope: 'renderer',
+    rendererCommand: 'timesheet:log',
+  },
+  {
     id: 'settings:toggle',
     label: 'Settings…',
     accelerator: 'CommandOrControl+,',
@@ -214,6 +221,7 @@ export const RENDERER_COMBOS: readonly ComboEntry[] = [
   { key: 'g', shift: true, command: 'find:prev' },
   { key: 'e', command: 'notes:new' },
   { key: 'e', shift: true, command: 'reminders:new' },
+  { key: 'l', shift: true, command: 'timesheet:log' },
   { key: ',', command: 'settings:toggle' },
   { key: 'y', command: 'history:open' },
   { key: '\\', command: 'split:toggle' },

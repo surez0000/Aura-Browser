@@ -88,7 +88,14 @@ export class MiniWindow {
       title: this.tab.title,
       isLoading: this.tab.isLoading,
       canGoBack: this.tab.info().canGoBack,
+      loadError: this.tab.loadError,
     }
+  }
+
+  /** The page changed: what the window shows, and whether the view or an error page is up. */
+  refresh(): void {
+    this.sync()
+    this.emitState()
   }
 
   emitState(): void {
@@ -105,13 +112,22 @@ export class MiniWindow {
     this.tab.goBack()
   }
 
+  reload(): void {
+    this.tab.reload()
+  }
+
+  proceed(): void {
+    this.tab.proceed()
+  }
+
   close(): void {
     if (!this.win.isDestroyed()) this.win.close()
   }
 
   private sync(): void {
     if (this.win.isDestroyed()) return
-    if (!this.bounds) {
+    // A failed page's view stays off: the window's chrome draws why it failed.
+    if (!this.bounds || this.tab.loadError) {
       if (this.attached) this.win.contentView.removeChildView(this.tab.view)
       this.attached = false
       return
@@ -148,7 +164,7 @@ export class MiniWindowService {
     if (!context || !isAllowedPageUrl(url)) return null
 
     const host: TabHost = {
-      changed: (tab) => this.find((w) => w.owns(tab))?.emitState(),
+      changed: (tab) => this.find((w) => w.owns(tab))?.refresh(),
       // Following a link out of a quick read means you want it properly.
       openUrl: (_opener, linkUrl) => this.deps.openInMain(linkUrl, {}),
       peek: (_opener, linkUrl) => this.deps.openInMain(linkUrl, {}),

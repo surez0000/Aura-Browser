@@ -85,6 +85,7 @@ describe('day summary', () => {
     askedAt: number,
     answer: string | null,
     skipped = false,
+    unplanned = false,
   ): TimesheetEntry => ({
     id,
     askedAt,
@@ -93,6 +94,7 @@ describe('day summary', () => {
     tabTitle: null,
     tabUrl: id === 1 ? 'https://example.com/spec' : null,
     skipped,
+    unplanned,
   })
 
   it('attributes each answer the time until the next question', () => {
@@ -110,6 +112,36 @@ describe('day summary', () => {
     expect(s.totals[0]).toEqual({ answer: 'Spec review', duration: 60 * MINUTE, count: 2 })
     expect(s.totals[1]).toEqual({ answer: 'Standup', duration: 20 * MINUTE, count: 1 })
     expect(s.totalDuration).toBe(80 * MINUTE)
+  })
+
+  it('unplanned work splits the answer it interrupts and runs until the next question', () => {
+    // Asked at 10:00, a P1 came up at 10:12, asked again on schedule at 10:30.
+    const s = summariseDay(
+      [
+        entry(1, wed(10), 'Spec review'),
+        entry(2, wed(10, 12), 'P1 customer bug', false, true),
+        entry(3, wed(10, 30), 'Standup'),
+      ],
+      wed(12),
+      wed(10, 45),
+      DEFAULT_TIMESHEET,
+    )
+    expect(s.blocks.map((b) => [b.answer, b.duration / MINUTE])).toEqual([
+      ['Spec review', 12],
+      ['P1 customer bug', 18],
+      ['Standup', 15],
+    ])
+    expect(s.totalDuration).toBe(45 * MINUTE)
+  })
+
+  it('unplanned work logged after the last question runs to now', () => {
+    const s = summariseDay(
+      [entry(1, wed(10), 'Spec review'), entry(2, wed(10, 5), 'Call with Ops', false, true)],
+      wed(12),
+      wed(10, 20),
+      DEFAULT_TIMESHEET,
+    )
+    expect(s.blocks.map((b) => b.duration / MINUTE)).toEqual([5, 15])
   })
 
   it('never lets one answer run past the interval when the next question was late', () => {
@@ -214,6 +246,7 @@ describe('week summary', () => {
     tabTitle: null,
     tabUrl: null,
     skipped: false,
+    unplanned: false,
   })
   const entries = [
     entry(1, at(0, 9), 'Spec review'),

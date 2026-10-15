@@ -3,6 +3,7 @@ import { RotateCw, X } from 'lucide-react'
 import { invoke, modKeyLabel } from '@/lib/ipc'
 import { displayLabel } from '@/lib/url'
 import { TabFavicon } from '@/components/sidebar/TabFavicon'
+import { LoadErrorPage } from '@/components/LoadErrorPage'
 import { useTabs } from '@/state/tabs'
 import { useUi } from '@/state/ui'
 import type { TabInfo } from '@shared/models'
@@ -269,6 +270,17 @@ function Pane({
           />
         )}
         {tab?.crashed && <CrashState tabId={tabId} />}
+        {tab?.loadError && !tab.crashed && (
+          <LoadErrorPage
+            error={tab.loadError}
+            onReload={() => void invoke('tabs:reload', { tabId })}
+            onBack={() => {
+              if (tab.canGoBack) void invoke('tabs:back', { tabId })
+              else void invoke('tabs:close', { tabId })
+            }}
+            onProceed={() => void invoke('tabs:proceedUnsafe', { tabId })}
+          />
+        )}
       </div>
     </div>
   )

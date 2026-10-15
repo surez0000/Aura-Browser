@@ -810,7 +810,8 @@ export class TabManager {
    */
   private syncPeek(): void {
     const tab = this.peekTab
-    const wanted = !!tab && !!this.peekBounds && !this.overlayShown && !tab.crashed
+    const wanted =
+      !!tab && !!this.peekBounds && !this.overlayShown && !tab.crashed && !tab.loadError
     if (!tab || this.win.isDestroyed()) return
     if (!wanted) {
       if (this.peekAttached) this.win.contentView.removeChildView(tab.view)
@@ -1022,7 +1023,8 @@ export class TabManager {
         ? []
         : space.panes.filter((id) => {
             const tab = this.getTab(id)
-            return !!tab && !tab.crashed && this.paneBounds.has(id)
+            // A failed page's view stays off: the chrome draws why it failed.
+            return !!tab && !tab.crashed && !tab.loadError && this.paneBounds.has(id)
           })
 
     for (const id of this.attachedTabIds) {
@@ -1078,6 +1080,7 @@ export class TabManager {
     // A crash removes just that pane's view; the rest of the split stays.
     if (tab.crashed) this.detachOne(tab)
     else if (this.activeSpace()?.panes.includes(tab.id)) this.syncAttachments()
+    else if (tab === this.peekTab) this.syncPeek()
     this.scheduleEmit()
   }
 
@@ -1105,6 +1108,7 @@ export class TabManager {
             url: this.peekTab.url || this.peekTab.pendingUrl || '',
             title: this.peekTab.title,
             isLoading: this.peekTab.isLoading,
+            loadError: this.peekTab.loadError,
           }
         : null,
     }
