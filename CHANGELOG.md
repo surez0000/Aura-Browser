@@ -5,6 +5,37 @@ All notable changes to Aura Browser. The format follows
 [semver](https://semver.org). See [docs/RELEASING.md](docs/RELEASING.md) for how
 a release is cut.
 
+## [1.1.8] — 2026-10-15
+
+### Added
+
+- **Log unplanned work without waiting for the next question.** Press ⇧⌘L
+  (also in the View menu and the Command Palette) and a bar opens above the
+  page, ready to type into even while you were in the page. Write one line,
+  say when it started (now, or 5, 15 or 30 minutes ago), and press Enter. The
+  Timesheet's day view has the same line at the top, for several in a row.
+  The schedule stays put: asked at 10:00, an unplanned item logged at 10:12
+  takes the time until the 10:30 question, which still comes at 10:30.
+  Unplanned entries carry an **Unplanned** tag in the day's timeline.
+
+### Fixed
+
+- **Pages that don't load get Chrome's pages.** A certificate the system
+  doesn't trust (`NET::ERR_CERT_AUTHORITY_INVALID`, an expired one, one for
+  another address) shows "Your connection is not private" with **Back to
+  safety**, and **Advanced** explains the problem and offers **Proceed to
+  the site (unsafe)**. Proceeding accepts that certificate for that site, in
+  that Space, until Aura quits, and the address field then says **Not secure**
+  in red. Revoked and invalid certificates have no way through, as in Chrome.
+  Everything else gets Chrome's page too, with its "Try:" tips and Reload:
+  "This site can't be reached", "No internet" (which reloads by itself when
+  the connection is back), "This page isn't working", and "This page can't be
+  found" for an empty 404. The address field keeps the address you asked for,
+  Reload tries that page again, and Back goes to the page before. These pages
+  appear in a Peek and in the small window too.
+- Behind a proxy, an address that doesn't exist says "This site can't be
+  reached" rather than "No internet".
+
 ## [1.1.7] — 2026-10-13
 
 ### Fixed
